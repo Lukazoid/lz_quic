@@ -1,6 +1,5 @@
 use errors::*;
 use std::io::{Read, Write};
-use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
 use rand::Rng;
 use writable::Writable;
 use readable::Readable;
@@ -19,7 +18,7 @@ impl Display for QuicConnectionId {
 
 impl Readable for QuicConnectionId {
     fn read<R: Read>(reader: &mut R) -> Result<QuicConnectionId> {
-        let inner = reader.read_u64::<LittleEndian>()?;
+        let inner = u64::read(reader)?;
 
         Ok(QuicConnectionId(inner))
     }
@@ -27,7 +26,7 @@ impl Readable for QuicConnectionId {
 
 impl Writable for QuicConnectionId {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writer.write_u64::<LittleEndian>(self.0)?;
+        self.0.write(writer)?;
 
         Ok(())
     }

@@ -2,7 +2,6 @@ use errors::*;
 use quic_tag::QuicTag;
 use std::collections::BTreeMap;
 use std::io::{self, Read, Write};
-use byteorder::{ReadBytesExt, LittleEndian, WriteBytesExt};
 use writable::Writable;
 use readable::Readable;
 
@@ -19,7 +18,7 @@ struct IntermediateQuicTagValue {
 impl Readable for IntermediateQuicTagValue {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
         let quic_tag = QuicTag::read(reader)?;
-        let end_offset = reader.read_u32::<LittleEndian>()
+        let end_offset = u32::read(reader)
             .chain_err(|| ErrorKind::UnableToReadQuicTagValueMap)?;
 
         Ok(IntermediateQuicTagValue {
@@ -74,7 +73,7 @@ impl Writable for QuicTagValueMap {
             let data = entry.1;
             end_offset += data.len() as u32;
 
-            writer.write_u32::<LittleEndian>(end_offset)
+            end_offset.write(writer)
                 .chain_err(|| ErrorKind::UnableToWriteQuicTagValueMapEndOffset(end_offset))
                 .chain_err(|| ErrorKind::UnableToWriteQuicTagValueMap)?;
         }

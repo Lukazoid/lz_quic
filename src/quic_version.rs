@@ -1,6 +1,6 @@
 use errors::*;
 use std::io::{Read, Write};
-use byteorder::{ReadBytesExt, WriteBytesExt, LittleEndian};
+use byteorder::{ReadBytesExt, WriteBytesExt};
 use writable::Writable;
 use readable::Readable;
 use std::fmt::{Display, Formatter, Result as FmtResult};
@@ -16,13 +16,15 @@ impl Display for QuicVersion {
 
 impl Writable for QuicVersion {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        Ok(writer.write_u32::<LittleEndian>(self.0)?)
+        self.0.write(writer)?;
+
+        Ok(())
     }
 }
 
 impl Readable for QuicVersion {
     fn read<R: Read>(reader: &mut R) -> Result<QuicVersion> {
-        let quic_version = reader.read_u32::<LittleEndian>()
+        let quic_version = u32::read(reader)
             .map(QuicVersion)?;
 
         Ok(quic_version)

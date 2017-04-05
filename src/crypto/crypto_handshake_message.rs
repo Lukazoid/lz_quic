@@ -1,7 +1,6 @@
 use errors::*;
 use std::io::{Read, Write};
 use quic_tag::QuicTag;
-use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use quic_tag_value_map::QuicTagValueMap;
 use std::convert::TryInto;
 use crypto::client_hello_message::ClientHelloMessage;
@@ -35,7 +34,8 @@ impl Writable for CryptoHandshakeMessage {
         quic_tag.write(writer)
             .chain_err(|| ErrorKind::UnableToWriteCryptoMessageQuicTag(quic_tag))?;
 
-        writer.write_u16::<LittleEndian>(quic_tag_value_map.len() as u16)
+        (quic_tag_value_map.len() as u16)
+            .write(writer)
             .chain_err(|| ErrorKind::UnableToWriteQuicTagValueMapLength)?;
 
         // Two bytes of padding
@@ -50,7 +50,7 @@ impl Writable for CryptoHandshakeMessage {
 }
 
 fn read_quic_tag_value_map<R: Read>(reader: &mut R) -> Result<QuicTagValueMap> {
-    let tag_value_count = reader.read_u16::<LittleEndian>()
+    let tag_value_count = u16::read(reader)
         .chain_err(|| ErrorKind::UnableToReadQuicTagValueMapLength)?;
 
     // Ignore the two bytes of padding
