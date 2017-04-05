@@ -20,15 +20,26 @@ error_chain! {
             description("unable to write unsigned 8-bit integer")
             display("unable to write unsigned 8-bit integer '{}'", value)
         }
+        UnableToWriteU16(value: u16) {
+            description("unable to write unsigned 16-bit integer")
+            display("unable to write unsigned 16-bit integer '{}'", value)
+        }
+        UnableToWriteU32(value: u32) {
+            description("unable to write unsigned 32-bit integer")
+            display("unable to write unsigned 32-bit integer '{}'", value)
+        }
+        UnableToWriteU64(value: u64) {
+            description("unable to write 64-bit unsigned integer")
+            display("unable to write 64 bit unsigned integer '{}'", value)
+        }
         UnableToReadU8 {
             description("unable to read unsigned 8-bit integer")
         }
         UnableToReadU16 {
             description("unable to read 16-bit unsigned integer")
         }
-        UnableToWriteU64(value: u64) {
-            description("unable to write 64-bit unsigned integer")
-            display("unable to write 64 bit unsigned integer '{}'", value)
+        UnableToReadU32 {
+            description("unable to read 32-bit unsigned integer")
         }
         UnableToReadU64 {
             description("unable to read 64-bit unsigned integer")

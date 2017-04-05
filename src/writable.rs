@@ -36,6 +36,18 @@ impl Writable for u8 {
     }
 }
 
+impl Writable for u16 {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        writer.write_u16::<LittleEndian>(*self).chain_err(|| ErrorKind::UnableToWriteU16(*self))
+    }
+}
+
+impl Writable for u32 {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        writer.write_u32::<LittleEndian>(*self).chain_err(|| ErrorKind::UnableToWriteU32(*self))
+    }
+}
+
 impl Writable for u64 {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         writer.write_u64::<LittleEndian>(*self).chain_err(|| ErrorKind::UnableToWriteU64(*self))

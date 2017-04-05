@@ -28,6 +28,34 @@ pub trait Readable {
     }
 }
 
+impl Readable for u8 {
+    fn read<R: Read>(reader: &mut R) -> Result<Self>
+        where Self: Sized
+    {
+        reader.read_u8()
+            .chain_err(|| ErrorKind::UnableToReadU8)
+    }
+}
+
+
+impl Readable for u16 {
+    fn read<R: Read>(reader: &mut R) -> Result<Self>
+        where Self: Sized
+    {
+        reader.read_u16::<LittleEndian>()
+            .chain_err(|| ErrorKind::UnableToReadU16)
+    }
+}
+
+impl Readable for u32 {
+    fn read<R: Read>(reader: &mut R) -> Result<Self>
+        where Self: Sized
+    {
+        reader.read_u32::<LittleEndian>()
+            .chain_err(|| ErrorKind::UnableToReadU32)
+    }
+}
+
 impl Readable for u64 {
     fn read<R: Read>(reader: &mut R) -> Result<Self>
         where Self: Sized
@@ -47,22 +75,14 @@ impl Readable for String {
     }
 }
 
-impl Readable for u16 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
-        where Self: Sized
-    {
-        reader.read_u16::<LittleEndian>()
-            .chain_err(|| ErrorKind::UnableToReadU16)
-    }
-}
-
 impl Readable for Vec<u8> {
     fn read<R: Read>(reader: &mut R) -> Result<Self>
         where Self: Sized
     {
         let mut vec = Vec::new();
+
         reader.read_to_end(&mut vec)
             .map(|_| vec)
-            .chain_err(||ErrorKind::UnableToReadBytes)
+            .chain_err(|| ErrorKind::UnableToReadBytes)
     }
 }
