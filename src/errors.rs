@@ -187,5 +187,11 @@ error_chain! {
         UnableToReadCryptoServerConfigurationMessage {
             description("unable to read crypto server configuration message")
         }
+        NotEnoughReplacementValues {
+            description("not enough replacement values")
+        }
+        NotEnoughValuesToReplace {
+            description("not enough values to replace")
+        }
     }
 }

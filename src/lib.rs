@@ -24,6 +24,7 @@ extern crate matches;
 extern crate test;
 
 mod errors;
+mod options_slice_ext;
 mod writable;
 mod readable;
 mod primitives;
