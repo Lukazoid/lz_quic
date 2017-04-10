@@ -16,6 +16,9 @@ extern crate futures;
 extern crate conv;
 extern crate hex;
 extern crate num;
+extern crate fnv;
+extern crate flate2;
+extern crate itertools;
 
 #[macro_use]
 extern crate matches;

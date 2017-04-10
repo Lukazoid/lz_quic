@@ -187,6 +187,91 @@ error_chain! {
         UnableToReadCryptoServerConfigurationMessage {
             description("unable to read crypto server configuration message")
         }
+        UnableToReadCompressedCertificateEntryType {
+            description("unable to read compressed certificate entry type")
+        }
+        UnableToWriteCompressedCertificateEntryType {
+            description("unable to write compressed certificate entry type")
+        }
+        UnableToReadCachedCertificateHash {
+            description("unable to read cached certificate hash")
+        }
+        UnableToWriteCachedCertificateHash {
+            description("unable to write cached certificate hash")
+        }
+        UnableToReadCommonCertificateSetHash {
+            description("unable to read common certificate set hash")
+        }
+        UnableToWriteCommonCertificateSetHash {
+            description("unable to write common certificate set hash")
+        }
+        UnableToReadCommonCertificateIndex {
+            description("unable to read common certificate index")
+        }
+        UnableToWriteCommonCertificateIndex {
+            description("unable to write common certificate index")
+        }
+        InvalidCompressedCertificateEntryType (entry_type: u8) {
+            description("invalid compressed certificate entry type")
+            display("invalid compressed certificate entry type '{}'", entry_type)
+        }
+        UnableToReadCompressedCertificatesUncompressedLength {
+            description("unable to read compressed certificates uncompressed length")
+        }
+        UnableToWriteCompressedCertificateUncompressedLength (length: usize) {
+            description("unable to write compressed certificate uncompressed length")
+            display("unable to write compressed certificate uncompressed length '{}'", length)
+        }
+        UnableToReadCompressedCertificateUncompressedLength  {
+            description("unable to read compressed certificate uncompressed length")
+        }
+        UnableToWriteCompressedCertificatesUncompressedLength (length: usize) {
+            description("unable to write compressed certificates uncompressed length")
+            display("unable to write compressed certificates uncompressed length '{}'", length)
+        }
+        UnableToWriteCompressedCertificateEntry {
+            description("unable to write compressed certificate entry")
+        }
+        UnableToReadCompressedCertificateEntry {
+            description("unable to read compressed certificate entry")
+        }
+        UnableToWriteCompressedChunk {
+            description("unable to write compressed chunk")
+        }
+        UnableToWriteCertificateBytes {
+            description("unable to write certificate bytes")
+        }
+        UnableToReadCertificateBytes {
+            description("unable to read certificate bytes")
+        }
+        UnableToWriteCompressedCertificates {
+            description("unable to write compressed certificates")
+        }
+        UnableToReadCompressedCertificates {
+            description("unable to read compressed certificates")
+        }
+        UnableToFindCachedCertificateWithHash (hash: u64) {
+            description("unable to find cached certificate with hash")
+            display("unable to find cached certificate with hash '{}'", hash)
+        }
+        UnableToFindCommonCertificateSetWithHash (hash: u64) {
+            description("unable to find common certificate set with hash")
+            display("unable to find common certificate set with hash '{}'", hash)
+        }
+        UnableToFindCommonCertificateWithIndexInSet (index: usize, set_hash: u64) {
+            description("unable to find certificate with index in certificate set with hash")
+            display("unable to find certificate with index '{}' in certificate set with hash '{}'", index, set_hash)
+        }
+        CompressedCertificatesUncompressedLengthIsTooLarge (length: usize) {
+            description("compress certificates uncompressed length is too large")
+            display("compress certificates uncompressed length '{}' is too large", length)
+        }
+        NotEnoughCompressedCertificates {
+            description("not enough compressed certificates")
+        }
+        UnableToDecompressCompressedCertificates {
+            description("unable to decompress compressed certificates")
+        }
         NotEnoughReplacementValues {
             description("not enough replacement values")
         }

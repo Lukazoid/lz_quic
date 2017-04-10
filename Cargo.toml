@@ -16,3 +16,7 @@ conv = "0.3.3"
 hex = "0.2.0"
 matches = "0.1.4"
 num = "0.1.36"
+fnv = "1.0.5"
+flate2 = { git = "https://github.com/Lukazoid/flate2-rs.git", branch = "set-dictionary", features = ["zlib"] }
+itertools = "0.6.0"
+lazy_static = "0.2.6"
