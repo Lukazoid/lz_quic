@@ -48,3 +48,60 @@ impl From<Vec<Certificate>> for CertificateSet {
         Self::new(value)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crypto::certificate::Certificate;
+
+    #[test]
+    fn index_of_non_existent_certificate_returns_none() {
+        // Arrange
+        let certificate_set = CertificateSet::from(vec![]);
+
+        // Act
+        let index = certificate_set.index_of(&Certificate::new(vec![6, 3, 1, 3]));
+
+        // Assert
+        assert_eq!(index, None);
+    }
+
+    #[test]
+    fn index_of_existent_certificate_returns_index() {
+        // Arrange
+        let certificate = Certificate::new(vec![6, 3, 1, 3]);
+        let certificate_set = CertificateSet::from(vec![certificate.clone()]);
+
+        // Act
+        let index = certificate_set.index_of(&certificate);
+
+        // Assert
+        assert_eq!(index, Some(0));
+    }
+
+    #[test]
+    fn non_existent_certificate_at_index_returns_none() {
+        // Arrange
+        let certificate_set = CertificateSet::from(vec![]);
+
+        // Act
+        let found_certificate = certificate_set.certificate(0);
+
+        // Assert
+        assert_eq!(found_certificate, None);
+    }
+
+    #[test]
+    fn certificate_at_index_returns_certificate() {
+        // Arrange
+        let certificate = Certificate::new(vec![6, 3, 1, 3]);
+        let certificate_set = CertificateSet::from(vec![certificate.clone()]);
+
+        // Act
+        let found_certificate = certificate_set.certificate(0);
+
+        // Assert
+        assert_eq!(found_certificate, Some(&certificate));
+    }
+}
+
