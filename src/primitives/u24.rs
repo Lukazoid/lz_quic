@@ -39,7 +39,7 @@ impl From<U24> for u32 {
 }
 
 impl TryFrom<u32> for U24 {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: u32) -> Result<U24> {
         if value > MAX.into() {

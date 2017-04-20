@@ -41,7 +41,7 @@ impl From<Proof> for QuicTag {
 }
 
 impl<'a> TryFrom<&'a QuicTag> for Proof {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: &'a QuicTag) -> Result<Self> {
         Ok(match *value {
@@ -52,8 +52,8 @@ impl<'a> TryFrom<&'a QuicTag> for Proof {
 }
 
 impl TryFrom<QuicTag> for Proof {
-    type Err = Error;
     fn try_from(value: QuicTag) -> Result<Self> {
+    type Error = Error;
         Proof::try_from(&value)
     }
 }

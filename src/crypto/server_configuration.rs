@@ -12,7 +12,7 @@ pub struct ServerConfiguration {
 }
 
 impl<'a> TryFrom<&'a QuicTagValueMap> for ServerConfiguration {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: &'a QuicTagValueMap) -> Result<Self> {
         let server_configuration_id = value.get_required_value(QuicTag::ServerConfigurationId)?;

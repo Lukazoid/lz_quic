@@ -14,7 +14,7 @@ pub enum StreamIdLength {
 }
 
 impl TryFrom<usize> for StreamIdLength {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: usize) -> Result<StreamIdLength> {
         let length = match value {
@@ -94,7 +94,7 @@ pub enum StreamOffsetLength {
 }
 
 impl TryFrom<usize> for StreamOffsetLength {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: usize) -> Result<StreamOffsetLength> {
         let length = match value {

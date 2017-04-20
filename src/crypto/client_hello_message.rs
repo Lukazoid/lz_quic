@@ -17,7 +17,7 @@ pub struct ClientHelloMessage {
 }
 
 impl<'a> TryFrom<&'a QuicTagValueMap> for ClientHelloMessage {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: &'a QuicTagValueMap) -> Result<Self> {
         let server_name = value.get_optional_value(QuicTag::ServerNameIndication)?;

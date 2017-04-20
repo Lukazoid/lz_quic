@@ -14,7 +14,7 @@ pub struct RejectionMessage {
 }
 
 impl<'a> TryFrom<&'a QuicTagValueMap> for RejectionMessage {
-    type Err = Error;
+    type Error = Error;
 
     fn try_from(value: &'a QuicTagValueMap) -> Result<Self> {
 
