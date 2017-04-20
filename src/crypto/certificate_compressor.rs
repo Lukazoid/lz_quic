@@ -45,14 +45,14 @@ impl Writable for CompressedCertificateEntry {
                 1u8.write(writer)
                     .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?
             }
-            CompressedCertificateEntry::Cached { hash: hash } => {
+            CompressedCertificateEntry::Cached { hash } => {
                 2u8.write(writer)
                     .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?;
 
                 hash.write(writer)
                     .chain_err(|| ErrorKind::UnableToWriteCachedCertificateHash)?;
             }
-            CompressedCertificateEntry::Common { set_hash: set_hash, index: index } => {
+            CompressedCertificateEntry::Common { set_hash, index } => {
                 3u8.write(writer)
                     .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?;
 
@@ -248,7 +248,7 @@ impl CertificateCompressor {
                              cached_certificates: &HashMap<u64, Certificate>)
                              -> Option<Result<Certificate>> {
         match *compressed_certificate_entry {
-            CompressedCertificateEntry::Cached { hash: hash } => {
+            CompressedCertificateEntry::Cached { hash } => {
                 let cached_certificate = cached_certificates.get(&hash)
                     .cloned()
                     .ok_or_else(|| {
@@ -257,7 +257,7 @@ impl CertificateCompressor {
 
                 Some(cached_certificate)
             }
-            CompressedCertificateEntry::Common { set_hash: set_hash, index: index } => {
+            CompressedCertificateEntry::Common { set_hash, index } => {
                 let index = index as usize;
 
                 let common_certificate = self.common_certificate_sets.get(&set_hash)
@@ -380,7 +380,7 @@ impl CertificateCompressor {
                     }
                 });
 
-            let mut certificates_by_known: HashMap<bool, Vec<&Certificate>> =
+            let certificates_by_known: HashMap<bool, Vec<&Certificate>> =
                 certificate_compressions_by_known.into_iter()
                     .map(|(key, group)| {
                         (key, group.into_iter().map(|&(certificate, _)| certificate).collect())
@@ -492,7 +492,7 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
 
         let processed_in = decompress.total_in() as usize;
 
-        let decompress_result = decompress.decompress_vec(&compressed[processed_in..],
+        decompress.decompress_vec(&compressed[processed_in..],
                             &mut decompressed,
                             Flush::Finish)
             .chain_err(|| ErrorKind::UnableToDecompressCompressedCertificates)?;
@@ -570,7 +570,7 @@ fn compress_certificates<W: Write>(known_certificates: &[&Certificate],
     // Vec so we do not allocate a large buffer on the stack
     let mut buffer = Vec::with_capacity(32 * 1024);
 
-    for mut certificate in certificates {
+    for certificate in certificates {
 
         let certificate_bytes = certificate.bytes();
 
@@ -656,6 +656,8 @@ mod tests {
                                         &HashSet::new(),
                                         &mut compressed_bytes);
 
+        assert!(compress_result.is_ok());
+
         let decompress_result = certificate_compressor.decompress_certificate_chain(&HashMap::new(),
                                         &mut Cursor::new(compressed_bytes));
 
@@ -677,6 +679,8 @@ mod tests {
                                         &HashSet::new(),
                                         &HashSet::new(),
                                         &mut compressed_bytes);
+
+        assert!(compress_result.is_ok());
 
         let decompress_result = certificate_compressor.decompress_certificate_chain(&HashMap::new(),
                                         &mut Cursor::new(compressed_bytes));
