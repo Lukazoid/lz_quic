@@ -1,7 +1,6 @@
-use errors::*;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Certificate {
     data: Vec<u8>,
 }

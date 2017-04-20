@@ -10,7 +10,7 @@ pub struct CertificateSet {
 
 impl CertificateSet {
     fn new(mut certificates: Vec<Certificate>) -> Self {
-        certificates.sort();
+        certificates.sort_by(|x, y| x.bytes().cmp(y.bytes()));
 
         let mut hasher = FnvHasher::default();
 
@@ -33,7 +33,9 @@ impl CertificateSet {
     }
 
     pub fn index_of(&self, certificate: &Certificate) -> Option<usize> {
-        self.certificates.binary_search(certificate).ok()
+        self.certificates
+            .binary_search_by(|c| c.bytes().cmp(certificate.bytes()))
+            .ok()
     }
 
     pub fn hash(&self) -> u64 {
