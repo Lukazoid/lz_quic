@@ -4,4 +4,4 @@ pub mod partial_packet_number;
 pub mod version_negotiation_packet;
 pub mod public_reset_packet;
 pub mod regular_packet;
-pub mod quic_packet;
+pub mod packet;

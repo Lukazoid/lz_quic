@@ -1,7 +1,7 @@
 use errors::*;
 use std::convert::TryFrom;
 use std::io::{Read, Write};
-use quic_tag::QuicTag;
+use tag::Tag;
 use readable::Readable;
 use writable::Writable;
 
@@ -12,48 +12,48 @@ pub enum Proof {
 
 impl Writable for Proof {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        let quic_tag: QuicTag = self.into();
+        let tag: Tag = self.into();
 
-        quic_tag.write(writer)
+        tag.write(writer)
     }
 }
 
 impl Readable for Proof {
     fn read<R: Read>(reader: &mut R) -> Result<Proof> {
-        let quic_tag = QuicTag::read(reader)?;
+        let tag = Tag::read(reader)?;
 
-        Proof::try_from(quic_tag)
+        Proof::try_from(tag)
     }
 }
 
-impl<'a> From<&'a Proof> for QuicTag {
+impl<'a> From<&'a Proof> for Tag {
     fn from(value: &'a Proof) -> Self {
         match *value {
-            Proof::X509 => QuicTag::X509,
+            Proof::X509 => Tag::X509,
         }
     }
 }
 
-impl From<Proof> for QuicTag {
+impl From<Proof> for Tag {
     fn from(value: Proof) -> Self {
         (&value).into()
     }
 }
 
-impl<'a> TryFrom<&'a QuicTag> for Proof {
+impl<'a> TryFrom<&'a Tag> for Proof {
     type Error = Error;
 
-    fn try_from(value: &'a QuicTag) -> Result<Self> {
+    fn try_from(value: &'a Tag) -> Result<Self> {
         Ok(match *value {
-            QuicTag::X509 => Proof::X509,
-            quic_tag @ _ => bail!(ErrorKind::InvalidProofType(quic_tag)),
+            Tag::X509 => Proof::X509,
+            tag @ _ => bail!(ErrorKind::InvalidProofType(tag)),
         })
     }
 }
 
-impl TryFrom<QuicTag> for Proof {
-    fn try_from(value: QuicTag) -> Result<Self> {
+impl TryFrom<Tag> for Proof {
     type Error = Error;
+    fn try_from(value: Tag) -> Result<Self> {
         Proof::try_from(&value)
     }
 }

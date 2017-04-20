@@ -1,6 +1,6 @@
 use errors::*;
-use quic_tag_value_map::QuicTagValueMap;
-use quic_tag::QuicTag;
+use tag_value_map::TagValueMap;
+use tag::Tag;
 use std::convert::TryFrom;
 use crypto::server_configuration_id::ServerConfigurationId;
 use crypto::key_exchange_algorithm::KeyExchangeAlgorithm;
@@ -11,12 +11,12 @@ pub struct ServerConfiguration {
     pub key_exchange_algorithms: Vec<KeyExchangeAlgorithm>,
 }
 
-impl<'a> TryFrom<&'a QuicTagValueMap> for ServerConfiguration {
+impl<'a> TryFrom<&'a TagValueMap> for ServerConfiguration {
     type Error = Error;
 
-    fn try_from(value: &'a QuicTagValueMap) -> Result<Self> {
-        let server_configuration_id = value.get_required_value(QuicTag::ServerConfigurationId)?;
-        let key_exchange_algorithms = value.get_required_values(QuicTag::KeyExchangeAlgorithm)?;
+    fn try_from(value: &'a TagValueMap) -> Result<Self> {
+        let server_configuration_id = value.get_required_value(Tag::ServerConfigurationId)?;
+        let key_exchange_algorithms = value.get_required_values(Tag::KeyExchangeAlgorithm)?;
 
         Ok(ServerConfiguration {
             server_configuration_id: server_configuration_id,
@@ -25,16 +25,16 @@ impl<'a> TryFrom<&'a QuicTagValueMap> for ServerConfiguration {
     }
 }
 
-impl<'a> From<&'a ServerConfiguration> for QuicTagValueMap {
+impl<'a> From<&'a ServerConfiguration> for TagValueMap {
     fn from(value: &'a ServerConfiguration) -> Self {
-        let mut quic_tag_value_map = QuicTagValueMap::default();
+        let mut tag_value_map = TagValueMap::default();
 
-        quic_tag_value_map.set_value(QuicTag::ServerConfigurationId,
+        tag_value_map.set_value(Tag::ServerConfigurationId,
                                      &value.server_configuration_id);
 
-        quic_tag_value_map.set_value(QuicTag::KeyExchangeAlgorithm,
+        tag_value_map.set_value(Tag::KeyExchangeAlgorithm,
                                      &value.key_exchange_algorithms);
 
-        quic_tag_value_map
+        tag_value_map
     }
 }

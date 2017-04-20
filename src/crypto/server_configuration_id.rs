@@ -24,6 +24,7 @@ impl Readable for ServerConfigurationId {
     fn read<R: Read>(reader: &mut R) -> Result<ServerConfigurationId> {
         let mut buf = [0u8; 16];
         let server_configuration_id = reader.read_exact(&mut buf)
+            .chain_err(|| ErrorKind::UnableToReadBytes)
             .map(|_| ServerConfigurationId(buf))?;
 
         Ok(server_configuration_id)
@@ -32,6 +33,7 @@ impl Readable for ServerConfigurationId {
 
 impl Writable for ServerConfigurationId {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        Ok(writer.write_all(&self.0)?)
+        Ok(writer.write_all(&self.0)
+            .chain_err(|| ErrorKind::UnableToWriteBytes(self.0.len()))?)
     }
 }

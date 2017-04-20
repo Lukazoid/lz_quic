@@ -62,7 +62,8 @@ impl StreamId {
 
         let byte_count = header_length.into();
         assert!(byte_count > 0);
-        writer.write_uint::<LittleEndian>(inner as u64, byte_count)?;
+        writer.write_uint::<LittleEndian>(inner as u64, byte_count)
+            .chain_err(|| ErrorKind::UnableToWriteBytes(byte_count))?;
 
         Ok(header_length)
     }
@@ -157,7 +158,8 @@ impl StreamOffset {
 
         let byte_count = header_length.into();
         if byte_count > 0 {
-            writer.write_uint::<LittleEndian>(offset, byte_count)?;
+            writer.write_uint::<LittleEndian>(offset, byte_count)
+                .chain_err(|| ErrorKind::UnableToWriteBytes(byte_count))?;
         }
         Ok(header_length)
     }

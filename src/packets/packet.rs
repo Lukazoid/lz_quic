@@ -2,13 +2,15 @@ use errors::*;
 use packets::version_negotiation_packet::VersionNegotiationPacket;
 use packets::public_reset_packet::PublicResetPacket;
 use packets::regular_packet::RegularPacket;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::net::SocketAddr;
 use byteorder::WriteBytesExt;
+use readable::Readable;
 use writable::Writable;
+use connection_id::ConnectionId;
 
 #[derive(Debug, Clone)]
-pub enum QuicPacket {
+pub enum Packet {
     VersionNegotiation(VersionNegotiationPacket),
     PublicReset(PublicResetPacket),
     Regular(RegularPacket),
@@ -26,10 +28,22 @@ bitflags!(
     }
 );
 
-impl QuicPacket {
-    pub fn write<W: Write>(&self, writer: &mut W) -> Result<SocketAddr> {
+impl Packet {
+    pub fn connection_id(&self) -> Option<ConnectionId> {
+        match *self {
+            Packet::VersionNegotiation(ref version_negotiation_packet) => {
+                Some(version_negotiation_packet.connection_id)
+            }
+            Packet::PublicReset(ref public_reset_packet) => Some(public_reset_packet.connection_id),
+            _ => None,
+        }
+    }
+}
+
+impl Writable for Packet {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         match self {
-            &QuicPacket::VersionNegotiation(ref version_negotiation_packet) => {
+            &Packet::VersionNegotiation(ref version_negotiation_packet) => {
                 let flags = PUBLIC_FLAG_VERSION | HAS_CONNECTION_ID;
                 writer.write_u8(flags.bits())
                     .chain_err(|| ErrorKind::UnableToWriteVersionNegotiationPacket)?;
@@ -44,7 +58,7 @@ impl QuicPacket {
                         .chain_err(|| ErrorKind::UnableToWriteVersionNegotiationPacket)?;
                 }
             }
-            &QuicPacket::PublicReset(ref public_reset_packet) => {
+            &Packet::PublicReset(ref public_reset_packet) => {
                 let flags = PUBLIC_FLAG_RESET | HAS_CONNECTION_ID;
                 writer.write_u8(flags.bits())
                     .chain_err(|| ErrorKind::UnableToWritePublicResetPacket)?;
@@ -52,7 +66,7 @@ impl QuicPacket {
                 public_reset_packet.connection_id
                     .write(writer)
                     .chain_err(|| {
-                        ErrorKind::UnableToWriteQuicConnectionId(public_reset_packet.connection_id)
+                        ErrorKind::UnableToWriteConnectionId(public_reset_packet.connection_id)
                     })
                     .chain_err(|| ErrorKind::UnableToWritePublicResetPacket)?;
 
@@ -60,7 +74,7 @@ impl QuicPacket {
                 // TODO LH Write the Quic Tag and the Tag value map
 
             }
-            &QuicPacket::Regular(ref regular_packet) => {
+            &Packet::Regular(ref regular_packet) => {
                 for frame in regular_packet.frames.iter() {
                     frame.write(writer)
                         .chain_err(|| ErrorKind::UnableToWriteRegularPacket)?;
@@ -68,6 +82,12 @@ impl QuicPacket {
             }
         }
 
+        Ok(())
+    }
+}
+
+impl Readable for Packet {
+    fn read<R: Read>(reader: &mut R) -> Result<Self> {
         unimplemented!()
     }
 }

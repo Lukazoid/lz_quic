@@ -6,7 +6,7 @@ use byteorder::WriteBytesExt;
 use writable::Writable;
 
 #[derive(Debug, Clone)]
-pub enum QuicFrame {
+pub enum Frame {
     Stream(StreamFrame),
     Ack(AckFrame),
     Padding,
@@ -33,10 +33,10 @@ bitflags!(
     }
 );
 
-impl Writable for QuicFrame {
+impl Writable for Frame {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         match self {
-            &QuicFrame::Stream(ref stream_frame) => {
+            &Frame::Stream(ref stream_frame) => {
                 let mut type_flags = STREAM.bits();
                 // TODO LH Add the data length field
 
@@ -76,47 +76,47 @@ impl Writable for QuicFrame {
                 writer.write_all(&payload)
                     .chain_err(|| ErrorKind::UnableToWriteStreamFrame)?;
             }
-            &QuicFrame::Ack(ref ack_frame) => {
+            &Frame::Ack(ref ack_frame) => {
                 let type_flags = ACK.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteAckFrame)?;
             }
-            &QuicFrame::Padding => {
+            &Frame::Padding => {
                 let type_flags = FrameTypeFlags::empty().bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWritePaddingFrame)?;
             }
-            &QuicFrame::ResetStream => {
+            &Frame::ResetStream => {
                 let type_flags = RESET_STREAM.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteResetStreamFrame)?;
             }
-            &QuicFrame::ConnectionClose => {
+            &Frame::ConnectionClose => {
                 let type_flags = CONNECTION_CLOSE.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteConnectionCloseFrame)?;
             }
-            &QuicFrame::GoAway => {
+            &Frame::GoAway => {
                 let type_flags = GO_AWAY.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteGoAwayFrame)?;
             }
-            &QuicFrame::WindowUpdate => {
+            &Frame::WindowUpdate => {
                 let type_flags = WINDOW_UPDATE.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteWindowUpdateFrame)?;
             }
-            &QuicFrame::Blocked => {
+            &Frame::Blocked => {
                 let type_flags = BLOCKED.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteBlockedFrame)?;
             }
-            &QuicFrame::StopWaiting => {
+            &Frame::StopWaiting => {
                 let type_flags = STOP_WAITING.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWriteStopWaitingFrame)?;
             }
-            &QuicFrame::Ping => {
+            &Frame::Ping => {
                 let type_flags = PING.bits();
                 writer.write_u8(type_flags)
                     .chain_err(|| ErrorKind::UnableToWritePingFrame)?;

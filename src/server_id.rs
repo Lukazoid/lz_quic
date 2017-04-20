@@ -1,14 +1,15 @@
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct QuicServerId {
+pub struct ServerId {
     host: String,
     port: u16,
 }
 
-impl QuicServerId {
-    fn new(host: String, port: u16) -> QuicServerId {
-        QuicServerId {
+impl ServerId {
+    fn new(host: String, port: u16) -> ServerId {
+        ServerId {
             host: host,
             port: port,
         }
     }
 }
+

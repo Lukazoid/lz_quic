@@ -7,6 +7,7 @@ authors = ["Luke Horsley <luke.horsley@offset1337.co.uk>"]
 error-chain = "0.10.0"
 tokio-core = "0.1.6"
 tokio-proto = "0.1.1"
+tokio-io = "0.1.1"
 bitflags = "0.8.2"
 byteorder = "1.0.0"
 rand = "0.3.15"

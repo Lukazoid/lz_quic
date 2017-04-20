@@ -2,8 +2,8 @@ use errors::*;
 use crypto::crypto_handshake_message::CryptoHandshakeMessage;
 use crypto::server_configuration::ServerConfiguration;
 use std::convert::TryFrom;
-use quic_tag_value_map::QuicTagValueMap;
-use quic_tag::QuicTag;
+use tag_value_map::TagValueMap;
+use tag::Tag;
 
 #[derive(Debug, Clone)]
 pub struct RejectionMessage {
@@ -13,26 +13,26 @@ pub struct RejectionMessage {
     seconds_to_live: u64,
 }
 
-impl<'a> TryFrom<&'a QuicTagValueMap> for RejectionMessage {
+impl<'a> TryFrom<&'a TagValueMap> for RejectionMessage {
     type Error = Error;
 
-    fn try_from(value: &'a QuicTagValueMap) -> Result<Self> {
+    fn try_from(value: &'a TagValueMap) -> Result<Self> {
 
         let server_configuration = if let Some(server_configuration_handshake_message) =
-                                          value.get_optional_value(QuicTag::ServerConfiguration)? {
+                                          value.get_optional_value(Tag::ServerConfiguration)? {
             if let CryptoHandshakeMessage::ServerConfiguration(server_configuration) =
                    server_configuration_handshake_message {
                 Some(server_configuration)
             } else {
-                bail!(ErrorKind::InvalidQuicTagValue(QuicTag::ServerConfiguration));
+                bail!(ErrorKind::InvalidTagValue(Tag::ServerConfiguration));
             }
         } else {
             None
         };
 
-        let source_address_token = value.get_optional_value(QuicTag::SourceAddressToken)?;
-        let server_nonce = value.get_optional_value(QuicTag::ServerNonce)?;
-        let seconds_to_live = value.get_required_value(QuicTag::ServerConfigurationTimeToLive)?;
+        let source_address_token = value.get_optional_value(Tag::SourceAddressToken)?;
+        let server_nonce = value.get_optional_value(Tag::ServerNonce)?;
+        let seconds_to_live = value.get_required_value(Tag::ServerConfigurationTimeToLive)?;
 
         Ok(Self {
             server_configuration: server_configuration,
@@ -43,29 +43,29 @@ impl<'a> TryFrom<&'a QuicTagValueMap> for RejectionMessage {
     }
 }
 
-impl<'a> From<&'a RejectionMessage> for QuicTagValueMap {
+impl<'a> From<&'a RejectionMessage> for TagValueMap {
     fn from(value: &'a RejectionMessage) -> Self {
-        let mut quic_tag_value_map = QuicTagValueMap::default();
+        let mut tag_value_map = TagValueMap::default();
 
         if let Some(ref server_configuration) = value.server_configuration {
             let server_configuration_message =
                 CryptoHandshakeMessage::ServerConfiguration(server_configuration.clone());
 
-            quic_tag_value_map.set_value(QuicTag::ServerConfiguration,
+            tag_value_map.set_value(Tag::ServerConfiguration,
                                          &server_configuration_message);
         }
 
         if let Some(ref source_address_token) = value.source_address_token {
-            quic_tag_value_map.set_value(QuicTag::SourceAddressToken, source_address_token);
+            tag_value_map.set_value(Tag::SourceAddressToken, source_address_token);
         }
 
         if let Some(ref server_nonce) = value.server_nonce {
-            quic_tag_value_map.set_value(QuicTag::ServerNonce, server_nonce);
+            tag_value_map.set_value(Tag::ServerNonce, server_nonce);
         }
 
-        quic_tag_value_map.set_value(QuicTag::ServerConfigurationTimeToLive,
+        tag_value_map.set_value(Tag::ServerConfigurationTimeToLive,
                                      &value.seconds_to_live);
 
-        quic_tag_value_map
+        tag_value_map
     }
 }

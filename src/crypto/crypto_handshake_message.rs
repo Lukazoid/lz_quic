@@ -1,7 +1,7 @@
 use errors::*;
 use std::io::{Read, Write};
-use quic_tag::QuicTag;
-use quic_tag_value_map::QuicTagValueMap;
+use tag::Tag;
+use tag_value_map::TagValueMap;
 use std::convert::TryInto;
 use crypto::client_hello_message::ClientHelloMessage;
 use crypto::rejection_message::RejectionMessage;
@@ -19,73 +19,73 @@ pub enum CryptoHandshakeMessage {
 impl Writable for CryptoHandshakeMessage {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
 
-        let (quic_tag, quic_tag_value_map) = match *self {
+        let (tag, tag_value_map) = match *self {
             CryptoHandshakeMessage::Rejection(ref rejection_message) => {
-                (QuicTag::Rejection, QuicTagValueMap::from(rejection_message))
+                (Tag::Rejection, TagValueMap::from(rejection_message))
             }
             CryptoHandshakeMessage::ClientHello(ref client_hello_message) => {
-                (QuicTag::ClientHello, QuicTagValueMap::from(client_hello_message))
+                (Tag::ClientHello, TagValueMap::from(client_hello_message))
             }
             CryptoHandshakeMessage::ServerConfiguration(ref server_configuration) => {
-                (QuicTag::ServerConfiguration, QuicTagValueMap::from(server_configuration))
+                (Tag::ServerConfiguration, TagValueMap::from(server_configuration))
             }
         };
 
-        quic_tag.write(writer)
-            .chain_err(|| ErrorKind::UnableToWriteCryptoMessageQuicTag(quic_tag))?;
+        tag.write(writer)
+            .chain_err(|| ErrorKind::UnableToWriteCryptoMessageTag(tag))?;
 
-        (quic_tag_value_map.len() as u16)
+        (tag_value_map.len() as u16)
             .write(writer)
-            .chain_err(|| ErrorKind::UnableToWriteQuicTagValueMapLength)?;
+            .chain_err(|| ErrorKind::UnableToWriteTagValueMapLength)?;
 
         // Two bytes of padding
         let padding = [0; 2];
         writer.write_all(&padding)
             .chain_err(|| ErrorKind::UnableToWritePadding(padding.len()))?;
 
-        quic_tag_value_map.write(writer)?;
+        tag_value_map.write(writer)?;
 
         Ok(())
     }
 }
 
-fn read_quic_tag_value_map<R: Read>(reader: &mut R) -> Result<QuicTagValueMap> {
+fn read_quic_tag_value_map<R: Read>(reader: &mut R) -> Result<TagValueMap> {
     let tag_value_count = u16::read(reader)
-        .chain_err(|| ErrorKind::UnableToReadQuicTagValueMapLength)?;
+        .chain_err(|| ErrorKind::UnableToReadTagValueMapLength)?;
 
     // Ignore the two bytes of padding
     let mut padding = [0; 2];
     reader.read_exact(&mut padding)
         .chain_err(|| ErrorKind::UnableToReadPadding(padding.len()))?;
 
-    QuicTagValueMap::read(reader, tag_value_count as usize)
+    TagValueMap::read(reader, tag_value_count as usize)
 }
 
 impl Readable for CryptoHandshakeMessage {
     fn read<R: Read>(reader: &mut R) -> Result<CryptoHandshakeMessage> {
-        let quic_tag = QuicTag::read(reader)
-            .chain_err(|| ErrorKind::UnableToReadCryptoMessageQuicTag)?;
+        let tag = Tag::read(reader)
+            .chain_err(|| ErrorKind::UnableToReadCryptoMessageTag)?;
 
-        match quic_tag {
-            QuicTag::Rejection => {
+        match tag {
+            Tag::Rejection => {
                 (&read_quic_tag_value_map(reader)?)
                     .try_into()
                     .chain_err(|| ErrorKind::UnableToReadCryptoRejectionMessage)
                     .map(CryptoHandshakeMessage::Rejection)
             }
-            QuicTag::ClientHello => {
+            Tag::ClientHello => {
                 (&read_quic_tag_value_map(reader)?)
                     .try_into()
                     .chain_err(|| ErrorKind::UnableToReadCryptoClientHelloMessage)
                     .map(CryptoHandshakeMessage::ClientHello)
             }
-            QuicTag::ServerConfiguration => {
+            Tag::ServerConfiguration => {
                 (&read_quic_tag_value_map(reader)?)
                     .try_into()
                     .chain_err(|| ErrorKind::UnableToReadCryptoServerConfigurationMessage)
                     .map(CryptoHandshakeMessage::ServerConfiguration)
             }
-            quic_tag @ _ => bail!(ErrorKind::InvalidCryptoHandshakeMessage(quic_tag)),
+            tag @ _ => bail!(ErrorKind::InvalidCryptoHandshakeMessage(tag)),
         }
     }
 }

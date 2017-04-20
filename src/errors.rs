@@ -1,21 +1,26 @@
-use quic_tag::QuicTag;
-use quic_connection_id::QuicConnectionId;
-use quic_version::QuicVersion;
+use tag::Tag;
+use connection_id::ConnectionId;
+use version::Version;
 use frames::stream_frame::{StreamId, StreamOffset};
 use std::io::Error as IoError;
+use std::net::SocketAddr;
 use futures::{Async, Poll, Future, Stream};
 use std::error::Error as StdError;
 
 error_chain! {
     foreign_links {
-        Io(IoError);
+
     }
     errors {
-        U32ToU24IntegerOverflow(value: u32){
+        UnableToBindToUdpSocket(addr: SocketAddr) {
+            description("unable to bind to UDP socket")
+            display("unable to bind to UDP socket '{}'", addr)
+        }
+        U32ToU24IntegerOverflow(value: u32) {
             description("overflow when creating 24-bit unsigned integer from 32-bit unsigned integer")
             display("overflow when creating 24-bit unsigned integer from 32-bit unsigned integer '{}'", value)
         }
-        U64ToU48IntegerOverflow(value: u64){
+        U64ToU48IntegerOverflow(value: u64) {
             description("overflow when creating 48-bit unsigned integer from 64-bit unsigned integer")
             display("overflow when creating 48-bit unsigned integer from 64-bit unsigned integer '{}'", value)
         }
@@ -57,59 +62,63 @@ error_chain! {
         UnableToReadBytes {
             description("unable to read bytes")
         }
-        InvalidQuicTagValue(quic_tag: QuicTag) {
+        UnableToWriteBytes(length: usize){
+            description("unable to write bytes")
+            display("unable to write '{}' bytes", length)
+        }
+        InvalidTagValue(tag: Tag) {
             description("invalid QUIC tag value")
-            display("invalid value for QUIC tag '{}'", quic_tag)
+            display("invalid value for QUIC tag '{}'", tag)
         }
-        MissingQuicTag(quic_tag: QuicTag) {
+        MissingTag(tag: Tag) {
             description("missing QUIC tag value")
-            display("missing QUIC tag '{}'", quic_tag)
+            display("missing QUIC tag '{}'", tag)
         }
-        InvalidProofType(quic_tag: QuicTag) {
+        InvalidProofType(tag: Tag) {
             description("invalid proof type")
-            display("QUIC tag '{}' is an invalid proof type", quic_tag)
+            display("QUIC tag '{}' is an invalid proof type", tag)
         }
-        InvalidKeyExchangeAlgorithm(quic_tag: QuicTag) {
+        InvalidKeyExchangeAlgorithm(tag: Tag) {
             description("invalid key exchange algorithm")
-            display("QUIC tag '{}' is an invalid key exchange algorithm", quic_tag)
+            display("QUIC tag '{}' is an invalid key exchange algorithm", tag)
         }
-        InvalidCryptoHandshakeMessage(quic_tag: QuicTag) {
+        InvalidCryptoHandshakeMessage(tag: Tag) {
             description("invalid crypto handshake message")
-            display("QUIC tag '{}' is an invalid crypto handshake message", quic_tag)
+            display("QUIC tag '{}' is an invalid crypto handshake message", tag)
         }
-        UnableToWriteQuicConnectionId(quic_connection_id: QuicConnectionId) {
+        UnableToWriteConnectionId(connection_id: ConnectionId) {
             description("unable to write QUIC connection id")
-            display("unable to write QUIC connection id '{}'", quic_connection_id)
+            display("unable to write QUIC connection id '{}'", connection_id)
         }
-        UnableToWriteCryptoMessageQuicTag(quic_tag: QuicTag) {
+        UnableToWriteCryptoMessageTag(tag: Tag) {
             description("unable to write crypto message QUIC tag")
-            display("unable to write crypto message QUIC tag '{}'", quic_tag)
+            display("unable to write crypto message QUIC tag '{}'", tag)
         }
-        UnableToReadCryptoMessageQuicTag {
+        UnableToReadCryptoMessageTag {
             description("unable to read crypo message QUIC tag")
         }
-        UnableToWriteQuicVersion(quic_version: QuicVersion) {
+        UnableToWriteQuicVersion(version: Version) {
             description("unable to write QUIC version")
-            display("unable to write QUIC version '{}'", quic_version)
+            display("unable to write QUIC version '{}'", version)
         }
-        UnableToWriteQuicTagValueMapLength {
+        UnableToWriteTagValueMapLength {
             description("unable to write QUIC tag-value map length")
         }
-        UnableToReadQuicTagValueMapLength {
+        UnableToReadTagValueMapLength {
             description("unable to read QUIC tag-value map length")
         }
-        UnableToReadQuicTagValueMap {
+        UnableToReadTagValueMap {
             description("unable to read QUIC tag-value map")
         }
-        UnableToWriteQuicTagValueMapEndOffset(end_offset: u32) {
+        UnableToWriteTagValueMapEndOffset(end_offset: u32) {
             description("unable to write QUIC tag-value map end offset")
             display("unable to write QUIC tag-value map end offset '{}'", end_offset)
         }
-        UnableToWriteQuicTagValue(quic_tag: QuicTag) {
+        UnableToWriteTagValue(tag: Tag) {
             description("unable to write QUIC tag value")
-            display("unable to write value for QUIC tag '{}'", quic_tag)
+            display("unable to write value for QUIC tag '{}'", tag)
         }
-        UnableToWriteQuicTagValueMap {
+        UnableToWriteTagValueMap {
             description("unable to write QUIC tag-value map")
         }
         UnableToWritePadding(num_bytes: usize) {
@@ -281,6 +290,19 @@ error_chain! {
         NotEnoughValuesToReplace {
             description("not enough values to replace")
         }
+        DecryptionFailed {
+            description("decryption failed")
+        }
+        UnableToHandleNewSession (connection_id: ConnectionId){
+            description("unable to handle new session")
+            display("unable to handle new session with connection id '{}'", connection_id)
+        }
+        UnableToInferPacketNumber {
+            description("unable to infer packet number")
+        }
+    }
+}
+
 struct ChainErrStream<S, C> {
     stream: S,
     callback: C,
