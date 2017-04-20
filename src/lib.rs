@@ -12,7 +12,6 @@ extern crate tokio_core;
 extern crate tokio_proto;
 extern crate rand;
 extern crate chrono;
-extern crate futures;
 extern crate conv;
 extern crate hex;
 extern crate num;
@@ -21,6 +20,9 @@ extern crate flate2;
 extern crate itertools;
 
 #[macro_use]
+
+#[macro_use]
+extern crate futures;
 extern crate matches;
 
 #[cfg(test)]
