@@ -5,17 +5,17 @@ authors = ["Luke Horsley <luke.horsley@offset1337.co.uk>"]
 
 [dependencies]
 error-chain = "0.10.0"
-tokio-core = "0.1.4"
-tokio-proto = "0.1.0"
-bitflags = "0.7.0"
+tokio-core = "0.1.6"
+tokio-proto = "0.1.1"
+bitflags = "0.8.2"
 byteorder = "1.0.0"
 rand = "0.3.15"
-chrono = "0.2.25"
-futures = "0.1.9"
+chrono = "0.3.0"
+futures = "0.1.13"
 conv = "0.3.3"
 hex = "0.2.0"
 matches = "0.1.4"
-num = "0.1.36"
+num = "0.1.37"
 fnv = "1.0.5"
 flate2 = { git = "https://github.com/Lukazoid/flate2-rs.git", branch = "set-dictionary", features = ["zlib"] }
 itertools = "0.6.0"

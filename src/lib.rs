@@ -1,15 +1,10 @@
 #![feature(associated_consts, try_from, never_type, conservative_impl_trait, test, result_expect_err)]
 #![recursion_limit="1024"]
 
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate bitflags;
-
 extern crate byteorder;
 extern crate tokio_core;
 extern crate tokio_proto;
+extern crate tokio_io;
 extern crate rand;
 extern crate chrono;
 extern crate conv;
@@ -20,9 +15,19 @@ extern crate flate2;
 extern crate itertools;
 
 #[macro_use]
+extern crate error_chain;
+
+#[macro_use]
+extern crate bitflags;
 
 #[macro_use]
 extern crate futures;
+
+#[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
+#[cfg(test)]
 extern crate matches;
 
 #[cfg(test)]
