@@ -3,6 +3,9 @@ use quic_connection_id::QuicConnectionId;
 use quic_version::QuicVersion;
 use frames::stream_frame::{StreamId, StreamOffset};
 use std::io::Error as IoError;
+use futures::{Async, Poll, Future, Stream};
+use std::error::Error as StdError;
+
 error_chain! {
     foreign_links {
         Io(IoError);
@@ -278,5 +281,130 @@ error_chain! {
         NotEnoughValuesToReplace {
             description("not enough values to replace")
         }
+struct ChainErrStream<S, C> {
+    stream: S,
+    callback: C,
+}
+
+impl<E, S, C, EK> Stream for ChainErrStream<S, C>
+    where E: 'static + StdError + Send,
+          S: Stream<Error = E>,
+          EK: Into<ErrorKind>,
+          C: FnMut() -> EK
+{
+    type Item = S::Item;
+    type Error = Error;
+
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+        self.stream.poll().chain_err(|| (self.callback)())
+    }
+}
+
+pub trait StreamExt: Stream {
+    fn chain_err<C, EK>(self, callback: C) -> ChainErrStream<Self, C>
+        where C: FnMut() -> EK,
+              EK: Into<ErrorKind>,
+              Self: Sized,
+              Self::Error: StdError;
+}
+
+impl<S: Stream> StreamExt for S {
+    fn chain_err<C, EK>(self, callback: C) -> ChainErrStream<Self, C>
+        where C: FnMut() -> EK,
+              EK: Into<ErrorKind>,
+              Self: Sized,
+              Self::Error: StdError
+    {
+        ChainErrStream {
+            stream: self,
+            callback: callback,
+        }
+    }
+}
+
+struct ChainErrFuture<F, C> {
+    future: F,
+    callback: Option<C>,
+}
+
+impl<E, F, C, EK> Future for ChainErrFuture<F, C>
+    where E: 'static + StdError + Send,
+          F: Future<Error = E>,
+          EK: Into<ErrorKind>,
+          C: FnOnce() -> EK
+{
+    type Item = F::Item;
+    type Error = Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        let e = match self.future.poll() {
+            Ok(Async::NotReady) => return Ok(Async::NotReady),
+            other => other,
+        };
+
+        e.chain_err(self.callback.take().expect("cannot poll ChainErrFuture twice"))
+    }
+}
+
+pub trait FutureExt: Future {
+    fn chain_err<C, EK>(self, callback: C) -> ChainErrFuture<Self, C>
+        where C: FnOnce() -> EK,
+              EK: Into<ErrorKind>,
+              Self: Sized,
+              Self::Error: StdError;
+}
+
+impl<F: Future> FutureExt for F {
+    fn chain_err<C, EK>(self, callback: C) -> ChainErrFuture<Self, C>
+        where C: FnOnce() -> EK,
+              EK: Into<ErrorKind>,
+              Self: Sized,
+              Self::Error: StdError
+    {
+        ChainErrFuture {
+            future: self,
+            callback: Some(callback),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use futures::Async;
+    use futures::future::{self, Future};
+    use futures::stream::{self, Stream};
+    use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+
+    #[test]
+    pub fn future_chain_err_chains_err() {
+        // Arrange
+        let future = future::err::<(), IoError>(IoError::from(IoErrorKind::InvalidData));
+
+        // Act
+        let mut chained_err_future =
+            future.chain_err(|| ErrorKind::Msg("An error occurred".to_owned()));
+
+        // Assert
+        let poll = chained_err_future.poll();
+        assert!(poll.is_err())
+    }
+
+    #[test]
+    pub fn stream_chain_err_chains_err() {
+        // Arrange
+        let stream = stream::iter(vec![Ok(1), Err(IoError::from(IoErrorKind::InvalidData))]);
+
+        // Act
+        let mut chained_err_stream =
+            stream.chain_err(|| ErrorKind::Msg("An error occurred".to_owned()));
+
+        // Assert
+        let poll = chained_err_stream.poll();
+        assert!(poll.is_ok());
+        assert_eq!(poll.unwrap(), Async::Ready(Some(1)));
+
+        let poll = chained_err_stream.poll();
+        assert!(poll.is_err());
     }
 }
