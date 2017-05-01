@@ -1,8 +1,8 @@
 use tag::Tag;
 use connection_id::ConnectionId;
 use version::Version;
-use frames::stream_frame::{StreamId, StreamOffset};
-use std::io::Error as IoError;
+use frames::stream_offset::StreamOffset;
+use stream_id::StreamId;
 use std::net::SocketAddr;
 use futures::{Async, Poll, Future, Stream};
 use std::error::Error as StdError;
@@ -18,29 +18,21 @@ error_chain! {
             description("unable to bind to UDP socket")
             display("unable to bind to UDP socket '{}'", addr)
         }
-        U32ToU24IntegerOverflow(value: u32) {
-            description("overflow when creating 24-bit unsigned integer from 32-bit unsigned integer")
-            display("overflow when creating 24-bit unsigned integer from 32-bit unsigned integer '{}'", value)
-        }
-        U64ToU48IntegerOverflow(value: u64) {
-            description("overflow when creating 48-bit unsigned integer from 64-bit unsigned integer")
-            display("overflow when creating 48-bit unsigned integer from 64-bit unsigned integer '{}'", value)
-        }
         UnableToWriteU8(value: u8) {
-            description("unable to write unsigned 8-bit integer")
-            display("unable to write unsigned 8-bit integer '{}'", value)
+            description("unable to write 8-bit unsigned integer")
+            display("unable to write 8-bit unsigned integer '{}'", value)
         }
         UnableToWriteU16(value: u16) {
-            description("unable to write unsigned 16-bit integer")
-            display("unable to write unsigned 16-bit integer '{}'", value)
+            description("unable to write 16-bit unsigned integer")
+            display("unable to write 16-bit unsigned integer '{}'", value)
         }
         UnableToWriteU24(value: U24) {
             description("unable to write 24-bit unsigned integer")
             display("unable to write 24-bit unsigned integer '{}'", value)
         }
         UnableToWriteU32(value: u32) {
-            description("unable to write unsigned 32-bit integer")
-            display("unable to write unsigned 32-bit integer '{}'", value)
+            description("unable to write 32-bit unsigned integer")
+            display("unable to write 32-bit unsigned integer '{}'", value)
         }
         UnableToWriteU48(value: U48) {
             description("unable to write 48-bit unsigned integer")
@@ -48,10 +40,10 @@ error_chain! {
         }
         UnableToWriteU64(value: u64) {
             description("unable to write 64-bit unsigned integer")
-            display("unable to write 64 bit unsigned integer '{}'", value)
+            display("unable to write 64-bit unsigned integer '{}'", value)
         }
         UnableToReadU8 {
-            description("unable to read unsigned 8-bit integer")
+            description("unable to read 8-bit unsigned integer")
         }
         UnableToReadU16 {
             description("unable to read 16-bit unsigned integer")
@@ -309,17 +301,40 @@ error_chain! {
         DecryptionFailed {
             description("decryption failed")
         }
-        UnableToHandleNewSession (connection_id: ConnectionId){
-            description("unable to handle new session")
-            display("unable to handle new session with connection id '{}'", connection_id)
-        }
         UnableToInferPacketNumber {
             description("unable to infer packet number")
+        }
+        UnableToCreateCryptographicRandomNumberGenerator {
+            description("unable to create cryptographic random number generator")
+        }
+        UnableToBindUdpSocket {
+            description("unable to bind UDP socket")
+        }
+        UnableToWriteDiversificationNonce {
+            description("unable to write diversification nonce")
+        }
+        UnableToReadDiversificationNonce {
+            description("unable to read diversification nonce")
+        }
+        UnableToWritePartialPacketNumber{
+            description("unable to write partial packet number")
+        }
+        UnableToReadPartialPacketNumber{
+            description("unable to read partial packet number")
+        }
+        UnableToWritePublicPacketHeaderFlags {
+            description("unable to write public packet header flags")
+        }
+        UnableToReadPublicPacketHeaderFlags {
+            description("unable to read public packet header flags")
+        }
+        UnableToBuildPartialPacketNumber {
+            description("unable to build the partial packet number")
         }
     }
 }
 
-struct ChainErrStream<S, C> {
+pub struct ChainErrStream<S, C> {
     stream: S,
     callback: C,
 }
@@ -360,7 +375,7 @@ impl<S: Stream> StreamExt for S {
     }
 }
 
-struct ChainErrFuture<F, C> {
+pub struct ChainErrFuture<F, C> {
     future: F,
     callback: Option<C>,
 }

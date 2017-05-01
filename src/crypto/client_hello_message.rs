@@ -76,7 +76,7 @@ mod tests {
     use super::*;
     use crypto::proof::Proof;
     use tag_value_map::TagValueMap;
-    use version::Version;
+    use version;
 
     #[test]
     fn serializes_to_from_quic_tag_value_map() {
@@ -86,7 +86,7 @@ mod tests {
             proof_demands: vec![Proof::X509],
             common_certificate_sets: vec![5435435, 654123],
             cached_certificates: vec![929080, 7897897],
-            version: Version::DRAFT_IETF_01,
+            version: version::DRAFT_IETF_01,
             leaf_certificate: 8123678,
         };
         let tag_value_map = TagValueMap::from(&chlo);

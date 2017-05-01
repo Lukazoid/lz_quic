@@ -21,3 +21,4 @@ fnv = "1.0.5"
 flate2 = { git = "https://github.com/Lukazoid/flate2-rs.git", branch = "set-dictionary", features = ["zlib"] }
 itertools = "0.6.0"
 lazy_static = "0.2.6"
+lz_stream_tools = { git = "https://github.com/Lukazoid/lz_stream_tools.git" }

@@ -13,6 +13,7 @@ extern crate num;
 extern crate fnv;
 extern crate flate2;
 extern crate itertools;
+extern crate lz_stream_tools;
 
 #[macro_use]
 extern crate error_chain;
@@ -41,6 +42,7 @@ mod primitives;
 mod byte_order_primitives;
 mod read_quic_primitives;
 mod write_quic_primitives;
+mod diversification_nonce;
 mod crypto;
 mod frames;
 mod packets;
@@ -49,3 +51,9 @@ mod version;
 mod tag;
 mod tag_value_map;
 mod connection_id;
+mod data_stream;
+mod stream_id;
+mod session;
+mod client_configuration;
+mod client;
+mod server;
