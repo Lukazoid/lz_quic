@@ -100,8 +100,8 @@ mod tests {
 
         maximum_u48_descending_range_delta: (U48::max_value(), U48::min_value()) => U48::max_value(),
         maximum_u48_ascending_range_delta: (U48::min_value(), U48::max_value()) => U48::max_value(),
-        u48_descending_range_delta: (U48::from(6), U48::from(5)) => U48::from(1),
-        u48_ascending_range_delta: (U48::from(5), U48::from(6)) => U48::from(1),
+        u48_descending_range_delta: (U48::from(6u32), U48::from(5u32)) => U48::from(1u32),
+        u48_ascending_range_delta: (U48::from(5u32), U48::from(6u32)) => U48::from(1u32),
         
         maximum_u32_descending_range_delta: (u32::max_value(), u32::min_value()) => u32::max_value(),
         maximum_u32_ascending_range_delta: (u32::min_value(), u32::max_value()) => u32::max_value(),
@@ -110,8 +110,8 @@ mod tests {
 
         maximum_u24_descending_range_delta: (U24::max_value(), U24::min_value()) => U24::max_value(),
         maximum_u24_ascending_range_delta: (U24::min_value(), U24::max_value()) => U24::max_value(),
-        u24_descending_range_delta: (U24::from(6), U24::from(5)) => U24::from(1),
-        u24_ascending_range_delta: (U24::from(5), U24::from(6)) => U24::from(1),
+        u24_descending_range_delta: (U24::from(6u16), U24::from(5u16)) => U24::from(1u16),
+        u24_ascending_range_delta: (U24::from(5u16), U24::from(6u16)) => U24::from(1u16),
 
         maximum_u16_descending_range_delta: (u16::max_value(), u16::min_value()) => u16::max_value(),
         maximum_u16_ascending_range_delta: (u16::min_value(), u16::max_value()) => u16::max_value(),
