@@ -152,7 +152,7 @@ mod tests {
     use errors::*;
     use super::*;
     use tag::Tag;
-    use version::Version;
+    use version::{self, Version};
 
     #[test]
     fn get_optional_value_for_missing_returns_none() {
@@ -170,13 +170,13 @@ mod tests {
     fn get_optional_value_for_existent_returns_value() {
         // Arrange
         let mut tag_value_map = TagValueMap::default();
-        tag_value_map.set_value(Tag::Version, &Version::DRAFT_IETF_01);
+        tag_value_map.set_value(Tag::Version, &version::DRAFT_IETF_01);
 
         // Act
         let result = tag_value_map.get_optional_value::<Version>(Tag::Version);
 
         // Assert
-        assert!(matches!(result, Ok(Some(Version::DRAFT_IETF_01))));
+        assert!(matches!(result, Ok(Some(version::DRAFT_IETF_01))));
     }
 
     #[test]
