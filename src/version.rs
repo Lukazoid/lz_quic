@@ -1,9 +1,9 @@
 use errors::*;
 use std::io::{Read, Write};
-use byteorder::{ReadBytesExt, WriteBytesExt};
 use writable::Writable;
 use readable::Readable;
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::collections::HashSet;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Version(u32);
@@ -24,13 +24,24 @@ impl Writable for Version {
 
 impl Readable for Version {
     fn read<R: Read>(reader: &mut R) -> Result<Version> {
-        let version = u32::read(reader)
-            .map(Version)?;
+        let version = u32::read(reader).map(Version)?;
 
         Ok(version)
     }
 }
 
-impl Version {
-    pub const DRAFT_IETF_01: Version = Version(0x100000FF);
+pub const DRAFT_IETF_01: Version = Version(0x100000FF);
+
+lazy_static! {
+    pub static ref SUPPORTED_VERSIONS: Vec<Version> = vec![DRAFT_IETF_01];
 }
+
+impl Version {
+    pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
+        // Find the first supported version going from highest -> lowest
+        SUPPORTED_VERSIONS.iter().rev()
+            .find(|v|other.contains(v))
+            .map(|v|*v)
+    }
+}
+
