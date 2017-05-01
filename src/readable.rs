@@ -1,6 +1,9 @@
 use errors::*;
 use std::io::{Read, Cursor};
 use byteorder::{LittleEndian, ReadBytesExt};
+use primitives::u24::U24;
+use primitives::u48::U48;
+use read_quic_primitives::ReadQuicPrimitives;
 
 pub trait Readable {
     fn read<R: Read>(reader: &mut R) -> Result<Self> where Self: Sized;
@@ -47,12 +50,28 @@ impl Readable for u16 {
     }
 }
 
+impl Readable for U24 {
+        fn read<R: Read>(reader: &mut R) -> Result<Self>
+        where Self: Sized
+    {
+        reader.read_u24::<LittleEndian>().chain_err(|| ErrorKind::UnableToReadU24)
+    }
+}
+
 impl Readable for u32 {
     fn read<R: Read>(reader: &mut R) -> Result<Self>
         where Self: Sized
     {
         reader.read_u32::<LittleEndian>()
             .chain_err(|| ErrorKind::UnableToReadU32)
+    }
+}
+
+impl Readable for U48 {
+        fn read<R: Read>(reader: &mut R) -> Result<Self>
+        where Self: Sized
+    {
+        reader.read_u48::<LittleEndian>().chain_err(|| ErrorKind::UnableToReadU48)
     }
 }
 

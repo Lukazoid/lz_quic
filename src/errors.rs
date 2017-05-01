@@ -6,6 +6,8 @@ use std::io::Error as IoError;
 use std::net::SocketAddr;
 use futures::{Async, Poll, Future, Stream};
 use std::error::Error as StdError;
+use primitives::u24::U24;
+use primitives::u48::U48;
 
 error_chain! {
     foreign_links {
@@ -32,9 +34,17 @@ error_chain! {
             description("unable to write unsigned 16-bit integer")
             display("unable to write unsigned 16-bit integer '{}'", value)
         }
+        UnableToWriteU24(value: U24) {
+            description("unable to write 24-bit unsigned integer")
+            display("unable to write 24-bit unsigned integer '{}'", value)
+        }
         UnableToWriteU32(value: u32) {
             description("unable to write unsigned 32-bit integer")
             display("unable to write unsigned 32-bit integer '{}'", value)
+        }
+        UnableToWriteU48(value: U48) {
+            description("unable to write 48-bit unsigned integer")
+            display("unable to write 48-bit unsigned integer '{}'", value)
         }
         UnableToWriteU64(value: u64) {
             description("unable to write 64-bit unsigned integer")
@@ -46,8 +56,14 @@ error_chain! {
         UnableToReadU16 {
             description("unable to read 16-bit unsigned integer")
         }
+        UnableToReadU24 {
+            description("unable to read 24-bit unsigned integer")
+        }
         UnableToReadU32 {
             description("unable to read 32-bit unsigned integer")
+        }
+        UnableToReadU48 {
+            description("unable to read 48-bit unsigned integer")
         }
         UnableToReadU64 {
             description("unable to read 64-bit unsigned integer")
