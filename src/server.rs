@@ -10,7 +10,6 @@ use futures::{Future, Stream};
 use futures::future::{self, Empty};
 use futures::stream::{self};
 use std::error::Error as StdError;
-use lz_stream_tools::StreamTools;
 
 #[derive(Debug)]
 pub struct Server {

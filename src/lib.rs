@@ -2,7 +2,6 @@
 
 extern crate byteorder;
 extern crate tokio_core;
-extern crate tokio_proto;
 extern crate tokio_io;
 extern crate rand;
 extern crate chrono;
@@ -12,7 +11,6 @@ extern crate num;
 extern crate fnv;
 extern crate flate2;
 extern crate itertools;
-extern crate lz_stream_tools;
 
 #[macro_use]
 extern crate error_chain;
