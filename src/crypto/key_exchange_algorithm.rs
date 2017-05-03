@@ -1,5 +1,5 @@
 use errors::*;
-use std::convert::TryFrom;
+use conv::TryFrom;
 use std::io::{Read, Write};
 use tag::Tag;
 use readable::Readable;
@@ -43,7 +43,7 @@ impl From<KeyExchangeAlgorithm> for Tag {
     }
 }
 impl<'a> TryFrom<&'a Tag> for KeyExchangeAlgorithm {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: &'a Tag) -> Result<Self> {
         Ok(match *value {
@@ -55,7 +55,7 @@ impl<'a> TryFrom<&'a Tag> for KeyExchangeAlgorithm {
 }
 
 impl TryFrom<Tag> for KeyExchangeAlgorithm {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: Tag) -> Result<Self> {
         KeyExchangeAlgorithm::try_from(&value)

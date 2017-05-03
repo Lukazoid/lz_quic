@@ -2,7 +2,7 @@ use errors::*;
 use std::io::{Read, Write};
 use tag::Tag;
 use tag_value_map::TagValueMap;
-use std::convert::TryInto;
+use conv::TryInto;
 use crypto::client_hello_message::ClientHelloMessage;
 use crypto::rejection_message::RejectionMessage;
 use crypto::server_configuration::ServerConfiguration;

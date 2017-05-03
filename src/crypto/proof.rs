@@ -1,5 +1,5 @@
 use errors::*;
-use std::convert::TryFrom;
+use conv::TryFrom;
 use std::io::{Read, Write};
 use tag::Tag;
 use readable::Readable;
@@ -41,7 +41,7 @@ impl From<Proof> for Tag {
 }
 
 impl<'a> TryFrom<&'a Tag> for Proof {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: &'a Tag) -> Result<Self> {
         Ok(match *value {
@@ -52,7 +52,8 @@ impl<'a> TryFrom<&'a Tag> for Proof {
 }
 
 impl TryFrom<Tag> for Proof {
-    type Error = Error;
+    type Err = Error;
+    
     fn try_from(value: Tag) -> Result<Self> {
         Proof::try_from(&value)
     }

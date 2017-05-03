@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use conv::TryFrom;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::ops::Sub;
 use conv::{ApproxFrom, ValueInto, ValueFrom, DefaultApprox, Wrapping, NoError, PosOverflow};
@@ -23,9 +23,9 @@ macro_rules! widening_conv {
     ($($src:ty) *) => {
         $(
             impl TryFrom<U24> for $src {
-                type Error = PosOverflow<U24>;
+                type Err = PosOverflow<U24>;
 
-                fn try_from(value: U24) -> Result<Self, Self::Error> {
+                fn try_from(value: U24) -> Result<Self, Self::Err> {
                     value.value_into()
                 }
             }
@@ -85,9 +85,9 @@ macro_rules! narrowing_conv {
     ($($src:ty) *) => {
         $(
             impl TryFrom<$src> for U24 {
-                type Error = PosOverflow<$src>;
+                type Err = PosOverflow<$src>;
 
-                fn try_from(value: $src) -> Result<Self, Self::Error> {
+                fn try_from(value: $src) -> Result<Self, Self::Err> {
                     value.value_into()
                 }
             }

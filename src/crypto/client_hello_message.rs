@@ -2,7 +2,7 @@ use errors::*;
 use version::Version;
 use tag_value_map::TagValueMap;
 use tag::Tag;
-use std::convert::TryFrom;
+use conv::TryFrom;
 use crypto::proof::Proof;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -17,7 +17,7 @@ pub struct ClientHelloMessage {
 }
 
 impl<'a> TryFrom<&'a TagValueMap> for ClientHelloMessage {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: &'a TagValueMap) -> Result<Self> {
         let server_name = value.get_optional_value(Tag::ServerNameIndication)?;

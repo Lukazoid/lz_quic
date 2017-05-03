@@ -3,6 +3,7 @@ use session::Session;
 use connection_id::ConnectionId;
 use rand::OsRng;
 use futures::{self, Future, IntoFuture};
+use futures::future::BoxFuture;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use tokio_core::reactor::Handle;
 use tokio_core::net::UdpSocket;
@@ -30,15 +31,16 @@ impl Client {
                    server_id: ServerId,
                    client_configuration: ClientConfiguration,
                    handle: &Handle)
-                   -> impl Future<Item = Client, Error = Error> {
+                   -> BoxFuture<Client, Error> {
         bind_udp_socket(handle)
             .and_then(|udp_socket| {
-                let connection_id = generate_connection_id()?;
+                          let connection_id = generate_connection_id()?;
 
-                Ok(Session::new_client(connection_id, udp_socket))
-            })
+                          Ok(Session::new_client(connection_id, udp_socket))
+                      })
             .map(|session| Client { session: session })
             .into_future()
+            .boxed()
     }
 }
 

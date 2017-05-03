@@ -1,6 +1,6 @@
 use errors::*;
 use futures::{Future, Stream};
-use futures::stream;
+use futures::stream::{self, BoxStream};
 use connection_id::ConnectionId;
 use data_stream::DataStream;
 use tokio_core::net::UdpSocket;
@@ -47,8 +47,8 @@ impl Session {
         unimplemented!()
     }
 
-    pub fn incoming_streams(&self) -> impl Stream<Item = DataStream, Error = Error> {
-        stream::empty::<DataStream, Error>()
+    pub fn incoming_streams(&self) -> BoxStream<DataStream, Error> {
+        stream::empty::<DataStream, Error>().boxed()
     }
 }
 

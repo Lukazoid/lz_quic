@@ -2,7 +2,8 @@ use byteorder::ByteOrder;
 use super::primitives::u24::U24;
 use super::primitives::u48::U48;
 use super::primitives::uf16::UF16;
-use std::convert::{TryFrom, From};
+use std::convert::From;
+use conv::TryFrom;
 
 pub trait ByteOrderPrimitives: ByteOrder {
     fn read_u24(buf: &[u8]) -> U24 {

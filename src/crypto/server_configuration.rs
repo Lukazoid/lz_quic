@@ -1,7 +1,7 @@
 use errors::*;
 use tag_value_map::TagValueMap;
 use tag::Tag;
-use std::convert::TryFrom;
+use conv::TryFrom;
 use crypto::server_configuration_id::ServerConfigurationId;
 use crypto::key_exchange_algorithm::KeyExchangeAlgorithm;
 
@@ -12,7 +12,7 @@ pub struct ServerConfiguration {
 }
 
 impl<'a> TryFrom<&'a TagValueMap> for ServerConfiguration {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: &'a TagValueMap) -> Result<Self> {
         let server_configuration_id = value.get_required_value(Tag::ServerConfigurationId)?;

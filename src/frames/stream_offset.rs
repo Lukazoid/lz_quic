@@ -1,6 +1,6 @@
 use errors::*;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use std::convert::TryFrom;
+use conv::TryFrom;
 use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
 use std::io::{Read, Write};
 
@@ -17,7 +17,7 @@ pub enum StreamOffsetLength {
 }
 
 impl TryFrom<usize> for StreamOffsetLength {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: usize) -> Result<StreamOffsetLength> {
         let length = match value {

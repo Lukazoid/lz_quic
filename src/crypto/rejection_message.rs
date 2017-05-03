@@ -1,7 +1,7 @@
 use errors::*;
 use crypto::crypto_handshake_message::CryptoHandshakeMessage;
 use crypto::server_configuration::ServerConfiguration;
-use std::convert::TryFrom;
+use conv::TryFrom;
 use tag_value_map::TagValueMap;
 use tag::Tag;
 
@@ -14,7 +14,7 @@ pub struct RejectionMessage {
 }
 
 impl<'a> TryFrom<&'a TagValueMap> for RejectionMessage {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: &'a TagValueMap) -> Result<Self> {
 

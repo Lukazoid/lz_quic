@@ -3,7 +3,7 @@ use rand::Rng;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use byteorder::{ReadBytesExt, LittleEndian, WriteBytesExt};
 use std::io::{Read, Write};
-use std::convert::TryFrom;
+use conv::TryFrom;
 
 /// An enum for the serialized length of a `StreamId`.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
@@ -15,7 +15,7 @@ pub enum StreamIdLength {
 }
 
 impl TryFrom<usize> for StreamIdLength {
-    type Error = Error;
+    type Err = Error;
 
     fn try_from(value: usize) -> Result<StreamIdLength> {
         let length = match value {

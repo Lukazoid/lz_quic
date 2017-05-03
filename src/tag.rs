@@ -193,27 +193,6 @@ impl PartialOrd for Tag {
 mod tests {
     use super::*;
     use std::io::Cursor;
-    use test::Bencher;
-
-    #[bench]
-    fn bench_three_byte_read(b: &mut Bencher) {
-        let input = [0x53, 0x4e, 0x49, 0x00];
-        b.iter(|| {
-            let mut cursor = Cursor::new(&input);
-
-            Tag::read(&mut cursor).unwrap();
-        });
-    }
-
-    #[bench]
-    fn bench_four_byte_read(b: &mut Bencher) {
-        let input = [0x43, 0x48, 0x4c, 0x4f];
-        b.iter(|| {
-            let mut cursor = Cursor::new(&input);
-
-            Tag::read(&mut cursor).unwrap();
-        });
-    }
 
     macro_rules! to_hex_tests {
         ($($name:ident: $value:expr,)*) => {
