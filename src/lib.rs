@@ -33,6 +33,9 @@ extern crate matches;
 
 #[cfg(test)]
 extern crate test;
+mod crate_info {
+    include!(concat!(env!("OUT_DIR"), "/version.rs"));
+}
 
 mod errors;
 mod options_slice_ext;

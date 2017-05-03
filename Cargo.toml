@@ -2,6 +2,7 @@
 name = "lz_quic"
 version = "0.1.0"
 authors = ["Luke Horsley <luke.horsley@offset1337.co.uk>"]
+build = "build.rs"
 
 [dependencies]
 error-chain = "0.10.0"
@@ -21,4 +22,6 @@ fnv = "1.0.5"
 flate2 = { git = "https://github.com/Lukazoid/flate2-rs.git", branch = "set-dictionary", features = ["zlib"] }
 itertools = "0.6.0"
 lazy_static = "0.2.6"
-lz_stream_tools = { git = "https://github.com/Lukazoid/lz_stream_tools.git" }
+lz_stream_tools = { git = "https://github.com/Lukazoid/lz_stream_tools.git" }[build-dependencies]
+vergen = "0.1.1"
+
