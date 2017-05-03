@@ -24,9 +24,6 @@ extern crate futures;
 #[macro_use]
 extern crate lazy_static;
 
-#[macro_use]
-#[cfg(test)]
-extern crate matches;
 mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
