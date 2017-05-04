@@ -11,18 +11,10 @@ extern crate num;
 extern crate fnv;
 extern crate flate2;
 extern crate itertools;
-
-#[macro_use]
-extern crate error_chain;
-
-#[macro_use]
-extern crate bitflags;
-
-#[macro_use]
-extern crate futures;
-
-#[macro_use]
-extern crate lazy_static;
+#[macro_use] extern crate error_chain;
+#[macro_use] extern crate bitflags;
+#[macro_use] extern crate futures;
+#[macro_use] extern crate lazy_static;
 extern crate openssl;
 extern crate ring;
 extern crate untrusted;
