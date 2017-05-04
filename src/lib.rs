@@ -26,6 +26,7 @@ extern crate lazy_static;
 extern crate openssl;
 extern crate ring;
 extern crate untrusted;
+#[cfg(test)] #[macro_use] extern crate matches;
 
 mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
