@@ -23,6 +23,9 @@ extern crate futures;
 
 #[macro_use]
 extern crate lazy_static;
+extern crate openssl;
+extern crate ring;
+extern crate untrusted;
 
 mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));

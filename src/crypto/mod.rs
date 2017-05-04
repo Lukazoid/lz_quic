@@ -1,6 +1,10 @@
 pub mod rejection_message;
 pub mod proof;
 pub mod key_exchange_algorithm;
+pub mod key_exchange;
+pub mod ring_key_exchange;
+pub mod curve25519_key_exchange;
+pub mod p256_key_exchange;
 pub mod client_hello_message;
 pub mod crypto_handshake_message;
 pub mod server_configuration_id;

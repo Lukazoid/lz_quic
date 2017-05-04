@@ -20,6 +20,9 @@ fnv = "1.0.5"
 flate2 = { git = "https://github.com/Lukazoid/flate2-rs.git", branch = "set-dictionary", features = ["zlib"] }
 itertools = "0.6.0"
 lazy_static = "0.2.6"
+openssl = "0.9.11"
+ring = "0.8.1"
+untrusted = "0.5.0"
 
 [build-dependencies]
 vergen = "0.1.1"

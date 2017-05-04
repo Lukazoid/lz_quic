@@ -331,6 +331,15 @@ error_chain! {
         UnableToBuildPartialPacketNumber {
             description("unable to build the partial packet number")
         }
+        UnableToCreateEphemerealPrivateKey {
+            description("unable to create ephemereal private key")
+        }
+        UnableToComputePublicKey {
+            description("unable to compute public key")
+        }
+        UnableToPerformKeyAgreement {
+            description("unable to perform key agreement")
+        }
     }
 }
 
