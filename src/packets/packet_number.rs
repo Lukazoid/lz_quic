@@ -6,6 +6,7 @@ use writable::Writable;
 use readable::Readable;
 use std::io::{Read, Write};
 use conv::{ConvAsUtil, UnwrapOk, Wrapping};
+use smallvec::SmallVec;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PacketNumber(u64);
@@ -22,12 +23,24 @@ impl PacketNumber {
     }
 
     /// Returns the "epochs" around this `PacketNumber` given the specified number of trailing bits are removed.
-    fn epochs(self, remove_trailing_bits: u8) -> [PacketNumber; 3] {
+    fn epochs(self, remove_trailing_bits: u8) -> SmallVec<[PacketNumber; 3]> {
         let delta = 1 << remove_trailing_bits;
 
         let epoch = self.0 & !(delta - 1);
 
-        [(epoch.wrapping_sub(delta)).into(), epoch.into(), (epoch.wrapping_add(delta)).into()]
+        let mut result = SmallVec::new();
+
+        if let Some(first) = epoch.checked_sub(delta) {
+            result.push(first.into());
+        }
+
+        result.push(epoch.into());
+
+        if let Some(last) = epoch.checked_add(delta) {
+            result.push(last.into())
+        }
+
+        result
     }
 }
 
@@ -108,7 +121,7 @@ impl PartialPacketNumber {
             if let Some(next) = largest_acknowledged.next() {
                 let epochs = largest_acknowledged.epochs(self.len().bit_len());
 
-                let possible_packet_numbers = epochs.into_iter().map(|epoch| *epoch + self);
+                let possible_packet_numbers = epochs.into_iter().map(|epoch| epoch + self);
 
                 let next_u64: u64 = next.into();
 
@@ -197,6 +210,7 @@ impl Add<PartialPacketNumber> for PacketNumber {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use smallvec::{Array, SmallVec};
 
     #[test]
     fn partial_packet_number_from_small_packet_number_gets_inferred_correctly() {
@@ -270,7 +284,7 @@ mod tests {
         let epochs = packet_number.epochs(8);
 
         // Assert
-        assert_eq!(epochs, [PacketNumber::from(5436160), PacketNumber::from(5436416), PacketNumber::from(5436672)]);
+        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber::from(5436160), PacketNumber::from(5436416), PacketNumber::from(5436672)]));
     }
 
     #[test]
@@ -282,7 +296,7 @@ mod tests {
         let epochs = packet_number.epochs(16);
 
         // Assert
-        assert_eq!(epochs, [PacketNumber::from(5308416), PacketNumber::from(5373952), PacketNumber::from(5439488)]);
+        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber::from(5308416), PacketNumber::from(5373952), PacketNumber::from(5439488)]));
     }
 
     #[test]
@@ -294,7 +308,7 @@ mod tests {
         let epochs = packet_number.epochs(1);
 
         // Assert
-        assert_eq!(epochs, [PacketNumber::from(5436532), PacketNumber::from(5436534), PacketNumber::from(5436536)]);
+        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber::from(5436532), PacketNumber::from(5436534), PacketNumber::from(5436536)]));
     }
 
 }
