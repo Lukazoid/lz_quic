@@ -8,10 +8,15 @@ use write_quic_primitives::WriteQuicPrimitives;
 pub trait Writable {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()>;
 
+    fn write_to_vec(&self, vec: &mut Vec<u8>) {
+        self.write(vec)
+            .expect("writing to a vector should result in no errors");
+    }
+
     fn bytes(&self) -> Vec<u8> {
         let mut vec = Vec::new();
         self.write(&mut vec)
-            .expect("Writing to a vector should result in no errors");
+            .expect("writing to a vector should result in no errors");
 
         vec
     }
@@ -101,3 +106,4 @@ impl<'a, T: Writable + 'a> Writable for &'a T {
         (*self).write(writer)
     }
 }
+
