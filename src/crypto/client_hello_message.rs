@@ -16,56 +16,55 @@ pub struct ClientHelloMessage {
     pub leaf_certificate: u64,
 }
 
-impl<'a> TryFrom<&'a TagValueMap> for ClientHelloMessage {
-    type Err = Error;
-
-    fn try_from(value: &'a TagValueMap) -> Result<Self> {
-        let server_name = value.get_optional_value(Tag::ServerNameIndication)?;
-        let source_address_token = value.get_optional_value(Tag::SourceAddressToken)?;
-        let proof_demands = value.get_required_values(Tag::ProofDemand)?;
-        let common_certificate_sets = value.get_optional_values(Tag::CommonCertificateSets)?;
-        let cached_certificates = value.get_optional_values(Tag::CachedCertificates)?;
-        let version = value.get_required_value(Tag::Version)?;
-        let leaf_certificate = value.get_required_value(Tag::Fnv1aHash)?;
+impl ClientHelloMessage {
+    pub fn from_tag_value_map(tag_value_map: &TagValueMap) -> Result<Self> {
+        let server_name = tag_value_map
+            .get_optional_value(Tag::ServerNameIndication)?;
+        let source_address_token = tag_value_map
+            .get_optional_value(Tag::SourceAddressToken)?;
+        let proof_demands = tag_value_map.get_required_values(Tag::ProofDemand)?;
+        let common_certificate_sets = tag_value_map
+            .get_optional_values(Tag::CommonCertificateSets)?;
+        let cached_certificates = tag_value_map
+            .get_optional_values(Tag::CachedCertificates)?;
+        let version = tag_value_map.get_required_value(Tag::Version)?;
+        let leaf_certificate = tag_value_map.get_required_value(Tag::Fnv1aHash)?;
 
         Ok(ClientHelloMessage {
-            server_name: server_name,
-            source_address_token: source_address_token,
-            proof_demands: proof_demands,
-            common_certificate_sets: common_certificate_sets,
-            cached_certificates: cached_certificates,
-            version: version,
-            leaf_certificate: leaf_certificate,
-        })
+               server_name: server_name,
+               source_address_token: source_address_token,
+               proof_demands: proof_demands,
+               common_certificate_sets: common_certificate_sets,
+               cached_certificates: cached_certificates,
+               version: version,
+               leaf_certificate: leaf_certificate,
+           })
     }
-}
 
-impl<'a> From<&'a ClientHelloMessage> for TagValueMap {
-    fn from(value: &'a ClientHelloMessage) -> Self {
+    pub fn to_tag_value_map(&self) -> TagValueMap {
         let mut tag_value_map = TagValueMap::default();
 
-        if let Some(ref server_name) = value.server_name {
+        if let Some(ref server_name) = self.server_name {
             tag_value_map.set_value(Tag::ServerNameIndication, server_name);
         }
 
-        if let Some(ref source_address_token) = value.source_address_token {
+        if let Some(ref source_address_token) = self.source_address_token {
             tag_value_map.set_value(Tag::SourceAddressToken, source_address_token);
         }
 
-        tag_value_map.set_value(Tag::ProofDemand, &value.proof_demands);
+        tag_value_map.set_value(Tag::ProofDemand, &self.proof_demands);
 
-        if !value.common_certificate_sets.is_empty() {
-            tag_value_map.set_value(Tag::CommonCertificateSets,
-                                         &value.common_certificate_sets);
+        if !self.common_certificate_sets.is_empty() {
+            tag_value_map.set_value(Tag::CommonCertificateSets, &self.common_certificate_sets);
         }
 
-        if !value.cached_certificates.is_empty() {
-            tag_value_map.set_value(Tag::CachedCertificates, &value.cached_certificates);
+        if !self.cached_certificates.is_empty() {
+            tag_value_map.set_value(Tag::CachedCertificates, &self.cached_certificates);
         }
 
-        tag_value_map.set_value(Tag::Version, &value.version);
+        tag_value_map.set_value(Tag::Version, &self.version);
 
-        tag_value_map.set_value(Tag::Fnv1aHash, &value.leaf_certificate);
+        tag_value_map.set_value(Tag::Fnv1aHash, &self.leaf_certificate);
 
         tag_value_map
     }
@@ -89,9 +88,10 @@ mod tests {
             version: version::DRAFT_IETF_01,
             leaf_certificate: 8123678,
         };
-        let tag_value_map = TagValueMap::from(&chlo);
-        let resultant_chlo = ClientHelloMessage::try_from(&tag_value_map).unwrap();
+        let tag_value_map = chlo.to_tag_value_map();
+        let resultant_chlo = ClientHelloMessage::from_tag_value_map(&tag_value_map).unwrap();
 
         assert_eq!(chlo, resultant_chlo);
     }
 }
+

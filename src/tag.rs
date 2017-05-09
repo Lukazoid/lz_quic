@@ -45,7 +45,7 @@ pub enum Tag {
 
 impl Display for Tag {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
-        let bytes: &[u8; 4] = self.into();
+        let bytes = self.bytes();
 
         // TODO LH It would be better to check bytes is an ASCII string instead of a utf8 string
         if let Ok(string) = str::from_utf8(bytes) {
@@ -57,54 +57,26 @@ impl Display for Tag {
     }
 }
 
-impl<'a> From<&'a Tag> for [u8; 4] {
-    fn from(value: &'a Tag) -> Self {
-        (*value).into()
-    }
-}
-
-impl<'a> From<&'a Tag> for u32 {
-    fn from(value: &'a Tag) -> Self {
-        (*value).into()
-    }
-}
-
-
 macro_rules! build_lookups {
     ($($tag:tt => $value:expr,)*) => {
                 
-        impl From<Tag> for u32 {
-            fn from(value: Tag) -> Self {
-                match value {
+        impl Tag {
+            pub fn bytes(&self) -> &[u8;4] {
+                match *self {
                 $(
-                    Tag::$tag => LittleEndian::read_u32($value),
+                    Tag::$tag => $value,
                 )*
-                    Tag::Custom(ref value) => LittleEndian::read_u32(value),
+                    Tag::Custom(ref value) => value,
                 }
             }
-        }
-        
-        impl<'a> From<&'a Tag> for &'a [u8; 4] {
-            fn from(value: &'a Tag) -> Self {
-                match value {
-                $(
-                    &Tag::$tag => $value,
-                )*
-                    &Tag::Custom(ref value) => value,
-                }
-            }
-        }
 
-        impl From<Tag> for [u8; 4] {
-            fn from(value: Tag) -> Self {
-                match value {
+            /// Provided so that references to static byte arrays may be used to create a `Tag`.
+            pub fn from_bytes(bytes: &[u8; 4]) -> Tag {
+                match bytes {
                 $(
-                    Tag::$tag => {
-                        // Have to clone the static byte array
-                        $value.clone()
-                    },
+                    $value => Tag::$tag,
                 )*
-                    Tag::Custom(value) => value,
+                    _ => Tag::Custom(bytes.clone()),
                 }
             }
         }
@@ -119,17 +91,22 @@ macro_rules! build_lookups {
                 }
             }
         }
-
-        impl<'a> From<&'a [u8; 4]> for Tag {
-            fn from(value: &'a [u8; 4]) -> Self {
+     
+        impl From<Tag> for [u8; 4] {
+            fn from(value: Tag) -> Self {
                 match value {
                 $(
-                    $value => Tag::$tag,
+                    Tag::$tag => {
+                        // Have to clone the static byte array
+                        $value.clone()
+                    },
                 )*
-                    bytes @ _ => Tag::Custom(bytes.clone()),
+                    Tag::Custom(value) => value,
                 }
             }
         }
+
+
     }
 }
 
@@ -166,9 +143,16 @@ build_lookups!{
     X509 => b"X509",
 }
 
+impl Tag {
+    fn as_u32(&self) -> u32 {
+        let bytes = self.bytes();
+        LittleEndian::read_u32(bytes)
+    }
+}
+
 impl Writable for Tag {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        Ok(u32::from(self).write(writer)?)
+        Ok(self.as_u32().write(writer)?)
     }
 }
 
@@ -177,7 +161,7 @@ impl Readable for Tag {
         let mut bytes = [0; 4];
         let tag = reader.read_exact(&mut bytes)
             .chain_err(|| ErrorKind::UnableToReadBytes)
-            .map(|_| Self::from(&bytes))?;
+            .map(|_| Self::from(bytes))?;
 
         Ok(tag)
     }
@@ -185,7 +169,7 @@ impl Readable for Tag {
 
 impl PartialOrd for Tag {
     fn partial_cmp(&self, other: &Tag) -> Option<Ordering> {
-        u32::from(self).partial_cmp(&u32::from(other))
+        self.as_u32().partial_cmp(&other.as_u32())
     }
 }
 
@@ -194,22 +178,25 @@ mod tests {
     use super::*;
     use std::io::Cursor;
 
-    macro_rules! to_hex_tests {
+    macro_rules! write_tests {
         ($($name:ident: $value:expr,)*) => {
             $(
                 #[test]
                 fn $name() {
-                    let (input, expected) : (Tag, u32) = $value;
+                    let (input, expected) : (Tag, &[u8; 4]) = $value;
                     
-                    assert_eq!(expected, u32::from(input));
+                    let mut vec = Vec::new();
+                    input.write_to_vec(&mut vec);
+
+                    assert_eq!(expected, vec.as_slice());
                 }
             )*
         }
     }
 
-    to_hex_tests!{
-        client_hello_to_hex: (Tag::ClientHello, 0x4f4c4843),
-        server_name_identification_to_hex: (Tag::ServerNameIndication, 0x494e53),
+    write_tests!{
+        write_client_hello: (Tag::ClientHello, &[0x43, 0x48, 0x4c, 0x4f]),
+        write_server_name_indication: (Tag::ServerNameIndication, &[0x53, 0x4e, 0x49, 0x00]),
     }
 
     macro_rules! read_tests {

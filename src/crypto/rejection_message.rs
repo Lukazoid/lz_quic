@@ -13,13 +13,10 @@ pub struct RejectionMessage {
     seconds_to_live: u64,
 }
 
-impl<'a> TryFrom<&'a TagValueMap> for RejectionMessage {
-    type Err = Error;
-
-    fn try_from(value: &'a TagValueMap) -> Result<Self> {
-
+impl RejectionMessage {
+    pub fn from_tag_value_map(tag_value_map: &TagValueMap) -> Result<Self> {
         let server_configuration = if let Some(server_configuration_handshake_message) =
-                                          value.get_optional_value(Tag::ServerConfiguration)? {
+                                          tag_value_map.get_optional_value(Tag::ServerConfiguration)? {
             if let CryptoHandshakeMessage::ServerConfiguration(server_configuration) =
                    server_configuration_handshake_message {
                 Some(server_configuration)
@@ -30,9 +27,9 @@ impl<'a> TryFrom<&'a TagValueMap> for RejectionMessage {
             None
         };
 
-        let source_address_token = value.get_optional_value(Tag::SourceAddressToken)?;
-        let server_nonce = value.get_optional_value(Tag::ServerNonce)?;
-        let seconds_to_live = value.get_required_value(Tag::ServerConfigurationTimeToLive)?;
+        let source_address_token = tag_value_map.get_optional_value(Tag::SourceAddressToken)?;
+        let server_nonce = tag_value_map.get_optional_value(Tag::ServerNonce)?;
+        let seconds_to_live = tag_value_map.get_required_value(Tag::ServerConfigurationTimeToLive)?;
 
         Ok(Self {
             server_configuration: server_configuration,
@@ -41,13 +38,11 @@ impl<'a> TryFrom<&'a TagValueMap> for RejectionMessage {
             seconds_to_live: seconds_to_live,
         })
     }
-}
 
-impl<'a> From<&'a RejectionMessage> for TagValueMap {
-    fn from(value: &'a RejectionMessage) -> Self {
+    pub fn to_tag_value_map(&self) -> TagValueMap {
         let mut tag_value_map = TagValueMap::default();
 
-        if let Some(ref server_configuration) = value.server_configuration {
+        if let Some(ref server_configuration) = self.server_configuration {
             let server_configuration_message =
                 CryptoHandshakeMessage::ServerConfiguration(server_configuration.clone());
 
@@ -55,16 +50,16 @@ impl<'a> From<&'a RejectionMessage> for TagValueMap {
                                          &server_configuration_message);
         }
 
-        if let Some(ref source_address_token) = value.source_address_token {
+        if let Some(ref source_address_token) = self.source_address_token {
             tag_value_map.set_value(Tag::SourceAddressToken, source_address_token);
         }
 
-        if let Some(ref server_nonce) = value.server_nonce {
+        if let Some(ref server_nonce) = self.server_nonce {
             tag_value_map.set_value(Tag::ServerNonce, server_nonce);
         }
 
         tag_value_map.set_value(Tag::ServerConfigurationTimeToLive,
-                                     &value.seconds_to_live);
+                                     &self.seconds_to_live);
 
         tag_value_map
     }

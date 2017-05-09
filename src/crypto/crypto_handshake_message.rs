@@ -2,7 +2,6 @@ use errors::*;
 use std::io::{Read, Write};
 use tag::Tag;
 use tag_value_map::TagValueMap;
-use conv::TryInto;
 use crypto::client_hello_message::ClientHelloMessage;
 use crypto::rejection_message::RejectionMessage;
 use crypto::server_configuration::ServerConfiguration;
@@ -21,13 +20,13 @@ impl Writable for CryptoHandshakeMessage {
 
         let (tag, tag_value_map) = match *self {
             CryptoHandshakeMessage::Rejection(ref rejection_message) => {
-                (Tag::Rejection, TagValueMap::from(rejection_message))
+                (Tag::Rejection, rejection_message.to_tag_value_map())
             }
             CryptoHandshakeMessage::ClientHello(ref client_hello_message) => {
-                (Tag::ClientHello, TagValueMap::from(client_hello_message))
+                (Tag::ClientHello, client_hello_message.to_tag_value_map())
             }
             CryptoHandshakeMessage::ServerConfiguration(ref server_configuration) => {
-                (Tag::ServerConfiguration, TagValueMap::from(server_configuration))
+                (Tag::ServerConfiguration, server_configuration.to_tag_value_map())
             }
         };
 
@@ -40,7 +39,8 @@ impl Writable for CryptoHandshakeMessage {
 
         // Two bytes of padding
         let padding = [0; 2];
-        writer.write_all(&padding)
+        writer
+            .write_all(&padding)
             .chain_err(|| ErrorKind::UnableToWritePadding(padding.len()))?;
 
         tag_value_map.write(writer)?;
@@ -55,7 +55,8 @@ fn read_quic_tag_value_map<R: Read>(reader: &mut R) -> Result<TagValueMap> {
 
     // Ignore the two bytes of padding
     let mut padding = [0; 2];
-    reader.read_exact(&mut padding)
+    reader
+        .read_exact(&mut padding)
         .chain_err(|| ErrorKind::UnableToReadPadding(padding.len()))?;
 
     TagValueMap::read(reader, tag_value_count as usize)
@@ -68,20 +69,21 @@ impl Readable for CryptoHandshakeMessage {
 
         match tag {
             Tag::Rejection => {
-                (&read_quic_tag_value_map(reader)?)
-                    .try_into()
+                let tag_value_map = read_quic_tag_value_map(reader)?;
+
+                RejectionMessage::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::UnableToReadCryptoRejectionMessage)
                     .map(CryptoHandshakeMessage::Rejection)
             }
             Tag::ClientHello => {
-                (&read_quic_tag_value_map(reader)?)
-                    .try_into()
+                let tag_value_map = read_quic_tag_value_map(reader)?;
+                ClientHelloMessage::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::UnableToReadCryptoClientHelloMessage)
                     .map(CryptoHandshakeMessage::ClientHello)
             }
             Tag::ServerConfiguration => {
-                (&read_quic_tag_value_map(reader)?)
-                    .try_into()
+                let tag_value_map = read_quic_tag_value_map(reader)?;
+                ServerConfiguration::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::UnableToReadCryptoServerConfigurationMessage)
                     .map(CryptoHandshakeMessage::ServerConfiguration)
             }
@@ -89,3 +91,4 @@ impl Readable for CryptoHandshakeMessage {
         }
     }
 }
+
