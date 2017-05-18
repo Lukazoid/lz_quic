@@ -1,10 +1,8 @@
 use errors::*;
-use connection_id::ConnectionId;
-use diversification_nonce::DiversificationNonce;
-use version::Version;
-use packets::packet_number::{PartialPacketNumber, PartialPacketNumberLength};
-use readable::Readable;
-use writable::Writable;
+use protocol::{ConnectionId, Version};
+use crypto::DiversificationNonce;
+use packets::{PartialPacketNumber, PartialPacketNumberLength};
+use protocol::{Readable, Writable};
 use std::io::{Read, Write};
 
 #[derive(Debug)]

@@ -1,8 +1,8 @@
 use errors::*;
 use futures::{Future, Stream};
 use futures::stream::{self, BoxStream};
-use connection_id::ConnectionId;
-use data_stream::DataStream;
+use DataStream;
+use protocol::ConnectionId;
 use tokio_core::net::UdpSocket;
 use std::sync::{Arc, RwLock};
 

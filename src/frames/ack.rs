@@ -1,4 +1,4 @@
-use primitives::u48::U48;
+use primitives::U48;
 use chrono::Duration;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

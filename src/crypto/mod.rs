@@ -1,17 +1,20 @@
-pub mod rejection_message;
-pub mod proof;
-pub mod key_exchange_algorithm;
+mod public_key;
+pub use self::public_key::PublicKey;
+
+mod shared_key;
+pub use self::shared_key::SharedKey;
+
+mod initialization_vector;
+pub use self::initialization_vector::InitializationVector;
+
+mod diversification_nonce;
+pub use self::diversification_nonce::DiversificationNonce;
+
+mod secret_key;
+pub use self::secret_key::SecretKey;
+
+pub mod aead;
+pub mod certificates;
+
 pub mod key_exchange;
-pub mod ring_key_exchange;
-pub mod curve25519_key_exchange;
-pub mod p256_key_exchange;
-pub mod client_hello_message;
-pub mod crypto_handshake_message;
-pub mod server_configuration_id;
-pub mod server_configuration;
-pub mod certificate;
-pub mod certificate_set;
-pub mod certificate_compressor;
-pub mod common_certificate_set_2;
-pub mod common_certificate_set_3;
-pub mod common_certificate_sets;
+pub mod key_derivation;

@@ -2,11 +2,8 @@ use errors::*;
 use std::io::{Read, Write};
 use tag::Tag;
 use tag_value_map::TagValueMap;
-use crypto::client_hello_message::ClientHelloMessage;
-use crypto::rejection_message::RejectionMessage;
-use crypto::server_configuration::ServerConfiguration;
-use writable::Writable;
-use readable::Readable;
+use crypto::{ClientHelloMessage, RejectionMessage, ServerConfiguration};
+use {Readable, Writable};
 
 #[derive(Debug, Clone)]
 pub enum CryptoHandshakeMessage {

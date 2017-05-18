@@ -1,6 +1,6 @@
 use tokio_io::{AsyncRead, AsyncWrite};
 use std::io::{Read, Write};
-use stream_id::StreamId;
+use protocol::StreamId;
 
 #[derive(Debug)]
 pub struct DataStream {

@@ -1,10 +1,9 @@
 use errors::*;
-use packets::public_header::PublicHeader;
-use packets::packet_number::PacketNumber;
+use packets::{PublicHeader, PacketNumber};
 use std::io::{Read, Write};
-use version::Version;
+use protocol::Version;
 use std::net::SocketAddr;
-use frames::frame::Frame;
+use frames::Frame;
 
 #[derive(Debug)]
 pub enum PacketContent {

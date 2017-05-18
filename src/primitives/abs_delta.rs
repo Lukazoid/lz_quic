@@ -1,5 +1,4 @@
-use primitives::u24::U24;
-use primitives::u48::U48;
+use primitives::{U24, U48};
 
 /// A trait for getting the absolute delta between two values.
 pub trait AbsDelta<RHS = Self> {

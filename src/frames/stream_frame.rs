@@ -1,6 +1,6 @@
 use errors::*;
-use stream_id::StreamId;
-use frames::stream_offset::StreamOffset;
+use protocol::StreamId;
+use frames::StreamOffset;
 
 #[derive(Debug, Clone)]
 pub struct StreamFrame {

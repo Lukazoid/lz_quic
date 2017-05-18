@@ -9,6 +9,7 @@ extern crate conv;
 extern crate hex;
 extern crate num;
 extern crate fnv;
+extern crate lz_fnv;
 extern crate flate2;
 extern crate itertools;
 #[macro_use] extern crate error_chain;
@@ -17,34 +18,37 @@ extern crate itertools;
 #[macro_use] extern crate lazy_static;
 extern crate openssl;
 extern crate ring;
+extern crate webpki;
 extern crate untrusted;
 #[cfg(test)] #[macro_use] extern crate matches;
 extern crate smallvec;
+extern crate time;
+#[cfg(test)] extern crate webpki_roots;
 
 mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
 
-mod errors;
-mod options_slice_ext;
-mod writable;
-mod readable;
+pub mod errors;
+mod protocol;
 mod primitives;
-mod byte_order_primitives;
-mod read_quic_primitives;
-mod write_quic_primitives;
-mod diversification_nonce;
-mod crypto;
+mod utils;
+mod handshake;
 mod frames;
+mod crypto;
 mod packets;
-mod server_id;
-mod version;
-mod tag;
-mod tag_value_map;
-mod connection_id;
-mod data_stream;
-mod stream_id;
+
 mod session;
+pub use self::session::Session;
+
+mod data_stream;
+pub use self::data_stream::DataStream;
+
 mod client_configuration;
+pub use self::client_configuration::ClientConfiguration;
+
 mod client;
+pub use self::client::Client;
+
 mod server;
+pub use self::server::Server;

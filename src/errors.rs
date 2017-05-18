@@ -1,13 +1,10 @@
-use tag::Tag;
-use connection_id::ConnectionId;
-use version::Version;
-use frames::stream_offset::StreamOffset;
-use stream_id::StreamId;
+use handshake::Tag;
+use protocol::{ConnectionId, StreamId, Version};
+use frames::StreamOffset;
 use std::net::SocketAddr;
 use futures::{Async, Poll, Future, Stream};
 use std::error::Error as StdError;
-use primitives::u24::U24;
-use primitives::u48::U48;
+use primitives::{U24, U48};
 
 error_chain! {
     foreign_links {
@@ -331,6 +328,13 @@ error_chain! {
         UnableToBuildPartialPacketNumber {
             description("unable to build the partial packet number")
         }
+        CipherTextTooShort (actual_length: usize, minimum_length: usize) {
+            description("the cipher text is too short")
+            display("the cipher text of length '{}' is too short and must be atleast {} bytes", actual_length, minimum_length)
+        }
+        FailedToAuthenticateReceivedData {
+            description("failed to authenticate received data")
+        }
         UnableToCreateEphemerealPrivateKey {
             description("unable to create ephemereal private key")
         }
@@ -339,6 +343,19 @@ error_chain! {
         }
         UnableToPerformKeyAgreement {
             description("unable to perform key agreement")
+        }
+        UnableToParseCertificateFromCertificateChain {
+            description("unable to parse certificate from certificate chain")
+        }
+        CertificateInvalidForDnsName(dns_name: String){
+            description("certificate invalid for dns name")
+            display("certificate invalid for dns name '{}'", dns_name)
+        }
+        InvalidTlsCertificate {
+            description("invalid TLS certificate")
+        }
+        CertificateChainIsEmpty {
+            description("certificate chain is empty")
         }
     }
 }

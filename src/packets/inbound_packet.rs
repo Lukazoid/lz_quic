@@ -1,4 +1,4 @@
-use packets::public_header::PublicHeader;
+use packets::PublicHeader;
 use std::net::SocketAddr;
 use chrono::{DateTime, UTC};
 

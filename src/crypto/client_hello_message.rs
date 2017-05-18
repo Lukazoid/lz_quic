@@ -3,7 +3,7 @@ use version::Version;
 use tag_value_map::TagValueMap;
 use tag::Tag;
 use conv::TryFrom;
-use crypto::proof::Proof;
+use crypto::Proof;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ClientHelloMessage {
@@ -80,7 +80,7 @@ mod tests {
     #[test]
     fn serializes_to_from_quic_tag_value_map() {
         let chlo = ClientHelloMessage {
-            server_name: Some("example.com".to_string()),
+            server_name: Some("example.com".to_owned()),
             source_address_token: Some(vec![1, 2, 3]),
             proof_demands: vec![Proof::X509],
             common_certificate_sets: vec![5435435, 654123],

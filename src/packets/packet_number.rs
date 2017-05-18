@@ -1,15 +1,30 @@
 use errors::*;
-use primitives::u48::U48;
-use primitives::abs_delta::AbsDelta;
+use primitives::{U48, AbsDelta};
 use std::ops::Add;
-use writable::Writable;
-use readable::Readable;
+use protocol::{Readable, Writable};
 use std::io::{Read, Write};
 use conv::{ConvAsUtil, UnwrapOk, Wrapping};
 use smallvec::SmallVec;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PacketNumber(u64);
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum PartialPacketNumberLength {
+    OneByte,
+    TwoBytes,
+    FourBytes,
+    SixBytes,
+}
+
+/// This represents a partial packet number consisting of only the lower bytes.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum PartialPacketNumber {
+    OneByte(u8),
+    TwoBytes(u16),
+    FourBytes(u32),
+    SixBytes(U48),
+}
 
 impl PacketNumber {
     /// Attempts to get the next `PacketNumber`.
@@ -56,14 +71,6 @@ impl From<u64> for PacketNumber {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum PartialPacketNumberLength {
-    OneByte,
-    TwoBytes,
-    FourBytes,
-    SixBytes,
-}
-
 impl PartialPacketNumberLength {
     /// Gets the length of the packet number in bytes.
     pub fn len(self) -> u8 {
@@ -82,15 +89,6 @@ impl PartialPacketNumberLength {
     fn threshold(self) -> u64 {
         2 << (self.bit_len() - 2)
     }
-}
-
-/// This represents a partial packet number consisting of only the lower bytes.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum PartialPacketNumber {
-    OneByte(u8),
-    TwoBytes(u16),
-    FourBytes(u32),
-    SixBytes(U48),
 }
 
 impl PartialPacketNumber {

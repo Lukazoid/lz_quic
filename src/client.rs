@@ -1,14 +1,12 @@
 use errors::*;
-use session::Session;
-use connection_id::ConnectionId;
+use {Session, ClientConfiguration};
 use rand::OsRng;
 use futures::{self, Future, IntoFuture};
 use futures::future::BoxFuture;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use tokio_core::reactor::Handle;
 use tokio_core::net::UdpSocket;
-use server_id::ServerId;
-use client_configuration::ClientConfiguration;
+use protocol::{ConnectionId, ServerId};
 
 pub struct Client {
     session: Session,

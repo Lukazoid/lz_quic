@@ -1,11 +1,8 @@
 use tokio_core::net::UdpCodec;
-use packets::inbound_packet::InboundPacket;
-use packets::outbound_packet::OutboundPacket;
-use packets::public_header::PublicHeader;
+use packets::{InboundPacket, OutboundPacket, PublicHeader};
 use std::io::{Cursor, Result as IoResult, Error as IoError, ErrorKind as IoErrorKind};
 use std::net::SocketAddr;
-use readable::Readable;
-use writable::Writable;
+use protocol::{Readable, Writable};
 use chrono::UTC;
 
 #[derive(Debug, Clone, Default)]
