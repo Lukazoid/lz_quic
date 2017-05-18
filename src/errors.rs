@@ -343,6 +343,50 @@ error_chain! {
     }
 }
 
+pub struct ErrorsIterator<'a> {
+    current_error: Option<&'a Error>
+}
+
+impl<'a> Iterator for ErrorsIterator<'a> {
+    type Item = &'a Error;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(current_error) = self.current_error.take() {
+            if let Some(next_error) = current_error.downcast_cause() {
+                self.current_error = next_error;
+            }
+
+            Some(current_error) 
+        } else {
+            None
+        }
+    }
+}
+
+impl Error {
+    /// Attempts to downcast the `Error::cause()` to `T`.
+    ///
+    /// # Returns
+    /// `None` if there was no cause.
+    /// `Some(None)` if there was a cause which could not be downcast to `T`.
+    /// `Some(Some(T))` if the cause was successfully downcast to `T`.
+    pub fn downcast_cause<T: StdError + 'static>(&self) -> Option<Option<&T>>
+    {
+        self.1.next_error.as_ref()
+            .map(|e| e.downcast_ref::<T>())
+    }
+
+    /// Determines whether this or one of the `Error` causes satisfies `predicate`.
+    pub fn has_error<P:FnMut(&Error) -> bool>(&self, predicate: P) -> bool {
+        self.errors().any(predicate)
+    }
+
+    /// Returns an `Iterator` which iterates over `self` and all `Error` causes.
+    pub fn errors(&self) -> ErrorsIterator {
+        ErrorsIterator { current_error: Some(self) }
+    }
+}
+
 pub struct ChainErrStream<S, C> {
     stream: S,
     callback: C,
@@ -445,7 +489,7 @@ mod tests {
 
         // Act
         let mut chained_err_future =
-            future.chain_err(|| ErrorKind::Msg("An error occurred".to_owned()));
+            future.chain_err(|| "An error occurred");
 
         // Assert
         let poll = chained_err_future.poll();
@@ -459,7 +503,7 @@ mod tests {
 
         // Act
         let mut chained_err_stream =
-            stream.chain_err(|| ErrorKind::Msg("An error occurred".to_owned()));
+            stream.chain_err(|| "An error occurred");
 
         // Assert
         let poll = chained_err_stream.poll();
@@ -468,5 +512,35 @@ mod tests {
 
         let poll = chained_err_stream.poll();
         assert!(poll.is_err());
+    }
+
+    #[test]
+    pub fn has_error_returns_true_for_matching_error() {
+        let first_cause : Error = "The first error".into();
+        let chained_result : Result<()> = Err(first_cause).chain_err(||"The next error");
+
+        let error = chained_result.unwrap_err();
+
+        assert!(error.has_error(|e| matches!(e.kind(), &ErrorKind::Msg(ref msg) if msg == "The first error")));
+    }
+
+    #[test]
+    pub fn errors_returns_errors() {
+        let first_cause : Error = "The first error".into();
+        let chained_result : Result<()> = Err(first_cause).chain_err(||"The next error");
+
+        let error = chained_result.unwrap_err();
+
+        assert_eq!(error.errors().count(), 2);
+    }
+
+    #[test]
+    pub fn errors_only_returns_errors() {
+        let first_cause = IoError::new(IoErrorKind::InvalidData, "first cause");
+        let chained_result : Result<()> = Err(first_cause).chain_err(||"The next error");
+
+        let error = chained_result.unwrap_err();
+
+        assert_eq!(error.errors().count(), 1);
     }
 }
