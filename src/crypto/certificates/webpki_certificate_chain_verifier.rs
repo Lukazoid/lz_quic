@@ -99,5 +99,19 @@ mod tests {
         
         verify_result.unwrap();
     }
+  
+    #[test]
+    pub fn verify_with_wrong_host_name_returns_error() {
+        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(&webpki_roots::ROOTS);
+        
+        let google_certificate = Certificate::new(include_bytes!("google.com.cer").to_vec());
+        let google_internet_authority_certificate = Certificate::new(include_bytes!("google_internet_authority_g2.cer").to_vec());
+
+        let certificate_chain = CertificateChain::from(vec![google_certificate, google_internet_authority_certificate]);
+
+        let verify_result = webpki_certificate_chain_verifier.verify(&certificate_chain, "google.com.notreally.tk");
+        
+        assert!(verify_result.is_err());
+    }
 }
 
