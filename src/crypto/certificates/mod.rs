@@ -1,3 +1,6 @@
+mod trust_anchor;
+pub use self::trust_anchor::TrustAnchor;
+
 mod certificate;
 pub use self::certificate::Certificate;
 
@@ -6,6 +9,9 @@ pub use self::certificate_set::CertificateSet;
 
 mod certificate_chain;
 pub use self::certificate_chain::CertificateChain;
+
+mod certificate_verification_options;
+pub use self::certificate_verification_options::CertificateVerificationOptions;
 
 mod certificate_chain_verifier;
 pub use self::certificate_chain_verifier::CertificateChainVerifier;
