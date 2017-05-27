@@ -79,6 +79,9 @@ mod tests {
     use webpki_roots;
     use crypto::certificates::TrustAnchor;
 
+    static GOOGLE_CERTIFICATE_BYTES : &'static[u8] = include_bytes!("google.com.cer");
+    static GOOGLE_CERTIFICATE_AUTHORITY_BYTES : &'static[u8] = include_bytes!("google_internet_authority_g2.cer");
+
     #[test]
     pub fn verify_with_empty_chain_returns_error() {
         let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::ROOTS.iter().map(TrustAnchor::from_webpki_trust_anchor).collect());
@@ -93,8 +96,8 @@ mod tests {
     pub fn verify_with_correct_chain_succeeds() {
         let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::ROOTS.iter().map(TrustAnchor::from_webpki_trust_anchor).collect());
         
-        let google_certificate = Certificate::from(include_bytes!("google.com.cer").to_vec());
-        let google_internet_authority_certificate = Certificate::from(include_bytes!("google_internet_authority_g2.cer").to_vec());
+        let google_certificate = Certificate::from(GOOGLE_CERTIFICATE_BYTES);
+        let google_internet_authority_certificate = Certificate::from(GOOGLE_CERTIFICATE_AUTHORITY_BYTES);
 
         let certificate_chain = CertificateChain::from(vec![google_certificate, google_internet_authority_certificate]);
 
@@ -107,8 +110,8 @@ mod tests {
     pub fn verify_with_wrong_host_name_returns_error() {
         let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::ROOTS.iter().map(TrustAnchor::from_webpki_trust_anchor).collect());
         
-        let google_certificate = Certificate::from(include_bytes!("google.com.cer").to_vec());
-        let google_internet_authority_certificate = Certificate::from(include_bytes!("google_internet_authority_g2.cer").to_vec());
+        let google_certificate = Certificate::from(GOOGLE_CERTIFICATE_BYTES);
+        let google_internet_authority_certificate = Certificate::from(GOOGLE_CERTIFICATE_AUTHORITY_BYTES);
 
         let certificate_chain = CertificateChain::from(vec![google_certificate, google_internet_authority_certificate]);
 

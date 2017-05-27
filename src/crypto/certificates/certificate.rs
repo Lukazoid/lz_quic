@@ -22,3 +22,9 @@ impl From<Vec<u8>> for Certificate {
         Self { data: value }
     }
 }
+
+impl<'a> From<&'a [u8]> for Certificate{
+    fn from(value:&'a [u8]) -> Self {
+        value.to_vec().into()
+    }
+}
