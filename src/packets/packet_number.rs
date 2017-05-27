@@ -59,6 +59,12 @@ impl PacketNumber {
     }
 }
 
+impl Writable for PacketNumber {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        self.0.write(writer)
+    }
+}
+
 impl From<PacketNumber> for u64 {
     fn from(value: PacketNumber) -> Self {
         value.0
