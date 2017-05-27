@@ -1,9 +1,7 @@
 use errors::*;
-use tag_value_map::TagValueMap;
-use tag::Tag;
 use conv::TryFrom;
-use crypto::server_configuration_id::ServerConfigurationId;
-use crypto::key_exchange_algorithm::KeyExchangeAlgorithm;
+use handshake::{ServerConfigurationId, Tag, TagValueMap};
+use crypto::key_exchange::KeyExchangeAlgorithm;
 
 #[derive(Debug, Clone)]
 pub struct ServerConfiguration {

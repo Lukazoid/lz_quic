@@ -1,7 +1,6 @@
 use errors::*;
-use version::Version;
-use tag_value_map::TagValueMap;
-use tag::Tag;
+use protocol::Version;
+use handshake::{Tag, TagValueMap};
 use conv::TryFrom;
 use crypto::Proof;
 
@@ -73,9 +72,9 @@ impl ClientHelloMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crypto::proof::Proof;
-    use tag_value_map::TagValueMap;
-    use version;
+    use crypto::Proof;
+    use handshake::TagValueMap;
+    use protocol::version;
 
     #[test]
     fn serializes_to_from_quic_tag_value_map() {

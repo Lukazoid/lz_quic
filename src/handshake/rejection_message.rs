@@ -1,9 +1,6 @@
 use errors::*;
-use crypto::crypto_handshake_message::CryptoHandshakeMessage;
-use crypto::server_configuration::ServerConfiguration;
+use handshake::{ServerConfiguration, HandshakeMessage, Tag, TagValueMap};
 use conv::TryFrom;
-use tag_value_map::TagValueMap;
-use tag::Tag;
 
 #[derive(Debug, Clone)]
 pub struct RejectionMessage {
@@ -17,7 +14,7 @@ impl RejectionMessage {
     pub fn from_tag_value_map(tag_value_map: &TagValueMap) -> Result<Self> {
         let server_configuration = if let Some(server_configuration_handshake_message) =
                                           tag_value_map.get_optional_value(Tag::ServerConfiguration)? {
-            if let CryptoHandshakeMessage::ServerConfiguration(server_configuration) =
+            if let HandshakeMessage::ServerConfiguration(server_configuration) =
                    server_configuration_handshake_message {
                 Some(server_configuration)
             } else {
@@ -44,7 +41,7 @@ impl RejectionMessage {
 
         if let Some(ref server_configuration) = self.server_configuration {
             let server_configuration_message =
-                CryptoHandshakeMessage::ServerConfiguration(server_configuration.clone());
+                HandshakeMessage::ServerConfiguration(server_configuration.clone());
 
             tag_value_map.set_value(Tag::ServerConfiguration,
                                          &server_configuration_message);

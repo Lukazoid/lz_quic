@@ -87,7 +87,7 @@ error_chain! {
             description("invalid key exchange algorithm")
             display("QUIC tag '{}' is an invalid key exchange algorithm", tag)
         }
-        InvalidCryptoHandshakeMessage(tag: Tag) {
+        InvalidHandshakeMessage(tag: Tag) {
             description("invalid crypto handshake message")
             display("QUIC tag '{}' is an invalid crypto handshake message", tag)
         }

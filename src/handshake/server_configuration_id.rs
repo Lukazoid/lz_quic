@@ -1,7 +1,6 @@
 use errors::*;
 use std::io::{Read, Write};
-use writable::Writable;
-use readable::Readable;
+use protocol::{Readable, Writable};
 use num::bigint::{BigInt, Sign};
 use std::fmt::{Display, Formatter, Result as FmtResult};
 
