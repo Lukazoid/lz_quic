@@ -5,6 +5,12 @@ use std::io::{Read, Write};
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct DiversificationNonce([u8; 32]);
 
+impl DiversificationNonce {
+    pub fn bytes(&self) -> &[u8]{
+        &self.0
+    }
+}
+
 impl From<[u8; 32]> for DiversificationNonce {
     fn from(value: [u8; 32]) -> Self {
         DiversificationNonce(value)
