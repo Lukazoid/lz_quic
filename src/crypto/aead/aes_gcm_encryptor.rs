@@ -1,33 +1,51 @@
-use crypto::aead::AeadEncryptor;
+use errors::*;
+use crypto::aead::{self, AeadEncryptor};
 use openssl::symm::{encrypt_aead, Cipher};
 use packets::PacketNumber;
-use crypto::InitializationVector;
+use crypto::{InitializationVector, SecretKey};
 
+#[derive(Debug)]
 pub struct AesGcmEncryptor {
-    key: Vec<u8>,
+    secret_key: SecretKey,
     iv: InitializationVector,
 }
 
 impl AesGcmEncryptor {
-    pub fn new(packet_number: PacketNumber) -> AesGcmEncryptor {
-        unimplemented!()
+    pub fn new(secret_key: SecretKey, iv: InitializationVector) -> AesGcmEncryptor {
+        AesGcmEncryptor {
+            secret_key: secret_key,
+            iv: iv,
+        }
     }
 }
 
+
+
 impl AeadEncryptor for AesGcmEncryptor {
-    fn encrypt(&mut self, associated_data: &[u8], plain_text: &[u8]) -> Vec<u8> {
+    fn encrypt(&mut self,
+               associated_data: &[u8],
+               plain_text: &[u8],
+               packet_number: PacketNumber)
+               -> Result<Vec<u8>> {
+
+        let nonce = aead::make_nonce(&self.iv, packet_number);
+
         let cipher = Cipher::aes_128_gcm();
 
-        let mut tag = vec![0u8; 12];
+        let mut tag = [0u8; 12];
 
         // Using openssl here as it is the only crate which currently supports variable tag widths
-        encrypt_aead(cipher,
-                     &self.key,
-                     Some(self.iv.bytes()),
-                     associated_data,
-                     plain_text,
-                     &mut tag)
-                .expect("there should be no error when performing encryption using aes_128_gcm")
+        let mut encrypted = encrypt_aead(cipher,
+                                         self.secret_key.bytes(),
+                                         Some(&nonce),
+                                         associated_data,
+                                         plain_text,
+                                         &mut tag)
+                .chain_err(|| ErrorKind::UnableToPerformAesGcmEncryption)?;
+
+        encrypted.extend_from_slice(&tag);
+
+        Ok(encrypted)
     }
 }
 

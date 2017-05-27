@@ -4,12 +4,13 @@ use lz_fnv::Fnv128a;
 use std::mem;
 use protocol::Readable;
 use std::io::Cursor;
+use packets::PacketNumber;
 
 #[derive(Debug, Clone, Default)]
 pub struct NullAeadDecryptor {}
 
 impl AeadDecryptor for NullAeadDecryptor {
-    fn decrypt(&mut self, associated_data: &[u8], cipher_text: &[u8]) -> Result<Vec<u8>> {
+    fn decrypt(&mut self, associated_data: &[u8], cipher_text: &[u8], packet_number: PacketNumber) -> Result<Vec<u8>> {
         let hash_length = mem::size_of::<u64>() + mem::size_of::<u32>();
         let cipher_text_length = cipher_text.len();
 

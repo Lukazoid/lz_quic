@@ -357,6 +357,12 @@ error_chain! {
         CertificateChainIsEmpty {
             description("certificate chain is empty")
         }
+        UnableToPerformAesGcmEncryption {
+            description("unable to perform AES GCM encryption")
+        }
+        UnableToPerformAesGcmDecryption {
+            description("unable to perform AES GCM decryption")
+        }
     }
 }
 
