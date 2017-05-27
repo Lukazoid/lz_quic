@@ -13,6 +13,12 @@ impl ServerConfigurationId {
     }
 }
 
+impl From<[u8; 16]> for ServerConfigurationId {
+    fn from(value: [u8; 16]) -> Self{
+        ServerConfigurationId(value)
+    }
+}
+
 impl Display for ServerConfigurationId {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         self.to_big_int().fmt(f)

@@ -155,3 +155,58 @@ impl KeyDeriver for RingHkdfKeyDeriver {
     }
 }
 
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use protocol::{ConnectionId, Perspective, version};
+    use rand::{StdRng, SeedableRng};
+    use ring::digest::SHA256;
+    use crypto::{SharedKey, DiversificationNonce, Proof};
+    use crypto::certificates::Certificate;
+    use crypto::key_derivation::KeyDeriver;
+    use crypto::key_exchange::KeyExchangeAlgorithm;
+    use handshake::{ClientHelloMessage, ServerConfiguration, ServerConfigurationId};
+
+    #[test]
+    pub fn derive_keys_derives_correct_keys_for_each_side() {
+        let mut rng = StdRng::from_seed(&[4,2,98,231]);
+        let connection_id = ConnectionId::generate(&mut rng);
+
+        let shared_key = SharedKey::from(vec![47, 223, 13]);
+
+        let nonce = &[178, 82];
+
+        let client_hello_message = ClientHelloMessage {
+            server_name: Some("localhost".to_owned()),
+            source_address_token: Some(vec![218, 222, 106, 114, 56, 12, 239, 92]),
+            proof_demands: vec![Proof::X509],
+            common_certificate_sets: vec![85, 92, 54, 198],
+            cached_certificates: vec![162, 78, 217],
+            version: version::DRAFT_IETF_01,
+            leaf_certificate: 65462344,
+        };
+
+        let server_configuration = ServerConfiguration {
+            server_configuration_id: ServerConfigurationId::from([47, 178, 205, 244, 98, 47, 195, 231, 65, 252, 33, 230, 177, 39, 87, 77]),
+            key_exchange_algorithms: vec![KeyExchangeAlgorithm::Curve25519]
+        };
+
+        let leaf_certificate = Certificate::from(vec![65, 12, 645]);
+
+        let diversification_nonce = DiversificationNonce::from([172, 186, 73, 172, 74, 84, 241, 235, 203, 155, 78, 198, 196, 159, 19, 200, 51, 130, 151, 228, 67, 78, 183, 138,232, 238, 38, 122, 192, 228, 87, 143]);
+       
+        let client_ring_hkdf_key_deriver = RingHkdfKeyDeriver::new(false, Perspective::Client, connection_id, &SHA256, 16);
+        let server_ring_hkdf_key_deriver = RingHkdfKeyDeriver::new(false, Perspective::Server, connection_id, &SHA256, 16);
+
+        let client_keys = client_ring_hkdf_key_deriver.derive_keys(&shared_key, nonce, &client_hello_message, &server_configuration, &leaf_certificate, Some(&diversification_nonce)).expect("the keys should be derived");
+
+        let server_keys = server_ring_hkdf_key_deriver.derive_keys(&shared_key, nonce, &client_hello_message, &server_configuration, &leaf_certificate, Some(&diversification_nonce)).expect("the keys should be derived");
+
+        assert_eq!(client_keys.local_iv, server_keys.remote_iv);
+        assert_eq!(client_keys.local_key, server_keys.remote_key);
+        assert_eq!(client_keys.remote_iv, server_keys.local_iv);
+        assert_eq!(client_keys.remote_key, server_keys.local_key);
+    }
+}
