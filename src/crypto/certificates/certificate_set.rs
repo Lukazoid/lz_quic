@@ -60,7 +60,7 @@ mod tests {
         let certificate_set = CertificateSet::from(vec![]);
 
         // Act
-        let index = certificate_set.index_of(&Certificate::new(vec![6, 3, 1, 3]));
+        let index = certificate_set.index_of(&Certificate::from(vec![6, 3, 1, 3]));
 
         // Assert
         assert_eq!(index, None);
@@ -69,7 +69,7 @@ mod tests {
     #[test]
     fn index_of_existent_certificate_returns_index() {
         // Arrange
-        let certificate = Certificate::new(vec![6, 3, 1, 3]);
+        let certificate = Certificate::from(vec![6, 3, 1, 3]);
         let certificate_set = CertificateSet::from(vec![certificate.clone()]);
 
         // Act
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn certificate_at_index_returns_certificate() {
         // Arrange
-        let certificate = Certificate::new(vec![6, 3, 1, 3]);
+        let certificate = Certificate::from(vec![6, 3, 1, 3]);
         let certificate_set = CertificateSet::from(vec![certificate.clone()]);
 
         // Act

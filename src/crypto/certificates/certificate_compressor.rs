@@ -512,7 +512,7 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
         decompressed_reader.read_exact(&mut certificate_bytes)
             .chain_err(|| ErrorKind::UnableToReadCertificateBytes)?;
 
-        certificates.push(Certificate::new(certificate_bytes));
+        certificates.push(Certificate::from(certificate_bytes));
     }
 
     Ok(certificates)
@@ -609,7 +609,7 @@ mod tests {
     #[test]
     fn compress_certificate_chain_does_not_compress_common_certificates() {
         // Arrange
-        let common_certificate = Certificate::new(vec![1, 2, 3]);
+        let common_certificate = Certificate::from(vec![1, 2, 3]);
         let common_certificate_set = CertificateSet::from(vec![common_certificate.clone()]);
 
         let mut known_common_certificate_set_hashes = HashSet::new();
@@ -636,7 +636,7 @@ mod tests {
     #[test]
     fn decompress_of_compressed_certificate_chain_decompresses_common_certificates() {
         // Arrange
-        let common_certificate = Certificate::new(vec![1, 2, 3]);
+        let common_certificate = Certificate::from(vec![1, 2, 3]);
         let common_certificate_set = CertificateSet::from(vec![common_certificate.clone()]);
 
         let mut known_common_certificate_set_hashes = HashSet::new();
@@ -664,7 +664,7 @@ mod tests {
     #[test]
     fn decompress_of_compressed_certificate_chain_decompresses_unknown_certificates() {
         // Arrange
-        let unknown_certificate = Certificate::new(vec![1, 2, 3]);
+        let unknown_certificate = Certificate::from(vec![1, 2, 3]);
 
         let certificate_compressor = CertificateCompressor::new(Vec::new());
 
@@ -688,7 +688,7 @@ mod tests {
     #[test]
     fn compress_certificate_chain_compresses_unknown_certificates() {
         // Arrange
-        let unknown_certificate = Certificate::new(vec![1, 2, 3]);
+        let unknown_certificate = Certificate::from(vec![1, 2, 3]);
 
         let certificate_compressor = CertificateCompressor::new(Vec::new());
 

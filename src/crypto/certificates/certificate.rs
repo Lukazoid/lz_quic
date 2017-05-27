@@ -6,10 +6,6 @@ pub struct Certificate {
 }
 
 impl Certificate {
-    pub fn new(data: Vec<u8>) -> Self {
-        Self { data: data }
-    }
-
     pub fn bytes(&self) -> &[u8] {
         &self.data
     }
@@ -18,5 +14,11 @@ impl Certificate {
 impl Hash for Certificate {
     fn hash<H: Hasher>(&self, state: &mut H) {
         state.write(&self.data);
+    }
+}
+
+impl From<Vec<u8>> for Certificate {
+    fn from(value: Vec<u8>) -> Self {        
+        Self { data: value }
     }
 }
