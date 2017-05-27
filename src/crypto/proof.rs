@@ -1,9 +1,8 @@
 use errors::*;
 use conv::TryFrom;
 use std::io::{Read, Write};
-use tag::Tag;
-use readable::Readable;
-use writable::Writable;
+use handshake::Tag;
+use protocol::{Readable, Writable};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Proof {

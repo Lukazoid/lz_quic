@@ -13,6 +13,9 @@ pub use self::diversification_nonce::DiversificationNonce;
 mod secret_key;
 pub use self::secret_key::SecretKey;
 
+mod proof;
+pub use self::proof::Proof;
+
 pub mod aead;
 pub mod certificates;
 
