@@ -1,11 +1,11 @@
 use byteorder::WriteBytesExt;
-use primitives::{U24, U48, UF16, ByteOrderPrimitives};
+use primitives::{ByteOrderPrimitives, U24, U48, UF16};
 use std::io::Result;
 
 pub trait WriteQuicPrimitives: WriteBytesExt {
     fn write_u24<T: ByteOrderPrimitives>(&mut self, n: U24) -> Result<()> {
         let mut buf = [0; 3];
-        T::write_u24(&mut buf, n);
+        <T as ByteOrderPrimitives>::write_u24(&mut buf, n);
         self.write_all(&buf)
     }
 

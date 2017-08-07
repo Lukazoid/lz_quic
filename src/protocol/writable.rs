@@ -1,6 +1,6 @@
 use errors::*;
 use std::io::Write;
-use byteorder::{WriteBytesExt, LittleEndian};
+use byteorder::{LittleEndian, WriteBytesExt};
 use primitives::{U24, U48, WriteQuicPrimitives};
 
 pub trait Writable {
@@ -55,8 +55,7 @@ impl Writable for u16 {
 
 impl Writable for U24 {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        writer
-            .write_u24::<LittleEndian>(*self)
+        WriteQuicPrimitives::write_u24::<LittleEndian>(writer, *self)
             .chain_err(|| ErrorKind::UnableToWriteU24(*self))
     }
 }
@@ -104,4 +103,3 @@ impl<'a, T: Writable + 'a> Writable for &'a T {
         (*self).write(writer)
     }
 }
-

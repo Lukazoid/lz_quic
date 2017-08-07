@@ -7,7 +7,7 @@ pub trait ReadQuicPrimitives: ReadBytesExt {
         let mut buf = [0; 3];
         self.read_exact(&mut buf)?;
 
-        Ok(T::read_u24(&buf))
+        Ok(<T as ByteOrderPrimitives>::read_u24(&buf))
     }
 
     fn read_u48<T: ByteOrderPrimitives>(&mut self) -> Result<U48> {

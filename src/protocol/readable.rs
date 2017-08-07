@@ -52,7 +52,7 @@ impl Readable for U24 {
         fn read<R: Read>(reader: &mut R) -> Result<Self>
         where Self: Sized
     {
-        reader.read_u24::<LittleEndian>().chain_err(|| ErrorKind::UnableToReadU24)
+        ReadQuicPrimitives::read_u24::<LittleEndian>(reader).chain_err(|| ErrorKind::UnableToReadU24)
     }
 }
 
