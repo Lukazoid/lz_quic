@@ -24,6 +24,7 @@ extern crate untrusted;
 extern crate smallvec;
 extern crate time;
 #[cfg(test)] extern crate webpki_roots;
+extern crate extprim;
 
 mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));

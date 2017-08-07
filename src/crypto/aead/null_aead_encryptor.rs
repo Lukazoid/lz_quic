@@ -1,16 +1,17 @@
 use errors::*;
 use crypto::aead::AeadEncryptor;
-use lz_fnv::Fnv128a;
+use lz_fnv::{Fnv1a, FnvHasher};
 use std::mem;
 use protocol::Writable;
 use packets::PacketNumber;
+use extprim::u128::u128;
 
 #[derive(Debug, Clone, Default)]
 pub struct NullAeadEncryptor {}
 
 impl AeadEncryptor for NullAeadEncryptor {
     fn encrypt(&mut self, associated_data: &[u8], plain_text: &[u8], packet_number: PacketNumber) -> Result<Vec<u8>> {
-        let mut hasher = Fnv128a::default();
+        let mut hasher = Fnv1a::<u128>::default();
 
         hasher.write(associated_data);
         hasher.write(plain_text);

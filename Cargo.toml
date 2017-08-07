@@ -20,13 +20,14 @@ fnv = "1.0.5"
 flate2 = { git = "https://github.com/Lukazoid/flate2-rs.git", branch = "set-dictionary", features = ["zlib"] }
 itertools = "0.6.0"
 lazy_static = "0.2.6"
-lz_fnv = { git = "https://github.com/Lukazoid/lz_fnv" }
+lz_fnv = { version = "0.1.1", features = ["u128"] }
 openssl = "0.9.11"
 ring = "0.9.7"
 webpki = "0.12.1"
 untrusted = "0.5.0"
 smallvec = "0.3.3"
 time = "0.1.37"
+extprim = "1.4.0"
 
 [dev-dependencies]
 matches = "0.1.4"

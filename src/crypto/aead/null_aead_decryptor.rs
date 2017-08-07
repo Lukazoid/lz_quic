@@ -1,10 +1,11 @@
 use errors::*;
 use crypto::aead::AeadDecryptor;
-use lz_fnv::Fnv128a;
+use lz_fnv::{Fnv1a, FnvHasher};
 use std::mem;
 use protocol::Readable;
 use std::io::Cursor;
 use packets::PacketNumber;
+use extprim::u128::u128;
 
 #[derive(Debug, Clone, Default)]
 pub struct NullAeadDecryptor {}
@@ -18,7 +19,7 @@ impl AeadDecryptor for NullAeadDecryptor {
             bail!(ErrorKind::CipherTextTooShort(cipher_text_length, hash_length));
         }
 
-        let mut hasher = Fnv128a::default();
+        let mut hasher = Fnv1a::<u128>::default();
 
         let plain_text = &cipher_text[hash_length..];
 
