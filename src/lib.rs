@@ -1,4 +1,5 @@
 #![recursion_limit="1024"]
+#![cfg_attr(feature = "unstable", feature(test))]
 
 extern crate byteorder;
 extern crate tokio_core;
@@ -25,6 +26,9 @@ extern crate smallvec;
 extern crate time;
 #[cfg(test)] extern crate webpki_roots;
 extern crate extprim;
+
+#[cfg(all(feature = "unstable", test))]
+extern crate test;
 
 mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));

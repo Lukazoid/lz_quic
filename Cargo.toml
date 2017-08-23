@@ -35,3 +35,5 @@ webpki-roots = "0.10.0"
 
 [build-dependencies]
 vergen = "0.1.1"
+[features]
+unstable = []

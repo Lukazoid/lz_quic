@@ -171,6 +171,26 @@ impl PartialOrd for Tag {
     }
 }
 
+#[cfg(all(feature = "unstable", test))]
+mod bench {
+    use super::*;
+    use test::Bencher;
+
+    #[bench]
+    fn tag_from_bytes(b: &mut Bencher) {
+        b.iter(|| {
+            let _ = Tag::from_bytes(b"KEXS");
+        });
+    }
+
+    #[bench]
+    fn bytes_from_tag(b: &mut Bencher) {
+        b.iter(|| {
+            let _ = Tag::KeyExchangeAlgorithm.bytes();
+        });
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
