@@ -122,7 +122,7 @@ build_lookups!{
     ServerConfiguration => b"SCFG",
     ServerNonce => b"SNO\0",
     ServerConfigurationTimeToLive => b"STTL",
-    CertificateChain => b"ff54",
+    CertificateChain => b"\xff\x54\x52\x43",
     ProofOfAuthenticity => b"PROF",
     ServerConfigurationId => b"SCID",
     KeyExchangeAlgorithm => b"KEXS",
