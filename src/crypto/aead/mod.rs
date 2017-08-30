@@ -28,3 +28,8 @@ pub use self::aes_gcm_encryptor::AesGcmEncryptor;
 
 mod aes_gcm_decryptor;
 pub use self::aes_gcm_decryptor::AesGcmDecryptor;
+
+mod aead_algorithm;
+pub use self::aead_algorithm::AeadAlgorithm;
+
+pub const AEAD_ALGORITHM_COUNT: usize = 2;
