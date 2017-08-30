@@ -1,5 +1,4 @@
 use errors::*;
-use conv::TryFrom;
 use std::io::{Read, Write};
 use handshake::Tag;
 use protocol::{Readable, Writable};
@@ -8,6 +7,13 @@ use protocol::{Readable, Writable};
 pub enum KeyExchangeAlgorithm {
     Curve25519,
     P256,
+    Unsupported(Tag)
+}
+
+impl KeyExchangeAlgorithm {
+    pub fn is_supported(self) -> bool {
+        !matches!(self, KeyExchangeAlgorithm::Unsupported(_))
+    }
 }
 
 impl Writable for KeyExchangeAlgorithm {
@@ -22,7 +28,7 @@ impl Readable for KeyExchangeAlgorithm {
     fn read<R: Read>(reader: &mut R) -> Result<KeyExchangeAlgorithm> {
         let tag = Tag::read(reader)?;
 
-        KeyExchangeAlgorithm::try_from(tag)
+        Ok(KeyExchangeAlgorithm::from(tag))
     }
 }
 
@@ -31,18 +37,17 @@ impl From<KeyExchangeAlgorithm> for Tag {
         match value {
             KeyExchangeAlgorithm::Curve25519 => Tag::Curve25519,
             KeyExchangeAlgorithm::P256 => Tag::P256,
+            KeyExchangeAlgorithm::Unsupported(tag) => tag,
         }
     }
 }
 
-impl TryFrom<Tag> for KeyExchangeAlgorithm {
-    type Err = Error;
-
-    fn try_from(value: Tag) -> Result<Self> {
-        Ok(match value {
+impl From<Tag> for KeyExchangeAlgorithm {
+    fn from(value: Tag) -> Self {
+        match value {
             Tag::Curve25519 => KeyExchangeAlgorithm::Curve25519,
             Tag::P256 => KeyExchangeAlgorithm::P256,
-            tag @ _ => bail!(ErrorKind::InvalidKeyExchangeAlgorithm(tag)),
-        })
+            tag @ _ => KeyExchangeAlgorithm::Unsupported(tag),
+        }
     }
 }

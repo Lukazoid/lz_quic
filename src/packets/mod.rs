@@ -10,6 +10,7 @@ mod inbound_packet;
 pub use self::inbound_packet::InboundPacket;
 
 mod packet;
+pub use self::packet::PacketContent;
 pub use self::packet::Packet;
 
 mod outbound_packet;
@@ -20,3 +21,12 @@ pub use self::packet_codec::PacketCodec;
 
 mod packet_packer;
 pub use self::packet_packer::PacketPacker;
+
+mod inbound_packet_store;
+pub use self::inbound_packet_store::InboundPacketStore;
+
+mod packet_history;
+pub use self::packet_history::PacketHistory;
+
+mod packet_dispatcher;
+pub use self::packet_dispatcher::PacketDispatcher;

@@ -2,7 +2,7 @@ use errors::*;
 use protocol::StreamId;
 use frames::StreamOffset;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StreamFrame {
     pub finished: bool,
     pub offset: StreamOffset,

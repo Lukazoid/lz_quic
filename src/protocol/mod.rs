@@ -19,3 +19,6 @@ pub use self::perspective::Perspective;
 mod stream_id;
 pub use self::stream_id::StreamId;
 pub use self::stream_id::StreamIdLength;
+
+mod encryption_level;
+pub use self::encryption_level::EncryptionLevel;

@@ -5,7 +5,7 @@ pub struct ServerId {
 }
 
 impl ServerId {
-    fn new(host: String, port: u16) -> ServerId {
+    pub fn new(host: String, port: u16) -> ServerId {
         ServerId {
             host: host,
             port: port,

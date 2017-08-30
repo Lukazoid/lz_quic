@@ -1,6 +1,6 @@
 use errors::*;
-use crypto::certificates::{self, Certificate, CertificateSet};
-use fnv::FnvHasher;
+use crypto::certificates::{Certificate, CertificateSet, CertificateChain};
+use lz_fnv::Fnv1a;
 use std::hash::{Hash, Hasher};
 use std::collections::{HashSet, HashMap};
 use flate2::{Compress, Compression, Decompress, Flush, Status};
@@ -8,10 +8,6 @@ use std::io::{Cursor, Read, Write};
 use itertools::Itertools;
 use protocol::{Readable, Writable};
 use utils::OptionsSliceExt;
-
-lazy_static! {
-    pub static ref CERTIFICATE_COMPRESSOR: CertificateCompressor = CertificateCompressor::new(certificates::build_common_certificate_sets());
-}
 
 #[derive(Debug, Clone)]
 pub struct CertificateCompressor {
@@ -36,26 +32,26 @@ impl Writable for CompressedCertificateEntry {
         match *self {
             CompressedCertificateEntry::EndOfList => {
                 0u8.write(writer)
-                    .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?
+                    .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntryType)?
             }
             CompressedCertificateEntry::Compressed => {
                 1u8.write(writer)
-                    .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?
+                    .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntryType)?
             }
             CompressedCertificateEntry::Cached { hash } => {
                 2u8.write(writer)
-                    .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?;
+                    .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntryType)?;
 
                 hash.write(writer)
-                    .chain_err(|| ErrorKind::UnableToWriteCachedCertificateHash)?;
+                    .chain_err(|| ErrorKind::FailedToWriteCachedCertificateHash)?;
             }
             CompressedCertificateEntry::Common { set_hash, index } => {
                 3u8.write(writer)
-                    .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntryType)?;
+                    .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntryType)?;
 
                 set_hash.write(writer)
-                    .chain_err(|| ErrorKind::UnableToWriteCommonCertificateSetHash)?;
-                index.write(writer).chain_err(|| ErrorKind::UnableToWriteCommonCertificateIndex)?;
+                    .chain_err(|| ErrorKind::FailedToWriteCommonCertificateSetHash)?;
+                index.write(writer).chain_err(|| ErrorKind::FailedToWriteCommonCertificateIndex)?;
             }
         };
 
@@ -66,22 +62,22 @@ impl Writable for CompressedCertificateEntry {
 impl Readable for CompressedCertificateEntry {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
         let entry_type = u8::read(reader)
-            .chain_err(|| ErrorKind::UnableToReadCompressedCertificateEntryType)?;
+            .chain_err(|| ErrorKind::FailedToReadCompressedCertificateEntryType)?;
 
         let intermediate_entry = match entry_type {
             0 => CompressedCertificateEntry::EndOfList,
             1 => CompressedCertificateEntry::Compressed,
             2 => {
                 let hash = u64::read(reader)
-                    .chain_err(|| ErrorKind::UnableToReadCachedCertificateHash)?;
+                    .chain_err(|| ErrorKind::FailedToReadCachedCertificateHash)?;
 
                 CompressedCertificateEntry::Cached { hash: hash }
             }
             3 => {
                 let set_hash = u64::read(reader)
-                    .chain_err(|| ErrorKind::UnableToReadCommonCertificateSetHash)?;
+                    .chain_err(|| ErrorKind::FailedToReadCommonCertificateSetHash)?;
                 let index = u32::read(reader)
-                    .chain_err(|| ErrorKind::UnableToReadCommonCertificateIndex)?;
+                    .chain_err(|| ErrorKind::FailedToReadCommonCertificateIndex)?;
 
                 CompressedCertificateEntry::Common {
                     set_hash: set_hash,
@@ -249,7 +245,7 @@ impl CertificateCompressor {
                 let cached_certificate = cached_certificates.get(&hash)
                     .cloned()
                     .ok_or_else(|| {
-                        Error::from(ErrorKind::UnableToFindCachedCertificateWithHash(hash))
+                        Error::from(ErrorKind::FailedToFindCachedCertificateWithHash(hash))
                     });
 
                 Some(cached_certificate)
@@ -258,12 +254,12 @@ impl CertificateCompressor {
                 let index = index as usize;
 
                 let common_certificate = self.common_certificate_sets.get(&set_hash)
-                        .ok_or_else(|| Error::from(ErrorKind::UnableToFindCommonCertificateSetWithHash(set_hash)))
+                        .ok_or_else(|| Error::from(ErrorKind::FailedToFindCommonCertificateSetWithHash(set_hash)))
                         .and_then(|common_certificate_set|
                         {
                             common_certificate_set.certificate(index)
                                 .cloned()
-                                .ok_or_else(||Error::from(ErrorKind::UnableToFindCommonCertificateWithIndexInSet(index, set_hash)))
+                                .ok_or_else(||Error::from(ErrorKind::FailedToFindCommonCertificateWithIndexInSet(index, set_hash)))
                         });
 
                 Some(common_certificate)
@@ -278,13 +274,13 @@ impl CertificateCompressor {
     pub fn decompress_certificate_chain<R: Read>(&self,
                                                  cached_certificates: &HashMap<u64, Certificate>,
                                                  reader: &mut R)
-                                                 -> Result<Vec<Certificate>> {
+                                                 -> Result<CertificateChain> {
 
         let compressed_certificate_entries = deserialize_entries(reader)?;
 
         // TODO LH A better way to detect we are at the end of the reader
         let uncompressed_length = u32::read(reader)
-            .chain_err(|| ErrorKind::UnableToReadCompressedCertificatesUncompressedLength)
+            .chain_err(|| ErrorKind::FailedToReadCompressedCertificatesUncompressedLength)
             .unwrap_or(0) as usize;
 
         // Check no clients attempt to allocate a too large buffer
@@ -325,7 +321,7 @@ impl CertificateCompressor {
             }
         }
 
-        Ok(certificates)
+        Ok(certificates.into())
     }
 
     pub fn compress_certificate_chain<'a, C: IntoIterator<Item = &'a Certificate>, W: Write>
@@ -365,7 +361,7 @@ impl CertificateCompressor {
         if uncompressed_length > 0 {
             (uncompressed_length as u32)
                 .write(writer)
-                .chain_err(|| ErrorKind::UnableToWriteCompressedCertificatesUncompressedLength(uncompressed_length))?;
+                .chain_err(|| ErrorKind::FailedToWriteCompressedCertificatesUncompressedLength(uncompressed_length))?;
 
             let certificate_compressions_by_known = certificate_compression_entries.iter()
                 .group_by(|&&(_, ref compressed_entry)| match *compressed_entry {
@@ -396,10 +392,14 @@ impl CertificateCompressor {
                 .unwrap_or(&[]);
 
             compress_certificates(known_certificates, certificates_to_compress, writer)
-                .chain_err(|| ErrorKind::UnableToWriteCompressedCertificates)?;
+                .chain_err(|| ErrorKind::FailedToWriteCompressedCertificates)?;
         }
 
         Ok(())
+    }
+
+    pub fn common_certificate_set_hashes(&self) -> Vec<u64> {
+        self.common_certificate_sets.keys().map(|x|*x).collect()
     }
 }
 
@@ -407,7 +407,7 @@ fn match_cached_certificate(certificate: &Certificate,
                             cached_certificate_hashes: &HashSet<u64>)
                             -> Option<CompressedCertificateEntry> {
 
-    let mut hasher = FnvHasher::default();
+    let mut hasher = Fnv1a::<u64>::default();
     certificate.hash(&mut hasher);
     let certificate_hash = hasher.finish();
 
@@ -442,11 +442,11 @@ fn serialize_entries<'a, I: IntoIterator<Item = &'a CompressedCertificateEntry>,
      -> Result<()> {
     for compressed_entry in compressed_certificate_entries {
         compressed_entry.write(writer)
-            .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntry)?;
+            .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntry)?;
     }
 
     CompressedCertificateEntry::EndOfList.write(writer)
-        .chain_err(|| ErrorKind::UnableToWriteCompressedCertificateEntry)?;
+        .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntry)?;
 
     Ok(())
 }
@@ -455,7 +455,7 @@ fn deserialize_entries<R: Read>(reader: &mut R) -> Result<Vec<CompressedCertific
     let mut compressed_certificate_entries = Vec::new();
     loop {
         let compressed_certificate_entry = CompressedCertificateEntry::read(reader)
-            .chain_err(|| ErrorKind::UnableToReadCompressedCertificateEntry)?;
+            .chain_err(|| ErrorKind::FailedToReadCompressedCertificateEntry)?;
         if let CompressedCertificateEntry::EndOfList = compressed_certificate_entry {
             break;
         }
@@ -476,10 +476,10 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
 
     let mut compressed = Vec::new();
     reader.read_to_end(&mut compressed)
-        .chain_err(|| ErrorKind::UnableToReadCompressedCertificates)?;
+        .chain_err(|| ErrorKind::FailedToReadCompressedCertificates)?;
 
     let decompress_result = decompress.decompress_vec(&compressed, &mut decompressed, Flush::Finish)
-        .chain_err(|| ErrorKind::UnableToDecompressCompressedCertificates)?;
+        .chain_err(|| ErrorKind::FailedToDecompressCompressedCertificates)?;
 
     if let Status::NeedDictionary { .. } = decompress_result {
         assert_eq!(decompressed.len(), 0);
@@ -492,7 +492,7 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
         decompress.decompress_vec(&compressed[processed_in..],
                             &mut decompressed,
                             Flush::Finish)
-            .chain_err(|| ErrorKind::UnableToDecompressCompressedCertificates)?;
+            .chain_err(|| ErrorKind::FailedToDecompressCompressedCertificates)?;
     }
 
     let decompressed_length = decompressed.len();
@@ -503,14 +503,14 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
     while (decompressed_reader.position() as usize) < decompressed_length {
         let uncompressed_length = u32::read(&mut decompressed_reader)
             .chain_err(|| {
-                ErrorKind::UnableToReadCompressedCertificateUncompressedLength
+                ErrorKind::FailedToReadCompressedCertificateUncompressedLength
             })? as usize;
 
         let mut certificate_bytes = Vec::with_capacity(uncompressed_length);
         certificate_bytes.resize(uncompressed_length, 0);
 
         decompressed_reader.read_exact(&mut certificate_bytes)
-            .chain_err(|| ErrorKind::UnableToReadCertificateBytes)?;
+            .chain_err(|| ErrorKind::FailedToReadCertificateBytes)?;
 
         certificates.push(Certificate::from(certificate_bytes));
     }
@@ -546,7 +546,7 @@ fn compress_chunk<W: Write>(compress: &mut Compress,
         chunk = &chunk[processed_in..];
 
         writer.write_all(buffer)
-            .chain_err(|| ErrorKind::UnableToWriteCompressedChunk)?;
+            .chain_err(|| ErrorKind::FailedToWriteCompressedChunk)?;
 
         buffer.clear();
     }
@@ -578,11 +578,11 @@ fn compress_certificates<W: Write>(known_certificates: &[&Certificate],
             .write(&mut &mut length_bytes[..])
             .and_then(|_| compress_chunk(&mut compress, &length_bytes, &mut buffer, writer))
             .chain_err(|| {
-                ErrorKind::UnableToWriteCompressedCertificateUncompressedLength(uncompressed_length)
+                ErrorKind::FailedToWriteCompressedCertificateUncompressedLength(uncompressed_length)
             })?;
 
         compress_chunk(&mut compress, certificate_bytes, &mut buffer, writer)
-            .chain_err(|| ErrorKind::UnableToWriteCertificateBytes)?;
+            .chain_err(|| ErrorKind::FailedToWriteCertificateBytes)?;
     }
 
     // Loop while there are still output bytes to be written
@@ -592,7 +592,7 @@ fn compress_certificates<W: Write>(known_certificates: &[&Certificate],
             break;
         }
 
-        writer.write_all(&buffer).chain_err(|| ErrorKind::UnableToWriteCompressedChunk)?;
+        writer.write_all(&buffer).chain_err(|| ErrorKind::FailedToWriteCompressedChunk)?;
         buffer.clear();
     }
 
@@ -658,7 +658,7 @@ mod tests {
                                         &mut Cursor::new(compressed_bytes));
 
         // Assert
-        assert_eq!(decompress_result.unwrap(), input);
+        assert_eq!(decompress_result.unwrap().certificates(), input);
     }
 
     #[test]
@@ -682,7 +682,7 @@ mod tests {
                                         &mut Cursor::new(compressed_bytes));
 
         // Assert
-        assert_eq!(decompress_result.unwrap(), input);
+        assert_eq!(decompress_result.unwrap().certificates(), input);
     }
 
     #[test]

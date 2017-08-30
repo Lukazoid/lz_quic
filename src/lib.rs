@@ -9,7 +9,6 @@ extern crate chrono;
 extern crate conv;
 extern crate hex;
 extern crate num;
-extern crate fnv;
 extern crate lz_fnv;
 extern crate flate2;
 extern crate itertools;
@@ -21,11 +20,13 @@ extern crate openssl;
 extern crate ring;
 extern crate webpki;
 extern crate untrusted;
-#[cfg(test)] #[macro_use] extern crate matches;
+#[macro_use] extern crate matches;
 extern crate smallvec;
 extern crate time;
 #[cfg(test)] extern crate webpki_roots;
+extern crate lz_diet;
 extern crate extprim;
+extern crate binary_tree;
 
 #[cfg(all(feature = "unstable", test))]
 extern crate test;
@@ -34,8 +35,12 @@ mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
 
-pub mod errors;
+mod errors;
+pub use self::errors::{Error, Result, ErrorKind};
+
 mod protocol;
+pub use self::protocol::ServerId;
+
 mod primitives;
 mod utils;
 mod handshake;

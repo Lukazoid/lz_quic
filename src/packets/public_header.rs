@@ -5,7 +5,7 @@ use packets::{PartialPacketNumber, PartialPacketNumberLength};
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct PublicHeader {
     pub reset_flag: bool,
     pub connection_id: Option<ConnectionId>,
@@ -27,7 +27,7 @@ bitflags!(
 );
 impl Readable for PublicHeader {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
-        let flags = u8::read(reader).chain_err(|| ErrorKind::UnableToReadPublicPacketHeaderFlags)?;
+        let flags = u8::read(reader).chain_err(|| ErrorKind::FailedToReadPublicPacketHeaderFlags)?;
         let flags = PublicHeaderBitFlags::from_bits_truncate(flags);
 
         let reset_flag = flags.intersects(PUBLIC_FLAG_VERSION);
@@ -95,7 +95,7 @@ impl Writable for PublicHeader {
             PartialPacketNumber::SixBytes(_) => SIX_BYTE_PACKET_NUMBER,
         };
 
-        flags.bits().write(writer).chain_err(|| ErrorKind::UnableToWritePublicPacketHeaderFlags)?;
+        flags.bits().write(writer).chain_err(|| ErrorKind::FailedToWritePublicPacketHeaderFlags)?;
 
         if let Some(connection_id) = self.connection_id {
             connection_id.write(writer)?;

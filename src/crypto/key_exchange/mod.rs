@@ -1,6 +1,8 @@
 mod key_exchange_algorithm;
 pub use self::key_exchange_algorithm::KeyExchangeAlgorithm;
 
+pub const KEY_EXCHANGE_ALGORITHM_COUNT: usize = 2;
+
 mod key_exchange;
 pub use self::key_exchange::KeyExchange;
 

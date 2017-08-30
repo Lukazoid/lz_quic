@@ -5,7 +5,7 @@ use frames::{StreamFrame, AckFrame};
 use std::io::Write;
 use byteorder::WriteBytesExt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Frame {
     Stream(StreamFrame),
     Ack(AckFrame),
@@ -45,8 +45,8 @@ impl Writable for Frame {
                 let stream_id_length = stream_frame
                     .stream_id
                     .write(&mut payload)
-                    .chain_err(|| ErrorKind::UnableToWriteStreamId(stream_frame.stream_id))
-                    .chain_err(|| ErrorKind::UnableToWriteStreamFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteStreamId(stream_frame.stream_id))
+                    .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
 
                 type_flags |= match stream_id_length {
                     StreamIdLength::OneByte => 0b00,
@@ -58,8 +58,8 @@ impl Writable for Frame {
                 let offset_header_length = stream_frame
                     .offset
                     .write(&mut payload)
-                    .chain_err(|| ErrorKind::UnableToWriteStreamOffset(stream_frame.offset))
-                    .chain_err(|| ErrorKind::UnableToWriteStreamFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteStreamOffset(stream_frame.offset))
+                    .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
 
                 type_flags |= match offset_header_length {
                     StreamOffsetLength::ZeroBytes => 0,
@@ -74,65 +74,65 @@ impl Writable for Frame {
 
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteStreamFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
 
                 writer
                     .write_all(&payload)
-                    .chain_err(|| ErrorKind::UnableToWriteStreamFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
             }
             &Frame::Ack(ref ack_frame) => {
                 let type_flags = ACK.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteAckFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteAckFrame)?;
             }
             &Frame::Padding => {
                 let type_flags = FrameTypeFlags::empty().bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWritePaddingFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWritePaddingFrame)?;
             }
             &Frame::ResetStream => {
                 let type_flags = RESET_STREAM.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteResetStreamFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteResetStreamFrame)?;
             }
             &Frame::ConnectionClose => {
                 let type_flags = CONNECTION_CLOSE.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteConnectionCloseFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteConnectionCloseFrame)?;
             }
             &Frame::GoAway => {
                 let type_flags = GO_AWAY.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteGoAwayFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteGoAwayFrame)?;
             }
             &Frame::WindowUpdate => {
                 let type_flags = WINDOW_UPDATE.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteWindowUpdateFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteWindowUpdateFrame)?;
             }
             &Frame::Blocked => {
                 let type_flags = BLOCKED.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteBlockedFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteBlockedFrame)?;
             }
             &Frame::StopWaiting => {
                 let type_flags = STOP_WAITING.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWriteStopWaitingFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWriteStopWaitingFrame)?;
             }
             &Frame::Ping => {
                 let type_flags = PING.bits();
                 writer
                     .write_u8(type_flags)
-                    .chain_err(|| ErrorKind::UnableToWritePingFrame)?;
+                    .chain_err(|| ErrorKind::FailedToWritePingFrame)?;
             }
         }
         Ok(())

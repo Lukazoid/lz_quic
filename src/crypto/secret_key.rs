@@ -1,7 +1,8 @@
+use smallvec::SmallVec;
 use std::fmt::{Result as FmtResult, Formatter, Debug};
 
 #[derive(PartialEq, Eq, Hash)]
-pub struct SecretKey(Vec<u8>);
+pub struct SecretKey(SmallVec<[u8;16]>);
 
 impl Debug for SecretKey {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
@@ -10,20 +11,18 @@ impl Debug for SecretKey {
 }
 
 impl SecretKey {
+    pub fn from_iterator<I: IntoIterator<Item=u8>>(value: I) -> Self {
+        SecretKey(value.into_iter().collect())
+    }
+
     pub fn bytes(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<Vec<u8>> for SecretKey {
-    fn from(value: Vec<u8>) -> Self {
-        SecretKey(value)
-    }
-}
-
 impl<'a> From<&'a [u8]> for SecretKey {
     fn from(value: &'a [u8]) -> Self {
-        value.to_vec().into()
+        SecretKey(value.into())
     }
 }
 

@@ -11,65 +11,65 @@ error_chain! {
 
     }
     errors {
-        UnableToBindToUdpSocket(addr: SocketAddr) {
-            description("unable to bind to UDP socket")
-            display("unable to bind to UDP socket '{}'", addr)
+        FailedToBindToUdpSocket(addr: SocketAddr) {
+            description("failed to bind to UDP socket")
+            display("failed to bind to UDP socket '{}'", addr)
         }
-        UnableToWriteU8(value: u8) {
-            description("unable to write 8-bit unsigned integer")
-            display("unable to write 8-bit unsigned integer '{}'", value)
+        FailedToWriteU8(value: u8) {
+            description("failed to write 8-bit unsigned integer")
+            display("failed to write 8-bit unsigned integer '{}'", value)
         }
-        UnableToWriteU16(value: u16) {
-            description("unable to write 16-bit unsigned integer")
-            display("unable to write 16-bit unsigned integer '{}'", value)
+        FailedToWriteU16(value: u16) {
+            description("failed to write 16-bit unsigned integer")
+            display("failed to write 16-bit unsigned integer '{}'", value)
         }
-        UnableToWriteU24(value: U24) {
-            description("unable to write 24-bit unsigned integer")
-            display("unable to write 24-bit unsigned integer '{}'", value)
+        FailedToWriteU24(value: U24) {
+            description("failed to write 24-bit unsigned integer")
+            display("failed to write 24-bit unsigned integer '{}'", value)
         }
-        UnableToWriteU32(value: u32) {
-            description("unable to write 32-bit unsigned integer")
-            display("unable to write 32-bit unsigned integer '{}'", value)
+        FailedToWriteU32(value: u32) {
+            description("failed to write 32-bit unsigned integer")
+            display("failed to write 32-bit unsigned integer '{}'", value)
         }
-        UnableToWriteU48(value: U48) {
-            description("unable to write 48-bit unsigned integer")
-            display("unable to write 48-bit unsigned integer '{}'", value)
+        FailedToWriteU48(value: U48) {
+            description("failed to write 48-bit unsigned integer")
+            display("failed to write 48-bit unsigned integer '{}'", value)
         }
-        UnableToWriteU64(value: u64) {
-            description("unable to write 64-bit unsigned integer")
-            display("unable to write 64-bit unsigned integer '{}'", value)
+        FailedToWriteU64(value: u64) {
+            description("failed to write 64-bit unsigned integer")
+            display("failed to write 64-bit unsigned integer '{}'", value)
         }
-        UnableToReadU8 {
-            description("unable to read 8-bit unsigned integer")
+        FailedToReadU8 {
+            description("failed to read 8-bit unsigned integer")
         }
-        UnableToReadU16 {
-            description("unable to read 16-bit unsigned integer")
+        FailedToReadU16 {
+            description("failed to read 16-bit unsigned integer")
         }
-        UnableToReadU24 {
-            description("unable to read 24-bit unsigned integer")
+        FailedToReadU24 {
+            description("failed to read 24-bit unsigned integer")
         }
-        UnableToReadU32 {
-            description("unable to read 32-bit unsigned integer")
+        FailedToReadU32 {
+            description("failed to read 32-bit unsigned integer")
         }
-        UnableToReadU48 {
-            description("unable to read 48-bit unsigned integer")
+        FailedToReadU48 {
+            description("failed to read 48-bit unsigned integer")
         }
-        UnableToReadU64 {
-            description("unable to read 64-bit unsigned integer")
+        FailedToReadU64 {
+            description("failed to read 64-bit unsigned integer")
         }
-        UnableToWriteString(value: String) {
-            description("unable to write string")
-            display("unable to write string '{}'", value)
+        FailedToWriteString(value: String) {
+            description("failed to write string")
+            display("failed to write string '{}'", value)
         }
-        UnableToReadString {
-            description("unable to read string")
+        FailedToReadString {
+            description("failed to read string")
         }
-        UnableToReadBytes {
-            description("unable to read bytes")
+        FailedToReadBytes {
+            description("failed to read bytes")
         }
-        UnableToWriteBytes(length: usize){
-            description("unable to write bytes")
-            display("unable to write '{}' bytes", length)
+        FailedToWriteBytes(length: usize){
+            description("failed to write bytes")
+            display("failed to write '{}' bytes", length)
         }
         InvalidTagValue(tag: Tag) {
             description("invalid QUIC tag value")
@@ -83,59 +83,55 @@ error_chain! {
             description("invalid proof type")
             display("QUIC tag '{}' is an invalid proof type", tag)
         }
-        InvalidKeyExchangeAlgorithm(tag: Tag) {
-            description("invalid key exchange algorithm")
-            display("QUIC tag '{}' is an invalid key exchange algorithm", tag)
-        }
         InvalidHandshakeMessage(tag: Tag) {
             description("invalid crypto handshake message")
             display("QUIC tag '{}' is an invalid crypto handshake message", tag)
         }
-        UnableToWriteConnectionId(connection_id: ConnectionId) {
-            description("unable to write QUIC connection id")
-            display("unable to write QUIC connection id '{}'", connection_id)
+        FailedToWriteConnectionId(connection_id: ConnectionId) {
+            description("failed to write QUIC connection id")
+            display("failed to write QUIC connection id '{}'", connection_id)
         }
-        UnableToWriteCryptoMessageTag(tag: Tag) {
-            description("unable to write crypto message QUIC tag")
-            display("unable to write crypto message QUIC tag '{}'", tag)
+        FailedToWriteCryptoMessageTag(tag: Tag) {
+            description("failed to write crypto message QUIC tag")
+            display("failed to write crypto message QUIC tag '{}'", tag)
         }
-        UnableToReadCryptoMessageTag {
-            description("unable to read crypo message QUIC tag")
+        FailedToReadCryptoMessageTag {
+            description("failed to read crypo message QUIC tag")
         }
-        UnableToWriteQuicVersion(version: Version) {
-            description("unable to write QUIC version")
-            display("unable to write QUIC version '{}'", version)
+        FailedToWriteQuicVersion(version: Version) {
+            description("failed to write QUIC version")
+            display("failed to write QUIC version '{}'", version)
         }
-        UnableToWriteTagValueMapLength {
-            description("unable to write QUIC tag-value map length")
+        FailedToWriteTagValueMapLength {
+            description("failed to write QUIC tag-value map length")
         }
-        UnableToReadTagValueMapLength {
-            description("unable to read QUIC tag-value map length")
+        FailedToReadTagValueMapLength {
+            description("failed to read QUIC tag-value map length")
         }
-        UnableToReadTagValueMap {
-            description("unable to read QUIC tag-value map")
+        FailedToReadTagValueMap {
+            description("failed to read QUIC tag-value map")
         }
-        UnableToWriteTagValueMapEndOffset(end_offset: u32) {
-            description("unable to write QUIC tag-value map end offset")
-            display("unable to write QUIC tag-value map end offset '{}'", end_offset)
+        FailedToWriteTagValueMapEndOffset(end_offset: u32) {
+            description("failed to write QUIC tag-value map end offset")
+            display("failed to write QUIC tag-value map end offset '{}'", end_offset)
         }
-        UnableToWriteTagValue(tag: Tag) {
-            description("unable to write QUIC tag value")
-            display("unable to write value for QUIC tag '{}'", tag)
+        FailedToWriteTagValue(tag: Tag) {
+            description("failed to write QUIC tag value")
+            display("failed to write value for QUIC tag '{}'", tag)
         }
-        UnableToWriteTagValueMap {
-            description("unable to write QUIC tag-value map")
+        FailedToWriteTagValueMap {
+            description("failed to write QUIC tag-value map")
         }
-        UnableToWritePadding(num_bytes: usize) {
-            description("unable to write padding")
-            display("unable to write '{}' padding bytes", num_bytes)
+        FailedToWritePadding(num_bytes: usize) {
+            description("failed to write padding")
+            display("failed to write '{}' padding bytes", num_bytes)
         }
-        UnableToReadPadding(num_bytes: usize) {
-            description("unable to read padding")
-            display("unable to read '{}' padding bytes", num_bytes)
+        FailedToReadPadding(num_bytes: usize) {
+            description("failed to read padding")
+            display("failed to read '{}' padding bytes", num_bytes)
         }
-        UnableToWriteCryptoHandshakeTagValueMap {
-            description("unable to write crypto handshake message tag-value map")
+        FailedToWriteCryptoHandshakeTagValueMap {
+            description("failed to write crypto handshake message tag-value map")
         }
         InvalidStreamIdLength(length: usize) {
             description("invalid stream id length")
@@ -145,139 +141,142 @@ error_chain! {
             description("invalid stream offset length")
             display("invalid stream offset length '{}'", length)
         }
-        UnableToWriteStreamId(stream_id: StreamId){
-            description("unable to write stream id")
-            display("unable to write stream id '{}'", stream_id)
+        FailedToWriteStreamId(stream_id: StreamId){
+            description("failed to write stream id")
+            display("failed to write stream id '{}'", stream_id)
         }
-        UnableToReadStreamOffset {
-            description("unable to read stream offset")
+        FailedToReadStreamOffset {
+            description("failed to read stream offset")
         }
-        UnableToWriteStreamOffset(stream_offset: StreamOffset) {
-            description("unable to write stream offset")
-            display("unable to write stream offset '{}'", stream_offset)
+        FailedToWriteStreamOffset(stream_offset: StreamOffset) {
+            description("failed to write stream offset")
+            display("failed to write stream offset '{}'", stream_offset)
         }
-        UnableToWriteStreamFrame {
-            description("unable to write stream frame")
+        FailedToWriteStreamFrame {
+            description("failed to write stream frame")
         }
-        UnableToWriteAckFrame {
-            description("unable to write ACK frame")
+        FailedToWriteAckFrame {
+            description("failed to write ACK frame")
         }
-        UnableToWritePaddingFrame {
-            description("unable to write padding frame")
+        FailedToWritePaddingFrame {
+            description("failed to write padding frame")
         }
-        UnableToWriteResetStreamFrame {
-            description("unable to write reset stream frame")
+        FailedToWriteResetStreamFrame {
+            description("failed to write reset stream frame")
         }
-        UnableToWriteConnectionCloseFrame {
-            description("unable to write connection close frame")
+        FailedToWriteConnectionCloseFrame {
+            description("failed to write connection close frame")
         }
-        UnableToWriteGoAwayFrame {
-            description("unable to write go away frame")
+        FailedToWriteGoAwayFrame {
+            description("failed to write go away frame")
         }
-        UnableToWriteWindowUpdateFrame {
-            description("unable to write window update frame")
+        FailedToWriteWindowUpdateFrame {
+            description("failed to write window update frame")
         }
-        UnableToWriteBlockedFrame {
-            description("unable to write blocked frame")
+        FailedToWriteBlockedFrame {
+            description("failed to write blocked frame")
         }
-        UnableToWriteStopWaitingFrame {
-            description("unable to write stop waiting frame")
+        FailedToWriteStopWaitingFrame {
+            description("failed to write stop waiting frame")
         }
-        UnableToWritePingFrame {
-            description("unable to write ping frame")
+        FailedToWritePingFrame {
+            description("failed to write ping frame")
         }
-        UnableToWriteVersionNegotiationPacket {
-            description("unable to write version negotiation packet")
+        FailedToWriteVersionNegotiationPacket {
+            description("failed to write version negotiation packet")
         }
-        UnableToWritePublicResetPacket {
-            description("unable to write public reset packet")
+        FailedToWritePublicResetPacket {
+            description("failed to write public reset packet")
         }
-        UnableToWriteRegularPacket {
-            description("unable to write regular packet")
+        FailedToWriteRegularPacket {
+            description("failed to write regular packet")
         }
-        UnableToReadCryptoRejectionMessage {
-            description("unable to read crypto rejection message")
+        FailedToReadCryptoRejectionMessage {
+            description("failed to read crypto rejection message")
         }
-        UnableToReadCryptoClientHelloMessage {
-            description("unable to read crypto client hello message")
+        FailedToReadCryptoClientHelloMessage {
+            description("failed to read crypto client hello message")
         }
-        UnableToReadCryptoServerConfigurationMessage {
-            description("unable to read crypto server configuration message")
+        FailedToReadCryptoServerConfigurationMessage {
+            description("failed to read crypto server configuration message")
         }
-        UnableToReadCompressedCertificateEntryType {
-            description("unable to read compressed certificate entry type")
+        FailedToReadCryptoServerHelloMessage {
+            description("failed to read crypto server hello message")
         }
-        UnableToWriteCompressedCertificateEntryType {
-            description("unable to write compressed certificate entry type")
+        FailedToReadCompressedCertificateEntryType {
+            description("failed to read compressed certificate entry type")
         }
-        UnableToReadCachedCertificateHash {
-            description("unable to read cached certificate hash")
+        FailedToWriteCompressedCertificateEntryType {
+            description("failed to write compressed certificate entry type")
         }
-        UnableToWriteCachedCertificateHash {
-            description("unable to write cached certificate hash")
+        FailedToReadCachedCertificateHash {
+            description("failed to read cached certificate hash")
         }
-        UnableToReadCommonCertificateSetHash {
-            description("unable to read common certificate set hash")
+        FailedToWriteCachedCertificateHash {
+            description("failed to write cached certificate hash")
         }
-        UnableToWriteCommonCertificateSetHash {
-            description("unable to write common certificate set hash")
+        FailedToReadCommonCertificateSetHash {
+            description("failed to read common certificate set hash")
         }
-        UnableToReadCommonCertificateIndex {
-            description("unable to read common certificate index")
+        FailedToWriteCommonCertificateSetHash {
+            description("failed to write common certificate set hash")
         }
-        UnableToWriteCommonCertificateIndex {
-            description("unable to write common certificate index")
+        FailedToReadCommonCertificateIndex {
+            description("failed to read common certificate index")
+        }
+        FailedToWriteCommonCertificateIndex {
+            description("failed to write common certificate index")
         }
         InvalidCompressedCertificateEntryType (entry_type: u8) {
             description("invalid compressed certificate entry type")
             display("invalid compressed certificate entry type '{}'", entry_type)
         }
-        UnableToReadCompressedCertificatesUncompressedLength {
-            description("unable to read compressed certificates uncompressed length")
+        FailedToReadCompressedCertificatesUncompressedLength {
+            description("failed to read compressed certificates uncompressed length")
         }
-        UnableToWriteCompressedCertificateUncompressedLength (length: usize) {
-            description("unable to write compressed certificate uncompressed length")
-            display("unable to write compressed certificate uncompressed length '{}'", length)
+        FailedToWriteCompressedCertificateUncompressedLength (length: usize) {
+            description("failed to write compressed certificate uncompressed length")
+            display("failed to write compressed certificate uncompressed length '{}'", length)
         }
-        UnableToReadCompressedCertificateUncompressedLength  {
-            description("unable to read compressed certificate uncompressed length")
+        FailedToReadCompressedCertificateUncompressedLength  {
+            description("failed to read compressed certificate uncompressed length")
         }
-        UnableToWriteCompressedCertificatesUncompressedLength (length: usize) {
-            description("unable to write compressed certificates uncompressed length")
-            display("unable to write compressed certificates uncompressed length '{}'", length)
+        FailedToWriteCompressedCertificatesUncompressedLength (length: usize) {
+            description("failed to write compressed certificates uncompressed length")
+            display("failed to write compressed certificates uncompressed length '{}'", length)
         }
-        UnableToWriteCompressedCertificateEntry {
-            description("unable to write compressed certificate entry")
+        FailedToWriteCompressedCertificateEntry {
+            description("failed to write compressed certificate entry")
         }
-        UnableToReadCompressedCertificateEntry {
-            description("unable to read compressed certificate entry")
+        FailedToReadCompressedCertificateEntry {
+            description("failed to read compressed certificate entry")
         }
-        UnableToWriteCompressedChunk {
-            description("unable to write compressed chunk")
+        FailedToWriteCompressedChunk {
+            description("failed to write compressed chunk")
         }
-        UnableToWriteCertificateBytes {
-            description("unable to write certificate bytes")
+        FailedToWriteCertificateBytes {
+            description("failed to write certificate bytes")
         }
-        UnableToReadCertificateBytes {
-            description("unable to read certificate bytes")
+        FailedToReadCertificateBytes {
+            description("failed to read certificate bytes")
         }
-        UnableToWriteCompressedCertificates {
-            description("unable to write compressed certificates")
+        FailedToWriteCompressedCertificates {
+            description("failed to write compressed certificates")
         }
-        UnableToReadCompressedCertificates {
-            description("unable to read compressed certificates")
+        FailedToReadCompressedCertificates {
+            description("failed to read compressed certificates")
         }
-        UnableToFindCachedCertificateWithHash (hash: u64) {
-            description("unable to find cached certificate with hash")
-            display("unable to find cached certificate with hash '{}'", hash)
+        FailedToFindCachedCertificateWithHash (hash: u64) {
+            description("failed to find cached certificate with hash")
+            display("failed to find cached certificate with hash '{}'", hash)
         }
-        UnableToFindCommonCertificateSetWithHash (hash: u64) {
-            description("unable to find common certificate set with hash")
-            display("unable to find common certificate set with hash '{}'", hash)
+        FailedToFindCommonCertificateSetWithHash (hash: u64) {
+            description("failed to find common certificate set with hash")
+            display("failed to find common certificate set with hash '{}'", hash)
         }
-        UnableToFindCommonCertificateWithIndexInSet (index: usize, set_hash: u64) {
-            description("unable to find certificate with index in certificate set with hash")
-            display("unable to find certificate with index '{}' in certificate set with hash '{}'", index, set_hash)
+        FailedToFindCommonCertificateWithIndexInSet (index: usize, set_hash: u64) {
+            description("failed to find certificate with index in certificate set with hash")
+            display("failed to find certificate with index '{}' in certificate set with hash '{}'", index, set_hash)
         }
         CompressedCertificatesUncompressedLengthIsTooLarge (length: usize) {
             description("compress certificates uncompressed length is too large")
@@ -286,8 +285,8 @@ error_chain! {
         NotEnoughCompressedCertificates {
             description("not enough compressed certificates")
         }
-        UnableToDecompressCompressedCertificates {
-            description("unable to decompress compressed certificates")
+        FailedToDecompressCompressedCertificates {
+            description("failed to decompress compressed certificates")
         }
         NotEnoughReplacementValues {
             description("not enough replacement values")
@@ -298,35 +297,35 @@ error_chain! {
         DecryptionFailed {
             description("decryption failed")
         }
-        UnableToInferPacketNumber {
-            description("unable to infer packet number")
+        FailedToInferPacketNumber {
+            description("failed to infer packet number")
         }
-        UnableToCreateCryptographicRandomNumberGenerator {
-            description("unable to create cryptographic random number generator")
+        FailedToCreateCryptographicRandomNumberGenerator {
+            description("failed to create cryptographic random number generator")
         }
-        UnableToBindUdpSocket {
-            description("unable to bind UDP socket")
+        FailedToBindUdpSocket {
+            description("failed to bind UDP socket")
         }
-        UnableToWriteDiversificationNonce {
-            description("unable to write diversification nonce")
+        FailedToWriteDiversificationNonce {
+            description("failed to write diversification nonce")
         }
-        UnableToReadDiversificationNonce {
-            description("unable to read diversification nonce")
+        FailedToReadDiversificationNonce {
+            description("failed to read diversification nonce")
         }
-        UnableToWritePartialPacketNumber{
-            description("unable to write partial packet number")
+        FailedToWritePartialPacketNumber{
+            description("failed to write partial packet number")
         }
-        UnableToReadPartialPacketNumber{
-            description("unable to read partial packet number")
+        FailedToReadPartialPacketNumber{
+            description("failed to read partial packet number")
         }
-        UnableToWritePublicPacketHeaderFlags {
-            description("unable to write public packet header flags")
+        FailedToWritePublicPacketHeaderFlags {
+            description("failed to write public packet header flags")
         }
-        UnableToReadPublicPacketHeaderFlags {
-            description("unable to read public packet header flags")
+        FailedToReadPublicPacketHeaderFlags {
+            description("failed to read public packet header flags")
         }
-        UnableToBuildPartialPacketNumber {
-            description("unable to build the partial packet number")
+        FailedToBuildPartialPacketNumber {
+            description("failed to build the partial packet number")
         }
         CipherTextTooShort (actual_length: usize, minimum_length: usize) {
             description("the cipher text is too short")
@@ -335,17 +334,23 @@ error_chain! {
         FailedToAuthenticateReceivedData {
             description("failed to authenticate received data")
         }
-        UnableToCreateEphemerealPrivateKey {
-            description("unable to create ephemereal private key")
+        FailedToCreateEphemerealPrivateKey {
+            description("failed to create ephemereal private key")
         }
-        UnableToComputePublicKey {
-            description("unable to compute public key")
+        FailedToComputePublicKey {
+            description("failed to compute public key")
         }
-        UnableToPerformKeyAgreement {
-            description("unable to perform key agreement")
+        FailedToPerformKeyAgreement {
+            description("failed to perform key agreement")
         }
-        UnableToParseCertificateFromCertificateChain {
-            description("unable to parse certificate from certificate chain")
+        FailedToParseCertificateFromCertificateChain {
+            description("failed to parse certificate from certificate chain")
+        }
+        FailedToParseCertificate {
+            description("failed to parse certificate")
+        }
+        FailedToVerifyServerProof { 
+            description("failed to verify server proof")
         }
         CertificateInvalidForDnsName(dns_name: String){
             description("certificate invalid for dns name")
@@ -357,11 +362,93 @@ error_chain! {
         CertificateChainIsEmpty {
             description("certificate chain is empty")
         }
-        UnableToPerformAesGcmEncryption {
-            description("unable to perform AES GCM encryption")
+        FailedToPerformAesGcmEncryption {
+            description("failed to perform AES GCM encryption")
         }
-        UnableToPerformAesGcmDecryption {
-            description("unable to perform AES GCM decryption")
+        FailedToPerformAesGcmDecryption {
+            description("failed to perform AES GCM decryption")
+        }
+        FailedToGetLocalAddress {
+            description("failed to get local address")
+        }
+        APublicKeyMustBeSpecified {
+            description("a public key must be specified")
+        }
+        PublicKeyBytesTooLongForU24 {
+            description("public key bytes too long for U24")
+        }
+        FailedToReadPublicKeyBytes {
+            description("failed to read public key bytes")
+        }
+        FailedToWritePublicKeyBytes {
+            description("failed to write public key bytes")
+        }
+        ASupportedKeyExchangeAlgorithmMustBeSpecified {
+            description("a supported key exchange algorithm must be specified")
+        }
+        NoNonForwardSecureAead {
+            description("no non-forward secure AEAD")
+        }
+        NoForwardSecureAead {
+            description("no forward secure AEAD")
+        }
+        InvalidCryptoMessageType(tag: Tag) {
+            description("invalid crypto message type")
+            display("invalid crypto message type '{}'", tag)
+        }
+        ReceivedUnencryptedServerHello {
+            description("received unencrypted server hello")
+        }
+        KeyExchangeAlgorithmAndPublicKeyCountsMustMatch {
+            description("key exchange algorithm and public key counts must match")
+        }
+        ServerConfigurationIsRequiredBeforeForwardSecureEncryptionCanBeEstablished {
+            description("server configuration is required before forward secure encryption can be established")
+        }
+        UnableToVerifyWithoutACertificateChain {
+            description("unable to verify without a certificate chain")
+        }
+        UnableToSignWithoutACertificateChain {
+            description("unable to sign without a certificate chain")
+        }
+        UnableToDeriveKeysWithoutALeafCertificate {
+            description("unable to derive keys without a leaf certificate")
+        }
+        NoOrbitForClientNonce {
+            description("no orbit for client nonce")
+        }
+        FailedToReadClientNonce {
+            description("failed to read client nonce")
+        }
+        FailedToWriteClientNonce {
+            description("failed to write client nonce")
+        }
+        FailedToReadServerNonce {
+            description("failed to read server nonce")
+        }
+        FailedToWriteServerNonce {
+            description("failed to write server nonce")
+        }
+        ServerConfigurationExpired {
+            description("server configuration expired")
+        }
+        FailedToWriteSourceAddressToken {
+            description("failed to write source address token")
+        }
+        FailedToReadSourceAddressToken {
+            description("failed to read source address token")
+        }
+        FailedToParseRsaKeyPair {
+            description("failed to parse RSA key-pair")
+        }
+        FailedToDetermineTimeSinceUnixEpoch {
+            description("failed to determine time since unix epoch")
+        }
+        FailedToBuildRsaSigningState {
+            description("failed to build RSA signing state")
+        }
+        FailedToSignServerProof {
+            description("failed to sign server proof")
         }
     }
 }

@@ -21,7 +21,7 @@ impl Writable for DiversificationNonce {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         writer
             .write_all(&self.0)
-            .chain_err(|| ErrorKind::UnableToWriteDiversificationNonce)
+            .chain_err(|| ErrorKind::FailedToWriteDiversificationNonce)
     }
 }
 
@@ -30,7 +30,7 @@ impl Readable for DiversificationNonce {
         let mut value = [0u8; 32];
         reader
             .read_exact(&mut value)
-            .chain_err(|| ErrorKind::UnableToReadDiversificationNonce)?;
+            .chain_err(|| ErrorKind::FailedToReadDiversificationNonce)?;
 
         Ok(DiversificationNonce(value))
     }

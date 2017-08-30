@@ -1,8 +1,8 @@
 use crypto::certificates::Certificate;
-use fnv::FnvHasher;
+use lz_fnv::Fnv1a;
 use std::hash::{Hash, Hasher};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct CertificateSet {
     certificates: Vec<Certificate>,
     hash: u64,
@@ -12,7 +12,7 @@ impl CertificateSet {
     fn new(mut certificates: Vec<Certificate>) -> Self {
         certificates.sort_by(|x, y| x.bytes().cmp(y.bytes()));
 
-        let mut hasher = FnvHasher::default();
+        let mut hasher = Fnv1a::<u64>::default();
 
         for certificate in certificates.iter() {
             certificate.hash(&mut hasher);

@@ -1,13 +1,15 @@
 use errors::*;
-use handshake::{ServerConfiguration, HandshakeMessage, Tag, TagValueMap};
+use handshake::{ServerConfiguration, HandshakeMessage, Tag, TagValueMap, SourceAddressToken, ServerNonce};
 use conv::TryFrom;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RejectionMessage {
-    server_configuration: Option<ServerConfiguration>,
-    source_address_token: Option<Vec<u8>>,
-    server_nonce: Option<Vec<u8>>,
-    seconds_to_live: u64,
+    pub server_configuration: Option<ServerConfiguration>,
+    pub source_address_token: Option<SourceAddressToken>,
+    pub server_nonce: Option<ServerNonce>,
+    pub seconds_to_live: u64,
+    pub compressed_certificate_chain: Option<Vec<u8>>,
+
 }
 
 impl RejectionMessage {
@@ -28,11 +30,14 @@ impl RejectionMessage {
         let server_nonce = tag_value_map.get_optional_value(Tag::ServerNonce)?;
         let seconds_to_live = tag_value_map.get_required_value(Tag::ServerConfigurationTimeToLive)?;
 
+        let compressed_certificate_chain: Option<Vec<u8>> = tag_value_map.get_optional_value(Tag::CertificateChain)?;
+
         Ok(Self {
             server_configuration: server_configuration,
             source_address_token: source_address_token,
             server_nonce: server_nonce,
             seconds_to_live: seconds_to_live,
+            compressed_certificate_chain: compressed_certificate_chain
         })
     }
 
@@ -58,6 +63,10 @@ impl RejectionMessage {
         tag_value_map.set_value(Tag::ServerConfigurationTimeToLive,
                                      &self.seconds_to_live);
 
+        if let Some(ref compressed_certificate_chain) = self.compressed_certificate_chain {
+            tag_value_map.set_value(Tag::CertificateChain, compressed_certificate_chain);
+        }
+    
         tag_value_map
     }
 }

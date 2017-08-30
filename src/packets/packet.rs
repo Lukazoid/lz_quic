@@ -5,7 +5,7 @@ use protocol::Version;
 use std::net::SocketAddr;
 use frames::Frame;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum PacketContent {
     VersionNegotiation { supported_versions: Vec<Version> },
     PublicReset {
@@ -16,7 +16,7 @@ pub enum PacketContent {
     Regular { frames: Vec<Frame> },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Packet {
     pub packet_number: PacketNumber,
     pub content: PacketContent,

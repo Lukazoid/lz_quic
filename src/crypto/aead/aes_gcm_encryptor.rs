@@ -19,14 +19,13 @@ impl AesGcmEncryptor {
     }
 }
 
-
-
 impl AeadEncryptor for AesGcmEncryptor {
-    fn encrypt(&mut self,
-               associated_data: &[u8],
-               plain_text: &[u8],
-               packet_number: PacketNumber)
-               -> Result<Vec<u8>> {
+    fn encrypt(
+        &self,
+        associated_data: &[u8],
+        plain_text: &[u8],
+        packet_number: PacketNumber,
+    ) -> Result<Vec<u8>> {
 
         let nonce = aead::make_nonce(&self.iv, packet_number);
 
@@ -35,17 +34,17 @@ impl AeadEncryptor for AesGcmEncryptor {
         let mut tag = [0u8; 12];
 
         // Using openssl here as it is the only crate which currently supports variable tag widths
-        let mut encrypted = encrypt_aead(cipher,
-                                         self.secret_key.bytes(),
-                                         Some(&nonce),
-                                         associated_data,
-                                         plain_text,
-                                         &mut tag)
-                .chain_err(|| ErrorKind::UnableToPerformAesGcmEncryption)?;
+        let mut encrypted = encrypt_aead(
+            cipher,
+            self.secret_key.bytes(),
+            Some(&nonce),
+            associated_data,
+            plain_text,
+            &mut tag,
+        ).chain_err(|| ErrorKind::FailedToPerformAesGcmEncryption)?;
 
         encrypted.extend_from_slice(&tag);
 
         Ok(encrypted)
     }
 }
-

@@ -4,11 +4,11 @@ use tokio_core::reactor::Handle;
 use std::collections::HashMap;
 use std::sync::RwLock;
 use protocol::ConnectionId;
-use Session;
+use session::Session;
 use std::net::SocketAddr;
 use futures::{Future, Stream};
 use futures::future::{self, Empty};
-use futures::stream::{self};
+use futures::stream::{self, BoxStream};
 use std::error::Error as StdError;
 
 #[derive(Debug)]
@@ -19,17 +19,23 @@ pub struct Server {
 impl Server {
     pub fn bind(addr: SocketAddr, handle: &Handle) -> Result<Self> {
         let udp_socket = UdpSocket::bind(&addr, handle)
-            .chain_err(|| ErrorKind::UnableToBindToUdpSocket(addr))?;
+            .chain_err(|| ErrorKind::FailedToBindToUdpSocket(addr))?;
             
         Ok(Self { udp_socket: udp_socket })
     }
 
-    // pub fn incoming(self) -> impl Stream<Item=Session, Error=Error> {
+    pub fn local_addr(&self) -> Result<SocketAddr> {
+        self.udp_socket.local_addr()
+            .chain_err(||ErrorKind::FailedToGetLocalAddress)
+    }
+
+    // pub fn incoming(self) -> BoxStream<Session, Error> {
     //     stream::empty::<(), Error>()
     //         .map(move |_|{
     //             let connection_id = ConnectionId::generate(&mut ::rand::thread_rng());
     //             Session::new_server(connection_id)
-    //         })   
+    //         })
+    //         .boxed()
     // }
 }
 

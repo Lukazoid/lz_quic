@@ -37,7 +37,7 @@ impl StreamId {
         assert!(byte_count > 0);
         writer
             .write_uint::<LittleEndian>(inner as u64, byte_count)
-            .chain_err(|| ErrorKind::UnableToWriteBytes(byte_count))?;
+            .chain_err(|| ErrorKind::FailedToWriteBytes(byte_count))?;
 
         Ok(header_length)
     }
@@ -46,7 +46,7 @@ impl StreamId {
         let byte_count: usize = length.into();
         let inner = reader
             .read_uint::<LittleEndian>(byte_count)
-            .chain_err(|| ErrorKind::UnableToReadBytes)? as u32;
+            .chain_err(|| ErrorKind::FailedToReadBytes)? as u32;
 
         Ok(StreamId(inner))
     }

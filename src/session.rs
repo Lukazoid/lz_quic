@@ -25,17 +25,17 @@ pub struct Session {
     perspective: Perspective,
 }
 
+pub fn new_client_session(connection_id: ConnectionId, udp_socket: UdpSocket) -> Session {
+    Session::new(connection_id,
+        Perspective::Client { udp_socket: udp_socket })
+}
+
+pub fn new_server_session(connection_id: ConnectionId, udp_socket: Arc<RwLock<UdpSocket>>) -> Session {
+    Session::new(connection_id,
+        Perspective::Server { udp_socket: udp_socket })
+}
+
 impl Session {
-    pub fn new_client(connection_id: ConnectionId, udp_socket: UdpSocket) -> Self {
-        Self::new(connection_id,
-            Perspective::Client { udp_socket: udp_socket })
-    }
-
-    pub fn new_server(connection_id: ConnectionId, udp_socket: Arc<RwLock<UdpSocket>>) -> Self {
-        Self::new(connection_id,
-            Perspective::Server { udp_socket: udp_socket })
-    }
-
     fn new(connection_id: ConnectionId, perspective: Perspective) -> Self {
         Self {
             connection_id: connection_id,

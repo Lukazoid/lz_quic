@@ -66,7 +66,7 @@ impl StreamOffset {
 
         let inner = reader
             .read_uint::<LittleEndian>(byte_count)
-            .chain_err(|| ErrorKind::UnableToReadStreamOffset)? as u64;
+            .chain_err(|| ErrorKind::FailedToReadStreamOffset)? as u64;
 
         Ok(StreamOffset(inner))
     }
@@ -83,7 +83,7 @@ impl StreamOffset {
         if byte_count > 0 {
             writer
                 .write_uint::<LittleEndian>(offset, byte_count)
-                .chain_err(|| ErrorKind::UnableToWriteBytes(byte_count))?;
+                .chain_err(|| ErrorKind::FailedToWriteBytes(byte_count))?;
         }
         Ok(header_length)
     }

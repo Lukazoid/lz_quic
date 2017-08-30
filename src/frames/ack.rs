@@ -17,7 +17,7 @@ pub enum MissingPacketSequenceNumberDeltaFieldLength {
     Six = 6,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct AckFrameTypeProperties {
     pub multiple_ack_range: bool,
     pub largest_observed_field_length: LargestObservedFieldLength,

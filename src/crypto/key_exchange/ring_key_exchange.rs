@@ -27,16 +27,16 @@ impl RingKeyExchange {
         let rng = SystemRandom::new();
 
         let ephemeral_private_key = EphemeralPrivateKey::generate(algorithm, &rng)
-            .chain_err(||ErrorKind::UnableToCreateEphemerealPrivateKey)?;
+            .chain_err(||ErrorKind::FailedToCreateEphemerealPrivateKey)?;
       
         let mut public_key_bytes = vec![0u8; ephemeral_private_key.public_key_len()];
 
         ephemeral_private_key.compute_public_key(&mut public_key_bytes)
-            .chain_err(||ErrorKind::UnableToComputePublicKey)?;
+            .chain_err(||ErrorKind::FailedToComputePublicKey)?;
 
         Ok(Self {
             ephemeral_private_key: ephemeral_private_key,
-            public_key: public_key_bytes.into()
+            public_key: public_key_bytes.as_slice().into()
         })     
     }
 }
@@ -55,8 +55,8 @@ impl KeyExchange for RingKeyExchange {
         agreement::agree_ephemeral(ephemeral_private_key, 
             algorithm, 
             peer_public_key,
-            Error::from(ErrorKind::UnableToPerformKeyAgreement),
-            |shared_key| Ok(shared_key.to_vec().into()))
+            Error::from(ErrorKind::FailedToPerformKeyAgreement),
+            |shared_key| Ok(SharedKey::from(shared_key)))
     }
 }
 

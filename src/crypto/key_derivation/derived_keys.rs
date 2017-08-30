@@ -1,6 +1,6 @@
 use crypto::{InitializationVector, SecretKey};
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Hash)]
 pub struct DerivedKeys {
     pub local_key: SecretKey,
     pub local_iv: InitializationVector,

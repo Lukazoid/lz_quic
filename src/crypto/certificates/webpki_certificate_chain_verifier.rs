@@ -1,8 +1,8 @@
 use errors::*;
 use crypto::certificates::{Certificate, CertificateChain, CertificateChainVerifier, TrustAnchor};
-use webpki::{self, EndEntityCert, SignatureAlgorithm};
+use webpki::{self, EndEntityCert, SignatureAlgorithm, TLSServerTrustAnchors, Time};
 use untrusted::Input;
-use time::{self, Timespec};
+use std::time::{self, SystemTime};
 
 /// A `CertificateChainVerifier` using the verify methods from `webpki`.
 #[derive(Debug)]
@@ -28,14 +28,13 @@ fn as_webpki_cert<'a>(certificate: &'a Certificate) -> Result<EndEntityCert<'a>>
     // We have to map the error as webpki::Error does not currently implement the Error trait (see https://github.com/briansmith/webpki/pull/3)
     EndEntityCert::from(Input::from(certificate.bytes()))
         .map_err(|e| Error::from(format!("{:?}", e)))
-        .chain_err(||ErrorKind::UnableToParseCertificateFromCertificateChain)
+        .chain_err(||ErrorKind::FailedToParseCertificateFromCertificateChain)
 }
 
-impl<'a> WebpkiCertificateChainVerifier
-{
-    pub fn new(trust_anchors: Vec<TrustAnchor>) -> Self {
+impl<'a> WebpkiCertificateChainVerifier{
+    pub fn new<I:IntoIterator<Item=TrustAnchor>>(trust_anchors: I) -> Self {
         WebpkiCertificateChainVerifier{
-            trust_anchors: trust_anchors
+            trust_anchors: trust_anchors.into_iter().collect()
         }
     }
 }
@@ -55,12 +54,13 @@ impl CertificateChainVerifier for WebpkiCertificateChainVerifier {
                 .map(|c| Input::from(c.bytes()))
                 .collect();
                 
-            let now = time::now_utc().to_timespec();
+            let now = Time::try_from(SystemTime::now())
+                .chain_err(||ErrorKind::FailedToDetermineTimeSinceUnixEpoch)?;
 
             let webpki_trust_anchors : Vec<_> = self.trust_anchors.iter().map(|ta|ta.as_webpki_trust_anchor()).collect();
 
             // We have to map the error as webpki::Error does not currently implement the Error trait (see https://github.com/briansmith/webpki/pull/3)
-            webpki_cert.verify_is_valid_tls_server_cert(SUPPORTED_SIGNATURE_ALGORITHMS, &webpki_trust_anchors, &intermediate_certificates, now)
+            webpki_cert.verify_is_valid_tls_server_cert(SUPPORTED_SIGNATURE_ALGORITHMS, &TLSServerTrustAnchors(webpki_trust_anchors.as_slice()), &intermediate_certificates, now)
                 .map_err(|e| Error::from(format!("{:?}", e)))
                 .chain_err(||ErrorKind::InvalidTlsCertificate)?;
 
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     pub fn verify_with_empty_chain_returns_error() {
-        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::ROOTS.iter().map(TrustAnchor::from_webpki_trust_anchor).collect());
+        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(TrustAnchor::from_webpki_trust_anchor));
         let certificate_chain = CertificateChain::from(vec![]);
 
         let verify_result = webpki_certificate_chain_verifier.verify(&certificate_chain, "google.com");
@@ -94,10 +94,10 @@ mod tests {
 
     #[test]
     pub fn verify_with_correct_chain_succeeds() {
-        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::ROOTS.iter().map(TrustAnchor::from_webpki_trust_anchor).collect());
+        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(TrustAnchor::from_webpki_trust_anchor));
         
-        let google_certificate = Certificate::from(GOOGLE_CERTIFICATE_BYTES);
-        let google_internet_authority_certificate = Certificate::from(GOOGLE_CERTIFICATE_AUTHORITY_BYTES);
+        let google_certificate = Certificate::from(GOOGLE_CERTIFICATE_BYTES.to_vec());
+        let google_internet_authority_certificate = Certificate::from(GOOGLE_CERTIFICATE_AUTHORITY_BYTES.to_vec());
 
         let certificate_chain = CertificateChain::from(vec![google_certificate, google_internet_authority_certificate]);
 
@@ -108,10 +108,10 @@ mod tests {
   
     #[test]
     pub fn verify_with_wrong_host_name_returns_error() {
-        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::ROOTS.iter().map(TrustAnchor::from_webpki_trust_anchor).collect());
+        let webpki_certificate_chain_verifier = WebpkiCertificateChainVerifier::new(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(TrustAnchor::from_webpki_trust_anchor));
         
-        let google_certificate = Certificate::from(GOOGLE_CERTIFICATE_BYTES);
-        let google_internet_authority_certificate = Certificate::from(GOOGLE_CERTIFICATE_AUTHORITY_BYTES);
+        let google_certificate = Certificate::from(GOOGLE_CERTIFICATE_BYTES.to_vec());
+        let google_internet_authority_certificate = Certificate::from(GOOGLE_CERTIFICATE_AUTHORITY_BYTES.to_vec());
 
         let certificate_chain = CertificateChain::from(vec![google_certificate, google_internet_authority_certificate]);
 

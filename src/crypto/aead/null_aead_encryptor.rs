@@ -7,10 +7,15 @@ use packets::PacketNumber;
 use extprim::u128::u128;
 
 #[derive(Debug, Clone, Default)]
-pub struct NullAeadEncryptor {}
+pub struct NullAeadEncryptor;
 
 impl AeadEncryptor for NullAeadEncryptor {
-    fn encrypt(&mut self, associated_data: &[u8], plain_text: &[u8], packet_number: PacketNumber) -> Result<Vec<u8>> {
+    fn encrypt(
+        &self,
+        associated_data: &[u8],
+        plain_text: &[u8],
+        packet_number: PacketNumber,
+    ) -> Result<Vec<u8>> {
         let mut hasher = Fnv1a::<u128>::default();
 
         hasher.write(associated_data);
@@ -22,7 +27,7 @@ impl AeadEncryptor for NullAeadEncryptor {
         let high = hash.high64();
 
         let hash_length = mem::size_of::<u64>() + mem::size_of::<u32>();
-        
+
         let mut result = Vec::with_capacity(plain_text.len() + hash_length);
 
         low.write_to_vec(&mut result);
@@ -33,4 +38,3 @@ impl AeadEncryptor for NullAeadEncryptor {
         Ok(result)
     }
 }
-

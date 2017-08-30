@@ -1,14 +1,14 @@
 use errors::*;
 use protocol::Version;
 use handshake::{Tag, TagValueMap};
-use conv::TryFrom;
 use crypto::Proof;
+use smallvec::SmallVec;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ClientHelloMessage {
     pub server_name: Option<String>,
     pub source_address_token: Option<Vec<u8>>,
-    pub proof_demands: Vec<Proof>,
+    pub proof_demands: SmallVec<[Proof;1]>,
     pub common_certificate_sets: Vec<u64>,
     pub cached_certificates: Vec<u64>,
     pub version: Version,
@@ -81,7 +81,7 @@ mod tests {
         let chlo = ClientHelloMessage {
             server_name: Some("example.com".to_owned()),
             source_address_token: Some(vec![1, 2, 3]),
-            proof_demands: vec![Proof::X509],
+            proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![5435435, 654123],
             cached_certificates: vec![929080, 7897897],
             version: version::DRAFT_IETF_01,

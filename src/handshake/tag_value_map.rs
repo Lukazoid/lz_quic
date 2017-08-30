@@ -3,8 +3,9 @@ use handshake::Tag;
 use std::collections::BTreeMap;
 use std::io::{self, Read, Write};
 use protocol::{Readable, Writable};
+use std::iter::FromIterator;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Eq, PartialEq, Hash)]
 pub struct TagValueMap {
     entries: BTreeMap<Tag, Vec<u8>>,
 }
@@ -18,7 +19,7 @@ impl Readable for IntermediateTagValue {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
         let tag = Tag::read(reader)?;
         let end_offset = u32::read(reader)
-            .chain_err(|| ErrorKind::UnableToReadTagValueMap)?;
+            .chain_err(|| ErrorKind::FailedToReadTagValueMap)?;
 
         Ok(IntermediateTagValue {
             tag: tag,
@@ -47,7 +48,7 @@ impl TagValueMap {
 
             let mut data = Vec::with_capacity(length as usize);
             io::copy(&mut reader.take(length as u64), &mut data)
-                .chain_err(|| ErrorKind::UnableToReadTagValueMap)?;
+                .chain_err(|| ErrorKind::FailedToReadTagValueMap)?;
 
             previous_end_offset = end_offset;
 
@@ -67,14 +68,14 @@ impl Writable for TagValueMap {
         for entry in &self.entries {
             entry.0
                 .write(writer)
-                .chain_err(|| ErrorKind::UnableToWriteTagValueMap)?;
+                .chain_err(|| ErrorKind::FailedToWriteTagValueMap)?;
 
             let data = entry.1;
             end_offset += data.len() as u32;
 
             end_offset.write(writer)
-                .chain_err(|| ErrorKind::UnableToWriteTagValueMapEndOffset(end_offset))
-                .chain_err(|| ErrorKind::UnableToWriteTagValueMap)?;
+                .chain_err(|| ErrorKind::FailedToWriteTagValueMapEndOffset(end_offset))
+                .chain_err(|| ErrorKind::FailedToWriteTagValueMap)?;
         }
 
         // Write the actual data for each QUIC tag
@@ -82,8 +83,8 @@ impl Writable for TagValueMap {
             let data = entry.1;
 
             writer.write_all(data)
-                .chain_err(|| ErrorKind::UnableToWriteTagValue(*entry.0))
-                .chain_err(|| ErrorKind::UnableToWriteTagValueMap)?;
+                .chain_err(|| ErrorKind::FailedToWriteTagValue(*entry.0))
+                .chain_err(|| ErrorKind::FailedToWriteTagValueMap)?;
         }
 
         Ok(())
@@ -129,17 +130,17 @@ impl TagValueMap {
         }
     }
 
-    pub fn get_optional_values<T: Readable>(&self, tag: Tag) -> Result<Vec<T>> {
+    pub fn get_optional_values<C: Default + FromIterator<T>, T: Readable>(&self, tag: Tag) -> Result<C> {
         if let Some(data) = self.get_data(tag) {
-            T::collection_from_bytes(data).chain_err(|| ErrorKind::InvalidTagValue(tag))
+            T::collect_from_bytes(data).chain_err(|| ErrorKind::InvalidTagValue(tag))
         } else {
-            Ok(Vec::default())
+            Ok(C::default())
         }
     }
 
-    pub fn get_required_values<T: Readable>(&self, tag: Tag) -> Result<Vec<T>> {
+    pub fn get_required_values<C: FromIterator<T>, T: Readable>(&self, tag: Tag) -> Result<C> {
         if let Some(data) = self.get_data(tag) {
-            T::collection_from_bytes(data).chain_err(|| ErrorKind::InvalidTagValue(tag))
+            T::collect_from_bytes(data).chain_err(|| ErrorKind::InvalidTagValue(tag))
         } else {
             bail!(ErrorKind::MissingTag(tag))
         }

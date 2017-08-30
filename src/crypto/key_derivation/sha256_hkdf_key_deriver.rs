@@ -11,7 +11,7 @@ pub struct Sha256HkdfKeyDeriver {
     inner: RingHkdfKeyDeriver
 }
 
-impl Sha256HkdfKeyDeriver{
+impl Sha256HkdfKeyDeriver {
     pub fn new(is_forward_secure: bool, perspective: Perspective, connection_id: ConnectionId, key_len: usize) -> Self {
         Sha256HkdfKeyDeriver {
            inner: RingHkdfKeyDeriver::new(is_forward_secure, perspective, connection_id, &SHA256, key_len)

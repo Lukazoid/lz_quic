@@ -8,15 +8,23 @@ use packets::PacketNumber;
 use extprim::u128::u128;
 
 #[derive(Debug, Clone, Default)]
-pub struct NullAeadDecryptor {}
+pub struct NullAeadDecryptor;
 
 impl AeadDecryptor for NullAeadDecryptor {
-    fn decrypt(&mut self, associated_data: &[u8], cipher_text: &[u8], packet_number: PacketNumber) -> Result<Vec<u8>> {
+    fn decrypt(
+        &self,
+        associated_data: &[u8],
+        cipher_text: &[u8],
+        packet_number: PacketNumber,
+    ) -> Result<Vec<u8>> {
         let hash_length = mem::size_of::<u64>() + mem::size_of::<u32>();
         let cipher_text_length = cipher_text.len();
 
         if cipher_text_length < hash_length {
-            bail!(ErrorKind::CipherTextTooShort(cipher_text_length, hash_length));
+            bail!(ErrorKind::CipherTextTooShort(
+                cipher_text_length,
+                hash_length
+            ));
         }
 
         let mut hasher = Fnv1a::<u128>::default();
@@ -42,4 +50,3 @@ impl AeadDecryptor for NullAeadDecryptor {
         Ok(plain_text.to_vec())
     }
 }
-

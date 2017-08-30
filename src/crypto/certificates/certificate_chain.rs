@@ -1,4 +1,3 @@
-use errors::*;
 use crypto::certificates::Certificate;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -17,6 +16,10 @@ impl CertificateChain {
              .map(|t| t.1)
              .unwrap_or(&[])
     }
+
+    pub fn certificates(&self) -> &[Certificate] {
+        self.certificates.as_slice()
+    }
 }
 
 impl From<Vec<Certificate>> for CertificateChain {
@@ -25,3 +28,8 @@ impl From<Vec<Certificate>> for CertificateChain {
     }
 }
 
+impl From<CertificateChain> for Vec<Certificate> {
+    fn from(value: CertificateChain) -> Vec<Certificate> {
+        value.certificates
+    }
+}

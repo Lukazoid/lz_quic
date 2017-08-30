@@ -158,7 +158,7 @@ impl Readable for Tag {
     fn read<R: Read>(reader: &mut R) -> Result<Tag> {
         let mut bytes = [0; 4];
         let tag = reader.read_exact(&mut bytes)
-            .chain_err(|| ErrorKind::UnableToReadBytes)
+            .chain_err(|| ErrorKind::FailedToReadBytes)
             .map(|_| Self::from(bytes))?;
 
         Ok(tag)

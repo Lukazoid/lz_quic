@@ -163,10 +163,11 @@ mod tests {
     use protocol::{ConnectionId, Perspective, version};
     use rand::{StdRng, SeedableRng};
     use ring::digest::SHA256;
-    use crypto::{SharedKey, DiversificationNonce, Proof};
+    use crypto::{SharedKey, DiversificationNonce, Proof, PublicKey};
     use crypto::certificates::Certificate;
     use crypto::key_derivation::KeyDeriver;
     use crypto::key_exchange::KeyExchangeAlgorithm;
+    use crypto::aead::AeadAlgorithm;
     use handshake::{ClientHelloMessage, ServerConfiguration, ServerConfigurationId};
 
     #[test]
@@ -174,14 +175,14 @@ mod tests {
         let mut rng = StdRng::from_seed(&[4,2,98,231]);
         let connection_id = ConnectionId::generate(&mut rng);
 
-        let shared_key = SharedKey::from(vec![47, 223, 13]);
+        let shared_key = SharedKey::from([47, 223, 13].as_ref());
 
         let nonce = &[178, 82];
 
         let client_hello_message = ClientHelloMessage {
             server_name: Some("localhost".to_owned()),
             source_address_token: Some(vec![218, 222, 106, 114, 56, 12, 239, 92]),
-            proof_demands: vec![Proof::X509],
+            proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![85, 92, 54, 198],
             cached_certificates: vec![162, 78, 217],
             version: version::DRAFT_IETF_01,
@@ -190,7 +191,13 @@ mod tests {
 
         let server_configuration = ServerConfiguration {
             server_configuration_id: ServerConfigurationId::from([47, 178, 205, 244, 98, 47, 195, 231, 65, 252, 33, 230, 177, 39, 87, 77]),
-            key_exchange_algorithms: vec![KeyExchangeAlgorithm::Curve25519]
+            key_exchange_algorithms: [KeyExchangeAlgorithm::Curve25519].as_ref().into(),
+            aead_algorithms: [AeadAlgorithm::AesGcm].as_ref().into(),
+            public_keys: [PublicKey::from([7u8,3,6].as_ref())].as_ref().into(),
+            orbit: 654656,
+            expiry_time: 65474234,
+            versions: [version::DRAFT_IETF_01].as_ref().into(),
+            shared_key: SharedKey::from([165u8, 123, 765].as_ref()),
         };
 
         let leaf_certificate = Certificate::from(vec![65, 12, 645]);
