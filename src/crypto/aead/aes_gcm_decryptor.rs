@@ -31,7 +31,6 @@ impl AeadDecryptor for AesGcmDecryptor {
 
         let cipher = Cipher::aes_128_gcm();
 
-        let tag_start = cipher_text.len() - 12;
         let (tag, cipher_text) = cipher_text.split_at(cipher_text.len() - 12);
 
         // Using openssl here as it is the only crate which currently supports variable tag widths
