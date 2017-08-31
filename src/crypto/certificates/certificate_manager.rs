@@ -23,27 +23,27 @@ fn build_signature_input(
     // The signature is calculated over:
     let mut signature_input = Vec::new();
 
-    // // 1. The label “QUIC server config signature”
-    // // TODO LH Is this the actual label, the go and C++ impl have:
-    // // "QUIC CHLO and server config signature\x00"
-    // signature_input.extend(b"QUIC server config signature");
+    // 1. The label “QUIC server config signature”
+    // TODO LH Is this the actual label, the go and C++ impl have:
+    // "QUIC CHLO and server config signature\x00"
+    signature_input.extend(b"QUIC server config signature");
 
-    // // 2. The 32 bit length of the hash in the next field in bytes (which is 8).
-    // 8u32.write_to_vec(&mut signature_input);
+    // 2. The 32 bit length of the hash in the next field in bytes (which is 8).
+    8u32.write_to_vec(&mut signature_input);
 
-    // // 3. The SHA256 hash of the CHLO
-    // let mut client_hello_bytes = Vec::new();
-    // HandshakeMessage::write_client_hello(&mut client_hello_bytes, client_hello_message)
-    //     .expect("there should be no issue writing to a vec");
+    // 3. The SHA256 hash of the CHLO
+    let mut client_hello_bytes = Vec::new();
+    HandshakeMessage::write_client_hello(&mut client_hello_bytes, client_hello_message)
+        .expect("there should be no issue writing to a vec");
 
-    // signature_input.extend(digest(&SHA256, client_hello_bytes.as_slice()).as_ref());
+    signature_input.extend(digest(&SHA256, client_hello_bytes.as_slice()).as_ref());
 
-    // // 4. An 0x00 byte
-    // signature_input.push(0u8);
+    // 4. An 0x00 byte
+    signature_input.push(0u8);
 
-    // // 5. The serialised server config.
-    // HandshakeMessage::write_server_configuration(&mut signature_input, server_configuration)
-    //     .expect("there should be no issue writing to a vec");
+    // 5. The serialised server config.
+    HandshakeMessage::write_server_configuration(&mut signature_input, server_configuration)
+        .expect("there should be no issue writing to a vec");
 
     digest(&SHA256, signature_input.as_slice())
 }
