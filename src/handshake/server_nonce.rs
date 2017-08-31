@@ -1,8 +1,6 @@
 use errors::*;
 use protocol::{Writable, Readable};
 use std::io::{Read, Write};
-use time::{self, Timespec};
-use byteorder::{BigEndian, ByteOrder};
 use rand::{Rng, OsRng};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -21,6 +19,10 @@ impl ServerNonce {
         rng.fill_bytes(&mut nonce);
 
         Ok(ServerNonce(nonce))
+    }
+    
+    pub fn bytes(&self) -> &[u8] {
+        &self.0 as &[u8]
     }
 }
 

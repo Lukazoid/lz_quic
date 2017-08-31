@@ -1,13 +1,14 @@
 use errors::*;
-use crypto::certificates::{Certificate, ProofVerifier};
+use crypto::certificates::Certificate;
+use crypto::signing::{SignatureVerifier, Signature};
 use untrusted::Input;
 use webpki::{self, EndEntityCert};
 
 #[derive(Debug, Default)]
-pub struct WebPkiProofVerifier;
+pub struct WebPkiSignatureVerifier;
 
-impl ProofVerifier for WebPkiProofVerifier {
-    fn verify(&self, certificate: &Certificate, data: &[u8], proof: &[u8]) -> Result<()> {
+impl SignatureVerifier for WebPkiSignatureVerifier {
+    fn verify(&self, certificate: &Certificate, data: &[u8], signature: &Signature) -> Result<()> {
         // We have to map the error as webpki::Error does not currently implement the Error trait (see https://github.com/briansmith/webpki/pull/3)
         let end_entity_cert = EndEntityCert::from(Input::from(certificate.bytes()))
             .map_err(|e| Error::from(format!("{:?}", e)))
@@ -22,10 +23,10 @@ impl ProofVerifier for WebPkiProofVerifier {
         ];
 
         let data = Input::from(data);
-        let proof = Input::from(proof);
+        let signature = Input::from(signature.bytes());
 
         for algorithm in algorithms.into_iter() {
-            match end_entity_cert.verify_signature(algorithm, data, proof) {
+            match end_entity_cert.verify_signature(algorithm, data, signature) {
                 Ok(_) => {
                     return Ok(());
                 }
@@ -49,12 +50,13 @@ mod tests {
 
     #[test]
     fn verify_verifies_correctly() {
-        let proof_verifier = WebPkiProofVerifier::default();
+        let proof_verifier = WebPkiSignatureVerifier::default();
 
-        let certificate = Certificate::from(include_bytes!("example.cer").to_vec());
-        let signature = include_bytes!("readme.signature.dat");
-        let proof = include_bytes!("readme.md");
+        let certificate = Certificate::from(include_bytes!("../certificates/example.cer").to_vec());
+        let signature_data = include_bytes!("readme.signature.dat");
+        let signature = Signature::from(signature_data as &[u8]);
+        let data = include_bytes!("readme.md");
 
-        proof_verifier.verify(&certificate, proof, signature).unwrap();
+        proof_verifier.verify(&certificate, data, &signature).unwrap();
     }
 }

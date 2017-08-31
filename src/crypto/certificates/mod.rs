@@ -34,17 +34,5 @@ lazy_static! {
     pub static ref CERTIFICATE_COMPRESSOR: CertificateCompressor = CertificateCompressor::new(build_common_certificate_sets());
 }
 
-mod proof_signer;
-pub use self::proof_signer::ProofSigner;
-
-mod rsa_proof_signer;
-pub use self::rsa_proof_signer::RsaProofSigner;
-
-mod proof_verifier;
-pub use self::proof_verifier::ProofVerifier;
-
-mod webpki_proof_verifier;
-pub use self::webpki_proof_verifier::WebPkiProofVerifier;
-
 mod certificate_manager;
 pub use self::certificate_manager::CertificateManager;

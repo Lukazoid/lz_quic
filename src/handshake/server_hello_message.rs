@@ -1,6 +1,6 @@
 use errors::*;
 use handshake::{ServerConfiguration, HandshakeMessage, Tag, TagValueMap, SourceAddressToken, ServerNonce};
-use conv::TryFrom;
+use crypto::signing::Signature;
 use crypto::PublicKey;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -11,6 +11,7 @@ pub struct ServerHelloMessage {
     pub seconds_to_live: u64,
     pub public_key: PublicKey,
     pub compressed_certificate_chain: Option<Vec<u8>>,
+    pub server_proof: Option<Signature>,
 }
 
 impl ServerHelloMessage {
@@ -32,6 +33,7 @@ impl ServerHelloMessage {
         let seconds_to_live = tag_value_map.get_required_value(Tag::ServerConfigurationTimeToLive)?;
         let public_key = tag_value_map.get_required_value(Tag::PublicValue)?;
         let compressed_certificate_chain: Option<Vec<u8>> = tag_value_map.get_optional_value(Tag::CertificateChain)?;
+        let server_proof = tag_value_map.get_optional_value(Tag::ProofOfAuthenticity)?;
 
         Ok(Self {
             server_configuration: server_configuration,
@@ -40,6 +42,7 @@ impl ServerHelloMessage {
             seconds_to_live: seconds_to_live,
             public_key: public_key,
             compressed_certificate_chain: compressed_certificate_chain,
+            server_proof: server_proof,
         })
     }
 
@@ -70,7 +73,10 @@ impl ServerHelloMessage {
         if let Some(ref compressed_certificate_chain) = self.compressed_certificate_chain {
             tag_value_map.set_value(Tag::CertificateChain, compressed_certificate_chain);
         }
-    
+
+        if let Some(ref server_proof) = self.server_proof {
+            tag_value_map.set_value(Tag::ProofOfAuthenticity, server_proof);
+        }
 
         tag_value_map
     }

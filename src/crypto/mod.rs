@@ -21,3 +21,4 @@ pub mod certificates;
 
 pub mod key_exchange;
 pub mod key_derivation;
+pub mod signing;

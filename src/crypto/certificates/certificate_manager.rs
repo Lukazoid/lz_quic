@@ -1,6 +1,7 @@
 use errors::*;
-use crypto::certificates::{Certificate, CertificateChain, CertificateChainVerifier, ProofSigner,
-                           ProofVerifier, TrustAnchor, WebpkiCertificateChainVerifier};
+use crypto::certificates::{Certificate, CertificateChain, CertificateChainVerifier,
+     TrustAnchor, WebpkiCertificateChainVerifier};
+use crypto::signing::{Signer, SignatureVerifier, Signature};
 use crypto::certificates::CERTIFICATE_COMPRESSOR;
 use std::io::Cursor;
 use std::collections::HashMap;
@@ -91,21 +92,21 @@ impl CertificateManager {
         })
     }
 
-    pub fn sign_server_proof<S: ProofSigner>(
+    pub fn sign_server_proof<S: Signer>(
         &self,
-        proof_signer: &S,
+        signer: &S,
         client_hello_message: &ClientHelloMessage,
         server_configuration: &ServerConfiguration,
-    ) -> Result<Vec<u8>> {
+    ) -> Result<Signature> {
         let signature_input = build_signature_input(client_hello_message, server_configuration);
 
-        proof_signer.sign(signature_input.as_ref())
+        signer.sign(signature_input.as_ref())
     }
 
-    pub fn verify_server_proof<V: ProofVerifier>(
+    pub fn verify_server_proof<V: SignatureVerifier>(
         &self,
-        proof_verifier: &V,
-        proof: &[u8],
+        verifier: &V,
+        signature: &Signature,
         client_hello_message: &ClientHelloMessage,
         server_configuration: &ServerConfiguration,
     ) -> Result<()> {
@@ -116,7 +117,7 @@ impl CertificateManager {
 
         let signature_input = build_signature_input(client_hello_message, server_configuration);
 
-        proof_verifier.verify(leaf_certificate, signature_input.as_ref(), proof)
+        verifier.verify(leaf_certificate, signature_input.as_ref(), signature)
     }
 
     pub fn verify(&self, host_name: &str) -> Result<()> {
@@ -139,8 +140,8 @@ impl CertificateManager {
 mod tests {
     use super::*;
     use handshake::{ClientHelloMessage, ServerConfiguration, ServerConfigurationId};
-    use crypto::certificates::{Certificate, CertificateChain, RsaProofSigner,
-                               CERTIFICATE_COMPRESSOR, WebPkiProofVerifier};
+    use crypto::certificates::{Certificate, CertificateChain,CERTIFICATE_COMPRESSOR};
+    use crypto::signing::{RsaSigner, WebPkiSignatureVerifier};
     use crypto::{Proof, SharedKey};
     use protocol::version;
     use std::collections::HashSet;
@@ -173,7 +174,7 @@ mod tests {
             .set_data(&compressed_certificate_chain)
             .unwrap();
 
-        let proof_signer = RsaProofSigner::from_pkcs8(EXAMPLE_KEY_BYTES).unwrap();
+        let proof_signer = RsaSigner::from_pkcs8(EXAMPLE_KEY_BYTES).unwrap();
 
         let client_hello_message = ClientHelloMessage {
             server_name: Some("example.com".to_owned()),
@@ -196,15 +197,15 @@ mod tests {
             shared_key: SharedKey::from(&[0u8; 10][..]),
         };
 
-        let signed_proof = certificate_manager
+        let signature = certificate_manager
             .sign_server_proof(&proof_signer, &client_hello_message, &server_configuration)
             .unwrap();
 
-        let proof_verifier = WebPkiProofVerifier::default();
+        let proof_verifier = WebPkiSignatureVerifier::default();
         certificate_manager
             .verify_server_proof(
                 &proof_verifier,
-                &signed_proof,
+                &signature,
                 &client_hello_message,
                 &server_configuration,
             )

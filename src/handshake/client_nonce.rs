@@ -1,15 +1,15 @@
 use errors::*;
 use protocol::{Writable, Readable};
 use std::io::{Read, Write};
-use time::{self, Timespec};
 use byteorder::{BigEndian, ByteOrder};
-use rand::{Rng, OsRng};
+use rand::Rng;
+use time;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ClientNonce([u8;32]);
 
 impl ClientNonce {
-    pub fn generate(server_orbit: u64) -> Result<Self> {
+    pub fn generate<R: Rng>(rng: &mut R, server_orbit: u64) -> Result<Self> {
         let mut nonce = [0u8;32];
 
         let seconds_since_epoch = time::now_utc().to_timespec().sec as u32;
@@ -19,16 +19,15 @@ impl ClientNonce {
 
         // 8 bytes of server orbit
         server_orbit.write_to_slice(&mut nonce[4..12]);
-        
-        let mut rng = OsRng::new()
-            .chain_err(|| {
-                ErrorKind::FailedToCreateCryptographicRandomNumberGenerator
-            })?;
 
         // 20 bytes of random data
         rng.fill_bytes(&mut nonce[12..32]);
 
         Ok(ClientNonce(nonce))
+    }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.0 as &[u8]
     }
 }
 

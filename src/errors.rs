@@ -414,8 +414,8 @@ error_chain! {
         UnableToDeriveKeysWithoutALeafCertificate {
             description("unable to derive keys without a leaf certificate")
         }
-        NoOrbitForClientNonce {
-            description("no orbit for client nonce")
+        TheClientNonceHasAlreadyBeenGenerated {
+            description("the client nonce has already been generated")
         }
         FailedToReadClientNonce {
             description("failed to read client nonce")
@@ -449,6 +449,30 @@ error_chain! {
         }
         FailedToSignServerProof {
             description("failed to sign server proof")
+        }
+        ServerProofProvidedBeforeClientHelloSent {
+            description("server proof provided before client hello sent")
+        }
+        FailedToReadSignatureBytes {
+            description("failed to read signature bytes")
+        }
+        FailedToWriteSignatureBytes {
+            description("failed to write signature bytes")
+        }
+        ClientNonceIsRequiredBeforeForwardSecureEncryptionCanBeEstablished {
+            description("client nonce is required before forward secure encryption can be established")
+        }
+        ServerNonceIsRequiredBeforeForwardSecureEncryptionCanBeEstablished {
+            description("server nonce is required before forward secure encryption can be established")
+        }
+        UnableToUpgradeCryptoAsItIsAlreadyAtNonForwardSecureStage {
+            description("unable to upgrade crypto as it is already at non-forward secure stage")
+        }
+        UnableToUpgradeCryptoAsItIsAlreadyAtForwardSecureStage {
+            description("unable to upgrade crypto as it is already at forward secure stage")
+        }
+        UnableToUpgradeCryptoFromUnencryptedToForwardSecureStage {
+            description("unable to upgrade crypto from unencrypted to forward secure stage")
         }
     }
 }

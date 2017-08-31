@@ -1,6 +1,6 @@
 use errors::*;
 use handshake::{ServerConfiguration, HandshakeMessage, Tag, TagValueMap, SourceAddressToken, ServerNonce};
-use conv::TryFrom;
+use crypto::signing::Signature;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct RejectionMessage {
@@ -9,7 +9,7 @@ pub struct RejectionMessage {
     pub server_nonce: Option<ServerNonce>,
     pub seconds_to_live: u64,
     pub compressed_certificate_chain: Option<Vec<u8>>,
-
+    pub server_proof: Option<Signature>,
 }
 
 impl RejectionMessage {
@@ -32,12 +32,15 @@ impl RejectionMessage {
 
         let compressed_certificate_chain: Option<Vec<u8>> = tag_value_map.get_optional_value(Tag::CertificateChain)?;
 
+        let server_proof = tag_value_map.get_optional_value(Tag::ProofOfAuthenticity)?;
+
         Ok(Self {
             server_configuration: server_configuration,
             source_address_token: source_address_token,
             server_nonce: server_nonce,
             seconds_to_live: seconds_to_live,
-            compressed_certificate_chain: compressed_certificate_chain
+            compressed_certificate_chain: compressed_certificate_chain,
+            server_proof: server_proof,
         })
     }
 
@@ -65,6 +68,10 @@ impl RejectionMessage {
 
         if let Some(ref compressed_certificate_chain) = self.compressed_certificate_chain {
             tag_value_map.set_value(Tag::CertificateChain, compressed_certificate_chain);
+        }
+
+        if let Some(ref server_proof) = self.server_proof {
+            tag_value_map.set_value(Tag::ProofOfAuthenticity, server_proof);
         }
     
         tag_value_map
