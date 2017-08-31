@@ -1,13 +1,24 @@
 use errors::*;
 use crypto::aead::{AeadDecryptor, AeadEncryptor, AesGcmDecryptor, AesGcmEncryptor,
                    NullAeadDecryptor, NullAeadEncryptor};
+use crypto::key_derivation::DerivedKeys;
 use packets::PacketNumber;
 use protocol::EncryptionLevel;
+use std::mem;
 
 #[derive(Debug)]
 struct AeadPair {
     encryptor: AesGcmEncryptor,
     decryptor: AesGcmDecryptor,
+}
+
+impl AeadPair {
+    pub fn new(derived_keys: DerivedKeys) -> Self {
+        AeadPair {
+            encryptor: AesGcmEncryptor::new(derived_keys.local_key, derived_keys.local_iv),
+            decryptor: AesGcmDecryptor::new(derived_keys.remote_key, derived_keys.remote_iv),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -21,6 +32,48 @@ pub enum CryptoStage {
 }
 
 impl CryptoStage {
+    
+    pub fn upgrade_to_non_forward_secure(&mut self, derived_keys: DerivedKeys) -> Result<()> {
+        // temporarily take ownership of self
+        match mem::replace(self, CryptoStage::Unencrypted) {
+            CryptoStage::Unencrypted => {
+                *self = CryptoStage::NonForwardSecure{ aead: AeadPair::new(derived_keys) };
+                
+                Ok(())
+            },
+            original @ CryptoStage::NonForwardSecure { .. } | 
+                original @ CryptoStage::ForwardSecure { .. } => {
+                *self = original;
+                
+                bail!(ErrorKind::UnableToUpgradeCryptoAsItIsAlreadyAtNonForwardSecureStage);
+            },
+        }
+    }
+
+    pub fn upgrade_to_forward_secure(&mut self, derived_keys: DerivedKeys) -> Result<()> {
+        // temporarily take ownership of self
+        match mem::replace(self, CryptoStage::Unencrypted) {
+            original @ CryptoStage::Unencrypted => {
+                *self = original;
+
+                bail!(ErrorKind::UnableToUpgradeCryptoFromUnencryptedToForwardSecureStage);
+            },
+            CryptoStage::NonForwardSecure { aead: aead } => {
+                *self = CryptoStage::ForwardSecure{
+                    non_forward_secure: aead,
+                    forward_secure: AeadPair::new(derived_keys)
+                };
+                
+                Ok(())
+            },
+            original @ CryptoStage::ForwardSecure { .. } => {
+                *self = original;
+
+                bail!(ErrorKind::UnableToUpgradeCryptoAsItIsAlreadyAtForwardSecureStage);
+            }
+        }
+    }
+
     pub fn encryption_level(&self) -> EncryptionLevel {
         match *self {
             CryptoStage::Unencrypted => EncryptionLevel::Unencrypted,
@@ -63,7 +116,8 @@ impl CryptoStage {
 
     fn non_forward_secure_encryptor(&self) -> Option<&AesGcmEncryptor> {
         match *self {
-            CryptoStage::NonForwardSecure { aead: ref aead, .. } => Some(&aead.encryptor),
+            CryptoStage::NonForwardSecure { aead: ref aead, .. } |
+            CryptoStage::ForwardSecure { non_forward_secure: ref aead, .. } => Some(&aead.encryptor),
             _ => None,
         }
     }
