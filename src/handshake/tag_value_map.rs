@@ -44,8 +44,8 @@ impl TagValueMap {
         let mut entries = BTreeMap::new();
         for intermediate_entry in intermediate_entries {
             let end_offset = intermediate_entry.end_offset;
-            let length = previous_end_offset - end_offset;
-
+            let length = end_offset - previous_end_offset;
+            
             let mut data = Vec::with_capacity(length as usize);
             io::copy(&mut reader.take(length as u64), &mut data)
                 .chain_err(|| ErrorKind::FailedToReadTagValueMap)?;
@@ -152,7 +152,8 @@ mod tests {
     use errors::*;
     use super::*;
     use handshake::Tag;
-    use protocol::{version, Version};
+    use protocol::{version, Version, Writable};
+    use std::io::Cursor;
 
     #[test]
     fn get_optional_value_for_missing_returns_none() {
@@ -189,5 +190,19 @@ mod tests {
 
         // Assert
         assert!(matches!(result, Err(Error(ErrorKind::MissingTag(Tag::Version), _))));
+    }
+
+    #[test]
+    fn serialization_works() {
+        let mut vec = Vec::new();
+
+        let mut tag_value_map = TagValueMap::default();
+        tag_value_map.set_value(Tag::Version, &version::DRAFT_IETF_01);
+
+        tag_value_map.write_to_vec(&mut vec);
+
+        let read: TagValueMap = TagValueMap::read(&mut Cursor::new(vec), 1).unwrap();
+
+        assert_eq!(tag_value_map, read);
     }
 }
