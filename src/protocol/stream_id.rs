@@ -1,11 +1,12 @@
 use errors::*;
 use rand::Rng;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use byteorder::{ReadBytesExt, LittleEndian, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Write};
 use conv::TryFrom;
+use num::Integer;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct StreamId(u32);
 
 /// An enum for the serialized length of a `StreamId`.
@@ -24,7 +25,27 @@ impl StreamId {
         StreamId(inner)
     }
 
-    pub fn write<W: Write>(&self, writer: &mut W) -> Result<StreamIdLength> {
+    pub fn first_server_stream_id() -> Self {
+        StreamId(2)
+    }
+
+    pub fn first_client_stream_id() -> Self {
+        StreamId(1)
+    }
+
+    pub fn is_server_initiated(self) -> bool {
+        self.0.is_even()
+    }
+
+    pub fn is_client_initiated(self) -> bool {
+        self.0.is_odd()
+    }
+
+    pub fn next(self) -> Self {
+        StreamId(self.0 + 2)
+    }
+
+    pub fn write<W: Write>(self, writer: &mut W) -> Result<StreamIdLength> {
         let inner = self.0;
 
         let leading_zeros = inner.leading_zeros();
