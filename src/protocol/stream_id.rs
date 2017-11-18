@@ -52,6 +52,18 @@ impl StreamId {
     }
 }
 
+impl TryFrom<u32> for StreamId {
+    type Err = Error;
+
+    fn try_from(value: u32) -> Result<Self> {
+        if value == 0 {
+            bail!(ErrorKind::InvalidStreamId(value));
+        }
+
+        Ok(StreamId(value))
+    }
+}
+
 impl Display for StreamId {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         self.0.fmt(f)

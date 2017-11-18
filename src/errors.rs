@@ -396,6 +396,10 @@ error_chain! {
             description("invalid crypto message type")
             display("invalid crypto message type '{}'", tag)
         }
+        InvalidStreamId(value: u32) {
+            description("invalid stream id")
+            display("invalid stream id '{}'", value)
+        }
         ReceivedUnencryptedServerHello {
             description("received unencrypted server hello")
         }
