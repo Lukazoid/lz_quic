@@ -10,6 +10,7 @@ pub struct TagValueMap {
     entries: BTreeMap<Tag, Vec<u8>>,
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 struct IntermediateTagValue {
     tag: Tag,
     end_offset: u32,
