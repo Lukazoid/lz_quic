@@ -31,16 +31,15 @@ impl Readable for Version {
 
 pub const DRAFT_IETF_01: Version = Version(0x100000FF);
 
-lazy_static! {
-    pub static ref SUPPORTED_VERSIONS: Vec<Version> = vec![DRAFT_IETF_01];
-}
+pub static SUPPORTED_VERSIONS: &'static [Version] = &[DRAFT_IETF_01];
 
 impl Version {
     pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
         // Find the first supported version going from highest -> lowest
-        SUPPORTED_VERSIONS.iter().rev()
-            .find(|v|other.contains(v))
-            .map(|v|*v)
+        SUPPORTED_VERSIONS
+            .iter()
+            .rev()
+            .find(|v| other.contains(v))
+            .map(|v| *v)
     }
 }
-
