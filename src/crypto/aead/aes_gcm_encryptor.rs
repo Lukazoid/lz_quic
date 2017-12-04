@@ -26,7 +26,7 @@ impl AeadEncryptor for AesGcmEncryptor {
         plain_text: &[u8],
         packet_number: PacketNumber,
     ) -> Result<Vec<u8>> {
-
+        trace!("encrypting data");
         let nonce = aead::make_nonce(&self.iv, packet_number);
 
         let cipher = Cipher::aes_128_gcm();
@@ -44,6 +44,8 @@ impl AeadEncryptor for AesGcmEncryptor {
         ).chain_err(|| ErrorKind::FailedToPerformAesGcmEncryption)?;
 
         encrypted.extend_from_slice(&tag);
+
+        debug!("encrypted data");
 
         Ok(encrypted)
     }

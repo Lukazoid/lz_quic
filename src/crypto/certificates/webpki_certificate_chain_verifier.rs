@@ -24,23 +24,29 @@ static SUPPORTED_SIGNATURE_ALGORITHMS : &'static[&'static SignatureAlgorithm] = 
  
  
 fn as_webpki_cert<'a>(certificate: &'a Certificate) -> Result<EndEntityCert<'a>> { 
- 
+    trace!("creating webpki certificate");
     // We have to map the error as webpki::Error does not currently implement the Error trait (see https://github.com/briansmith/webpki/pull/3) 
-    EndEntityCert::from(Input::from(certificate.bytes())) 
+    let end_entity_cert = EndEntityCert::from(Input::from(certificate.bytes())) 
         .map_err(|e| Error::from(format!("{:?}", e))) 
-        .chain_err(||ErrorKind::FailedToParseCertificateFromCertificateChain) 
+        .chain_err(||ErrorKind::FailedToParseCertificateFromCertificateChain)?;
+    debug!("created webpki certificate");
+    Ok(end_entity_cert)
 } 
  
-impl<'a> WebpkiCertificateChainVerifier{ 
-    pub fn new<I:IntoIterator<Item=TrustAnchor>>(trust_anchors: I) -> Self { 
-        WebpkiCertificateChainVerifier{ 
+impl<'a> WebpkiCertificateChainVerifier { 
+    pub fn new<I:IntoIterator<Item=TrustAnchor>>(trust_anchors: I) -> Self {
+        trace!("creating webpki certificate chain verifier");
+        let verifier = WebpkiCertificateChainVerifier{ 
             trust_anchors: trust_anchors.into_iter().collect() 
-        } 
+        };
+        debug!("created webpki certificate chain verifier");
+        verifier
     } 
 } 
  
 impl CertificateChainVerifier for WebpkiCertificateChainVerifier { 
-    fn verify(&self, certificate_chain: &CertificateChain, host_name: &str) -> Result<()> { 
+    fn verify(&self, certificate_chain: &CertificateChain, host_name: &str) -> Result<()> {
+        trace!("verifying certificate chain for host {}", host_name);
         if let Some(leaf_certificate) = certificate_chain.leaf_certificate() { 
             let webpki_cert = as_webpki_cert(leaf_certificate)?; 
  
@@ -63,10 +69,11 @@ impl CertificateChainVerifier for WebpkiCertificateChainVerifier {
             webpki_cert.verify_is_valid_tls_server_cert(SUPPORTED_SIGNATURE_ALGORITHMS, &TLSServerTrustAnchors(webpki_trust_anchors.as_slice()), &intermediate_certificates, now) 
                 .map_err(|e| Error::from(format!("{:?}", e))) 
                 .chain_err(||ErrorKind::InvalidTlsCertificate)?; 
- 
-            Ok(()) 
+            
+            trace!("verified certificate chain for host {}", host_name);
+            Ok(())
         } else { 
             bail!(ErrorKind::CertificateChainIsEmpty); 
-        } 
+        }
     } 
 }

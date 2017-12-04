@@ -1,6 +1,8 @@
 #![recursion_limit="1024"]
 #![cfg_attr(feature = "unstable", feature(test))]
 
+#![allow(dead_code)]
+
 extern crate byteorder;
 extern crate tokio_core;
 extern crate tokio_io;
@@ -27,6 +29,9 @@ extern crate time;
 extern crate lz_diet;
 extern crate extprim;
 extern crate binary_tree;
+extern crate bytes;
+#[macro_use] extern crate log;
+extern crate debugit;
 
 #[cfg(all(feature = "unstable", test))]
 extern crate test;
@@ -48,17 +53,47 @@ mod frames;
 mod crypto;
 mod packets;
 
+mod connection_termination_mode;
+pub use self::connection_termination_mode::ConnectionTerminationMode;
+
+mod new_data_streams;
+pub use self::new_data_streams::NewDataStreams;
+
 mod session;
-pub use self::session::Session;
+use self::session::Session;
 
 mod data_stream;
 pub use self::data_stream::DataStream;
 
+mod stream_map;
+use self::stream_map::StreamMap;
+
 mod client_configuration;
 pub use self::client_configuration::ClientConfiguration;
 
+mod new_data_stream;
+pub use self::new_data_stream::NewDataStream;
+
+mod new_client;
+pub use self::new_client::NewClient;
+
+mod perspective;
+use self::perspective::Perspective;
+
+mod client_perspective;
+pub use self::client_perspective::ClientPerspective;
+
+mod server_perspective;
+pub use self::server_perspective::ServerPerspective;
+
 mod client;
 pub use self::client::Client;
+
+mod remote_client;
+pub use self::remote_client::RemoteClient;
+
+mod new_remote_clients;
+pub use self::new_remote_clients::NewRemoteClients;
 
 mod server;
 pub use self::server::Server;

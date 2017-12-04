@@ -16,6 +16,7 @@ impl AeadEncryptor for NullAeadEncryptor {
         plain_text: &[u8],
         packet_number: PacketNumber,
     ) -> Result<Vec<u8>> {
+        trace!("encrypting data");
         let mut hasher = Fnv1a::<u128>::default();
 
         hasher.write(associated_data);
@@ -34,7 +35,8 @@ impl AeadEncryptor for NullAeadEncryptor {
         (high as u32).write_to_vec(&mut result);
 
         result.extend_from_slice(plain_text);
-
+        debug!("encrypted data");
+        
         Ok(result)
     }
 }

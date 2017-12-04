@@ -26,17 +26,23 @@ impl<'a> From<&'a [u8]> for Signature {
 
 impl Readable for Signature {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
+        trace!("reading signature");
         let mut bytes = Vec::new();
         reader.read_to_end(&mut bytes)
             .chain_err(|| ErrorKind::FailedToReadSignatureBytes)?;
-            
-        Ok(bytes.into())
+        
+        let signature = bytes.into();
+        debug!("read signature {:?}", signature);
+        Ok(signature)
     }
 }
 
 impl Writable for Signature {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing signature {:?}", self);
         writer.write_all(self.bytes())
-            .chain_err(||ErrorKind::FailedToWriteSignatureBytes)
+            .chain_err(||ErrorKind::FailedToWriteSignatureBytes)?;
+        debug!("written signature {:?}", self);
+        Ok(())
     }
 }

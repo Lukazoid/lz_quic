@@ -66,9 +66,15 @@ impl PacketNumber {
 
     /// Returns the "epochs" around this `PacketNumber` given the specified number of trailing bits are removed.
     fn epochs(self, remove_trailing_bits: u8) -> SmallVec<[PacketNumber; 3]> {
+        trace!("calculating epochs of packet {:?} after removal of {} trailing bits", self, remove_trailing_bits);
+
         let delta = 1 << remove_trailing_bits;
 
+        trace!("packet number {:?} has a delta of {} after removal of {} trailing bits", self, delta, remove_trailing_bits);
+
         let epoch = self.0 & !(delta - 1);
+
+        trace!("packet number {:?} has an epoch of {} after removal of {} trailing bits", self, epoch, remove_trailing_bits);
 
         let mut result = SmallVec::new();
 
@@ -81,6 +87,8 @@ impl PacketNumber {
         if let Some(last) = epoch.checked_add(delta) {
             result.push(last.into())
         }
+
+        debug!("calculated epochs {:?} of packet {:?} after removal of {} trailing bits", result, self, remove_trailing_bits);
 
         result
     }
@@ -98,7 +106,12 @@ impl Add<u64> for PacketNumber {
 
 impl Writable for PacketNumber {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        self.0.write(writer)
+        trace!("writing packet number {:?}", self);
+
+        self.0.write(writer)?;
+
+        debug!("written packet number {:?}", self);
+        Ok(())
     }
 }
 
@@ -136,6 +149,8 @@ impl PartialPacketNumberLength {
 
 impl PartialPacketNumber {
     pub fn from_packet_number(packet_number: PacketNumber, lowest_unacknowledged: PacketNumber) -> Result<PartialPacketNumber> {
+        trace!("calculating partial packet number for packet number {:?} with a lowest acknowledged packet number of {:?}", packet_number, lowest_unacknowledged);
+
         let diff = packet_number.0.checked_sub(lowest_unacknowledged.0)
             .ok_or_else(|| Error::from_kind(ErrorKind::FailedToBuildPartialPacketNumber))?;
 
@@ -151,14 +166,17 @@ impl PartialPacketNumber {
             bail!(ErrorKind::FailedToBuildPartialPacketNumber)
         };
 
+        debug!("calculated partial packet number {:?} for packet number {:?} with a lowest acknowledged packet number of {:?}", partial_packet_number, packet_number, lowest_unacknowledged);
+
         Ok(partial_packet_number)
     }
 
     pub fn infer_packet_number(self,
                                largest_acknowledged: Option<PacketNumber>)
                                -> Result<PacketNumber> {
+        trace!("infering packet number from partial packet number {:?} with a largest acknowledged packet number of {:?}", self, largest_acknowledged);
 
-        if let Some(largest_acknowledged) = largest_acknowledged {
+        let packet_number = if let Some(largest_acknowledged) = largest_acknowledged {
             if let Some(next) = largest_acknowledged.next() {
                 let epochs = largest_acknowledged.epochs(self.len().bit_len());
 
@@ -171,14 +189,17 @@ impl PartialPacketNumber {
                         .min_by_key(|pn| u64::from(*pn).abs_delta(next_u64))
                         .expect("there should always be a closest as there are always 3 epochs");
 
-                Ok(closest)
+                closest
             } else {
                 bail!(ErrorKind::FailedToInferPacketNumber);
             }
         } else {
-            Ok(PacketNumber::from(u64::from(self)))
-        }
+            PacketNumber::from(u64::from(self))
+        };
 
+        debug!("infered packet number {:?} from partial packet number {:?} with a largest acknowledged packet number of {:?}", packet_number, self, largest_acknowledged);
+
+        Ok(packet_number)
     }
 
     pub fn len(self) -> PartialPacketNumberLength {
@@ -191,6 +212,8 @@ impl PartialPacketNumber {
     }
 
     pub fn read<R: Read>(reader: &mut R, length: PartialPacketNumberLength) -> Result<Self> {
+        trace!("reading partial packet number of length {:?}", length);
+
         let partial_packet_number = match length {
             PartialPacketNumberLength::OneByte => {
                 let value = u8::read(reader).chain_err(||ErrorKind::FailedToReadPartialPacketNumber)?;
@@ -210,18 +233,26 @@ impl PartialPacketNumber {
             }
         };
 
+        debug!("read partial packet number {:?}", partial_packet_number);
+
         Ok(partial_packet_number)
     }
 }
 
 impl Writable for PartialPacketNumber {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing partial packet number {:?}", self);
+
         match *self {
             PartialPacketNumber::OneByte(value) => value.write(writer),
             PartialPacketNumber::TwoBytes(value) => value.write(writer),
             PartialPacketNumber::FourBytes(value) => value.write(writer),
             PartialPacketNumber::SixBytes(value) => value.write(writer),
-        }.chain_err(||ErrorKind::FailedToWritePartialPacketNumber)
+        }.chain_err(||ErrorKind::FailedToWritePartialPacketNumber)?;
+
+        debug!("written partial packet number {:?}", self);
+
+        Ok(())
     }
 }
 

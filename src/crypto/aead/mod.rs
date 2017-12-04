@@ -15,11 +15,12 @@ use crypto::InitializationVector;
 use protocol::Writable;
 
 pub fn make_nonce(iv: &InitializationVector, packet_number: PacketNumber) -> Vec<u8> {
+    trace!("making new nonce from initialization vector {:?} and packet number {:?}", iv, packet_number);
     let mut result = Vec::new();
 
     result.extend_from_slice(iv.bytes());
     packet_number.write_to_vec(&mut result);
-
+    debug!("made new nonce from initialization vector {:?} and packet number {:?}", iv, packet_number);
     result
 }
 

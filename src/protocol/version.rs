@@ -15,7 +15,9 @@ impl Display for Version {
 
 impl Writable for Version {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing version {:?}", self);
         self.0.write(writer)?;
+        debug!("written version {:?}", self);
 
         Ok(())
     }
@@ -23,8 +25,9 @@ impl Writable for Version {
 
 impl Readable for Version {
     fn read<R: Read>(reader: &mut R) -> Result<Version> {
+        trace!("reading version");
         let version = u32::read(reader).map(Version)?;
-
+        debug!("read version {:?}", version);
         Ok(version)
     }
 }
@@ -35,11 +38,20 @@ pub static SUPPORTED_VERSIONS: &'static [Version] = &[DRAFT_IETF_01];
 
 impl Version {
     pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
+        trace!("finding highest supported version from {:?}", other);
         // Find the first supported version going from highest -> lowest
-        SUPPORTED_VERSIONS
+        let highest_version = SUPPORTED_VERSIONS
             .iter()
             .rev()
             .find(|v| other.contains(v))
-            .map(|v| *v)
+            .map(|v| *v);
+
+        if let Some(highest_version) = highest_version {
+            debug!("found supported version {:?}", highest_version);
+            Some(highest_version)
+        } else {
+            debug!("unable to find supported version");
+            None
+        }
     }
 }

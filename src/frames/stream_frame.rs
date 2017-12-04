@@ -1,4 +1,3 @@
-use errors::*;
 use protocol::StreamId;
 use frames::StreamOffset;
 

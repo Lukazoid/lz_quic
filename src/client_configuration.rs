@@ -1,5 +1,9 @@
+use ConnectionTerminationMode;
+
 #[derive(Debug)]
-pub struct ClientConfiguration;
+pub struct ClientConfiguration{
+    pub connection_termination_mode: ConnectionTerminationMode,
+}
 
 impl ClientConfiguration {
     pub fn new() -> Self {
@@ -9,6 +13,8 @@ impl ClientConfiguration {
 
 impl Default for ClientConfiguration {
     fn default() -> Self {
-        ClientConfiguration {}
+        ClientConfiguration {
+            connection_termination_mode: ConnectionTerminationMode::Explicit,
+        }
     }
 }

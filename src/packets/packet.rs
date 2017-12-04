@@ -1,6 +1,5 @@
 use errors::*;
-use packets::{PublicHeader, PacketNumber};
-use std::io::{Read, Write};
+use packets::PacketNumber;
 use protocol::Version;
 use std::net::SocketAddr;
 use frames::Frame;
@@ -14,6 +13,17 @@ pub enum PacketContent {
         client_address: Option<SocketAddr>,
     },
     Regular { frames: Vec<Frame> },
+}
+
+impl PacketContent {
+    pub fn frames(&self) -> Option<&[Frame]> {
+        match *self {
+            PacketContent::Regular { frames: ref frames } => {
+                Some(frames.as_slice())
+            }
+            _ => None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

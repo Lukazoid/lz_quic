@@ -5,7 +5,7 @@ use packets::{Packet, OutboundPacket};
 pub struct PacketPacker;
 
 impl PacketPacker {
-    pub fn pack_packet(&self, packet: Packet) -> Result<OutboundPacket> {
+    pub fn pack_packet(&mut self) -> Result<OutboundPacket> {
 
 
         unimplemented!()

@@ -27,7 +27,7 @@ impl ClientNonce {
     }
 
     pub fn bytes(&self) -> &[u8] {
-        &self.0 as &[u8]
+        &self.0[..]
     }
 }
 

@@ -20,9 +20,12 @@ pub enum StreamIdLength {
 
 impl StreamId {
     pub fn generate<R: Rng>(rng: &mut R) -> StreamId {
+        trace!("generating new stream id");
         let inner = rng.next_u32();
 
-        StreamId(inner)
+        let stream_id = StreamId(inner);
+        debug!("generated stream id {:?}", stream_id);
+        stream_id
     }
 
     pub fn first_server_stream_id() -> Self {
@@ -46,30 +49,39 @@ impl StreamId {
     }
 
     pub fn write<W: Write>(self, writer: &mut W) -> Result<StreamIdLength> {
+        trace!("writing stream id {:?}", self);
+
         let inner = self.0;
 
+        trace!("calculating stream id length");
         let leading_zeros = inner.leading_zeros();
         let leading_bytes = leading_zeros / 8;
         let header_length = 4 - leading_bytes;
 
         let header_length = StreamIdLength::try_from(header_length as usize)?;
+        debug!("calculated stream id length {:?}", header_length);
 
         let byte_count = header_length.into();
         assert!(byte_count > 0);
+        trace!("writing {} bytes of stream id {:?}", byte_count, self);
         writer
             .write_uint::<LittleEndian>(inner as u64, byte_count)
             .chain_err(|| ErrorKind::FailedToWriteBytes(byte_count))?;
-
+        debug!("written stream id {:?} with length {:?}", self, header_length);
+        
         Ok(header_length)
     }
 
     pub fn read<R: Read>(reader: &mut R, length: StreamIdLength) -> Result<StreamId> {
+        trace!("reading stream id of length {:?}", length);
         let byte_count: usize = length.into();
         let inner = reader
             .read_uint::<LittleEndian>(byte_count)
             .chain_err(|| ErrorKind::FailedToReadBytes)? as u32;
+        let stream_id = StreamId(inner);
+        debug!("read stream id {:?}", stream_id);
 
-        Ok(StreamId(inner))
+        Ok(stream_id)
     }
 }
 

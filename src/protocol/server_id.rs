@@ -11,5 +11,12 @@ impl ServerId {
             port: port,
         }
     }
-}
 
+    pub fn host(&self) -> &str {
+        &self.host
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+}

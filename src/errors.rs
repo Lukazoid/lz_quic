@@ -478,6 +478,9 @@ error_chain! {
         UnableToUpgradeCryptoFromUnencryptedToForwardSecureStage {
             description("unable to upgrade crypto from unencrypted to forward secure stage")
         }
+        FailedToPerformClientHandshake {
+            description("failed to perform client handshake")
+        }
     }
 }
 
@@ -508,19 +511,19 @@ impl Error {
     /// `None` if there was no cause.
     /// `Some(None)` if there was a cause which could not be downcast to `T`.
     /// `Some(Some(T))` if the cause was successfully downcast to `T`.
-    pub fn downcast_cause<T: StdError + 'static>(&self) -> Option<Option<&T>>
+    pub(crate) fn downcast_cause<T: StdError + 'static>(&self) -> Option<Option<&T>>
     {
         self.1.next_error.as_ref()
             .map(|e| e.downcast_ref::<T>())
     }
 
     /// Determines whether this or one of the `Error` causes satisfies `predicate`.
-    pub fn has_error<P:FnMut(&Error) -> bool>(&self, predicate: P) -> bool {
+    pub(crate) fn has_error<P:FnMut(&Error) -> bool>(&self, predicate: P) -> bool {
         self.errors().any(predicate)
     }
 
     /// Returns an `Iterator` which iterates over `self` and all `Error` causes.
-    pub fn errors(&self) -> ErrorsIterator {
+    pub(crate) fn errors(&self) -> ErrorsIterator {
         ErrorsIterator { current_error: Some(self) }
     }
 }

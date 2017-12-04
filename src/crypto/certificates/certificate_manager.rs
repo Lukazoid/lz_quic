@@ -1,7 +1,7 @@
 use errors::*;
-use crypto::certificates::{Certificate, CertificateChain, CertificateChainVerifier,
-     TrustAnchor, WebpkiCertificateChainVerifier};
-use crypto::signing::{Signer, SignatureVerifier, Signature};
+use crypto::certificates::{Certificate, CertificateChain, CertificateChainVerifier, TrustAnchor,
+                           WebpkiCertificateChainVerifier};
+use crypto::signing::{Signature, SignatureVerifier, Signer};
 use crypto::certificates::CERTIFICATE_COMPRESSOR;
 use std::io::Cursor;
 use std::collections::HashMap;
@@ -9,7 +9,7 @@ use lz_fnv::Fnv1a;
 use std::hash::{Hash, Hasher};
 use handshake::{ClientHelloMessage, HandshakeMessage, ServerConfiguration};
 use ring::digest::{digest, Digest, SHA256};
-use protocol::{Readable, Writable};
+use protocol::Writable;
 
 #[derive(Debug, Default)]
 pub struct CertificateManager {
@@ -110,10 +110,9 @@ impl CertificateManager {
         client_hello_message: &ClientHelloMessage,
         server_configuration: &ServerConfiguration,
     ) -> Result<()> {
-        let leaf_certificate = self.leaf_certificate()
-            .ok_or_else(|| {
-                Error::from(ErrorKind::UnableToVerifyWithoutACertificateChain)
-            })?;
+        let leaf_certificate = self.leaf_certificate().ok_or_else(|| {
+            Error::from(ErrorKind::UnableToVerifyWithoutACertificateChain)
+        })?;
 
         let signature_input = build_signature_input(client_hello_message, server_configuration);
 
@@ -121,11 +120,9 @@ impl CertificateManager {
     }
 
     pub fn verify(&self, host_name: &str) -> Result<()> {
-        let certificate_chain = self.certificate_chain
-            .as_ref()
-            .ok_or_else(|| {
-                Error::from(ErrorKind::UnableToVerifyWithoutACertificateChain)
-            })?;
+        let certificate_chain = self.certificate_chain.as_ref().ok_or_else(|| {
+            Error::from(ErrorKind::UnableToVerifyWithoutACertificateChain)
+        })?;
 
         if let Some(ref verifier) = self.certificate_chain_verifier {
             verifier.verify(certificate_chain, host_name)
@@ -140,7 +137,7 @@ impl CertificateManager {
 mod tests {
     use super::*;
     use handshake::{ClientHelloMessage, ServerConfiguration, ServerConfigurationId};
-    use crypto::certificates::{Certificate, CertificateChain,CERTIFICATE_COMPRESSOR};
+    use crypto::certificates::{Certificate, CertificateChain, CERTIFICATE_COMPRESSOR};
     use crypto::signing::{RsaSigner, WebPkiSignatureVerifier};
     use crypto::{Proof, SharedKey};
     use protocol::version;
@@ -154,7 +151,6 @@ mod tests {
 
     #[test]
     pub fn verify_server_proof_verifies_signed_server_proof() {
-
         let example_certificate = Certificate::from(EXAMPLE_CERTIFICATE_BYTES.to_vec());
 
         let certificate_chain = CertificateChain::from(vec![example_certificate]);
@@ -178,12 +174,12 @@ mod tests {
 
         let client_hello_message = ClientHelloMessage {
             server_name: Some("example.com".to_owned()),
-            source_address_token: Some(vec![1, 2, 3]),
+            source_address_token: Some([1u8, 2, 3][..].into()),
             proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![],
             cached_certificates: vec![],
             version: version::DRAFT_IETF_01,
-            leaf_certificate: certificate_manager.leaf_certificate_hash().unwrap(),
+            leaf_certificate: certificate_manager.leaf_certificate_hash(),
         };
 
         let server_configuration = ServerConfiguration {

@@ -17,15 +17,20 @@ impl Display for ConnectionId {
 
 impl Readable for ConnectionId {
     fn read<R: Read>(reader: &mut R) -> Result<ConnectionId> {
+        trace!("reading connection id");
         let inner = u64::read(reader)?;
+        let connection_id = ConnectionId(inner);
+        debug!("read connection id {:?}", connection_id);
 
-        Ok(ConnectionId(inner))
+        Ok(connection_id)
     }
 }
 
 impl Writable for ConnectionId {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing connection id {:?}", self);
         self.0.write(writer)?;
+        debug!("written connection id {:?}", self);
 
         Ok(())
     }
@@ -33,8 +38,11 @@ impl Writable for ConnectionId {
 
 impl ConnectionId {
     pub fn generate<R: Rng>(rng: &mut R) -> ConnectionId {
+        trace!("generating new connection id");
         let inner = rng.next_u64();
-
-        ConnectionId(inner)
+        let connection_id = ConnectionId(inner);
+        debug!("generated new connection id {:?}", connection_id);
+        
+        connection_id
     }
 }

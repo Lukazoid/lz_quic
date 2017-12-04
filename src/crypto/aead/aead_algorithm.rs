@@ -12,17 +12,23 @@ pub enum AeadAlgorithm {
 
 impl Writable for AeadAlgorithm {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing aead algorithm {:?}", self);
         let tag: Tag = (*self).into();
 
-        tag.write(writer)
+        tag.write(writer)?;
+        debug!("written aead algorithm {:?}", self);
+        Ok(())
     }
 }
 
 impl Readable for AeadAlgorithm {
     fn read<R: Read>(reader: &mut R) -> Result<AeadAlgorithm> {
+        trace!("reading aead algorithm");
         let tag = Tag::read(reader)?;
 
-        Ok(AeadAlgorithm::from(tag))
+        let aead_algorithm = AeadAlgorithm::from(tag);
+        debug!("read aead algorithm {:?}", aead_algorithm);
+        Ok(aead_algorithm)
     }
 }
 

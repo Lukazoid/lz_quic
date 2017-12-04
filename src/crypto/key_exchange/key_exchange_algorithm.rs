@@ -7,7 +7,7 @@ use protocol::{Readable, Writable};
 pub enum KeyExchangeAlgorithm {
     Curve25519,
     P256,
-    Unsupported(Tag)
+    Unsupported(Tag),
 }
 
 impl KeyExchangeAlgorithm {
@@ -18,17 +18,24 @@ impl KeyExchangeAlgorithm {
 
 impl Writable for KeyExchangeAlgorithm {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing key exchange algorithm {:?}", self);
         let tag: Tag = (*self).into();
 
-        tag.write(writer)
+        tag.write(writer)?;
+        trace!("written key exchange algorithm {:?}", self);
+        Ok(())
     }
 }
 
 impl Readable for KeyExchangeAlgorithm {
     fn read<R: Read>(reader: &mut R) -> Result<KeyExchangeAlgorithm> {
+        trace!("reading key exchange algorithm");
         let tag = Tag::read(reader)?;
 
-        Ok(KeyExchangeAlgorithm::from(tag))
+        let key_exchange_algorithm = KeyExchangeAlgorithm::from(tag);
+        debug!("read key exchange algorithm {:?}", key_exchange_algorithm);
+
+        Ok(key_exchange_algorithm)
     }
 }
 

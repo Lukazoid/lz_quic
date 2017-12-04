@@ -4,11 +4,12 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use primitives::{ReadQuicPrimitives, U24, U48};
 use std::marker::PhantomData;
 use std::iter::FromIterator;
+use debugit::DebugIt;
 
 #[derive(Debug)]
 pub struct ReadableIterator<'a, R> {
     length: u64,
-    cursor: Cursor<&'a[u8]>,
+    cursor: Cursor<&'a [u8]>,
     _phantom: PhantomData<R>,
 }
 
@@ -20,7 +21,7 @@ impl<'a, R: Readable> Iterator for ReadableIterator<'a, R> {
             Some(R::read(&mut self.cursor))
         } else {
             None
-        }        
+        }
     }
 }
 
@@ -33,44 +34,46 @@ pub trait Readable {
     where
         Self: Sized,
     {
+        trace!("reading from bytes {:?}", bytes);
+
         let mut cursor = Cursor::new(bytes);
 
-        Readable::read(&mut cursor)
+        let read_value = Readable::read(&mut cursor)?;
+
+        debug!("read {:?} from bytes {:?}", DebugIt(&read_value), bytes);
+
+        Ok(read_value)
     }
 
     fn iterator_from_bytes<'a>(bytes: &'a [u8]) -> ReadableIterator<'a, Self>
     where
         Self: Sized,
     {
-        ReadableIterator{
+        trace!("reading from bytes {:?}", bytes);
+
+        ReadableIterator {
             length: bytes.len() as u64,
             cursor: Cursor::new(bytes),
-            _phantom: PhantomData::default()
+            _phantom: PhantomData::default(),
         }
     }
-    
+
     fn collect_from_bytes<C: FromIterator<Self>>(bytes: &[u8]) -> Result<C>
     where
         Self: Sized,
     {
-        let mut error = None;
-        
-        let collection: C = Self::iterator_from_bytes(bytes)
-            .scan(&mut error, |error, result| {
-                match result {
-                    Ok(value) => Some(value),
-                    Err(err) => {
-                        **error = Some(err);
-                        None
-                    }
-                }
-            })
-            .collect();
-        
-        error.map(Err)
-            .unwrap_or(Ok(collection))
-    }
+        trace!("collecting from bytes {:?}", bytes);
 
+        let collection = Self::iterator_from_bytes(bytes).collect::<Result<C>>()?;
+
+        debug!(
+            "collected {:?} from bytes {:?}",
+            DebugIt(&collection),
+            bytes
+        );
+
+        Ok(collection)
+    }
 }
 
 impl Readable for Vec<u8> {
@@ -78,12 +81,16 @@ impl Readable for Vec<u8> {
     where
         Self: Sized,
     {
+        trace!("reading byte vector");
+
         let mut vec = Vec::new();
 
-        reader
-            .read_to_end(&mut vec)
-            .map(|_| vec)
-            .chain_err(|| ErrorKind::FailedToReadBytes)
+        reader.read_to_end(&mut vec)
+            .chain_err(|| ErrorKind::FailedToReadBytes)?;
+
+        debug!("read byte vector {:?}", vec);
+
+        Ok(vec)
     }
 }
 
@@ -92,7 +99,12 @@ impl Readable for u8 {
     where
         Self: Sized,
     {
-        reader.read_u8().chain_err(|| ErrorKind::FailedToReadU8)
+        trace!("reading byte");
+        let byte = reader.read_u8().chain_err(|| ErrorKind::FailedToReadU8)?;
+
+        debug!("read byte {}", byte);
+
+        Ok(byte)
     }
 }
 
@@ -101,9 +113,15 @@ impl Readable for u16 {
     where
         Self: Sized,
     {
-        reader
+        trace!("reading unsigned 16-bit integer");
+
+        let value = reader
             .read_u16::<LittleEndian>()
-            .chain_err(|| ErrorKind::FailedToReadU16)
+            .chain_err(|| ErrorKind::FailedToReadU16)?;
+
+        debug!("read unsigned 16-bit integer {}", value);
+
+        Ok(value)
     }
 }
 
@@ -112,8 +130,14 @@ impl Readable for U24 {
     where
         Self: Sized,
     {
-        ReadQuicPrimitives::read_u24::<LittleEndian>(reader)
-            .chain_err(|| ErrorKind::FailedToReadU24)
+        trace!("reading unsigned 24-bit integer");
+
+        let value = ReadQuicPrimitives::read_u24::<LittleEndian>(reader)
+            .chain_err(|| ErrorKind::FailedToReadU24)?;
+
+        debug!("read unsigned 24-bit integer {}", value);
+
+        Ok(value)
     }
 }
 
@@ -122,9 +146,15 @@ impl Readable for u32 {
     where
         Self: Sized,
     {
-        reader
+        trace!("reading unsigned 32-bit integer");
+
+        let value = reader
             .read_u32::<LittleEndian>()
-            .chain_err(|| ErrorKind::FailedToReadU32)
+            .chain_err(|| ErrorKind::FailedToReadU32)?;
+
+        debug!("read unsigned 32-bit integer {}", value);
+
+        Ok(value)
     }
 }
 
@@ -133,9 +163,15 @@ impl Readable for U48 {
     where
         Self: Sized,
     {
-        reader
+        trace!("reading unsigned 48-bit integer");
+
+        let value = reader
             .read_u48::<LittleEndian>()
-            .chain_err(|| ErrorKind::FailedToReadU48)
+            .chain_err(|| ErrorKind::FailedToReadU48)?;
+
+        debug!("read unsigned 48-bit integer {}", value);
+
+        Ok(value)
     }
 }
 
@@ -144,9 +180,15 @@ impl Readable for u64 {
     where
         Self: Sized,
     {
-        reader
+        trace!("reading unsigned 64-bit integer");
+
+        let value = reader
             .read_u64::<LittleEndian>()
-            .chain_err(|| ErrorKind::FailedToReadU64)
+            .chain_err(|| ErrorKind::FailedToReadU64)?;
+
+        debug!("read unsigned 64-bit integer {}", value);
+
+        Ok(value)
     }
 }
 
@@ -155,10 +197,15 @@ impl Readable for String {
     where
         Self: Sized,
     {
+        trace!("reading string");
+
         let mut string = String::new();
         reader
             .read_to_string(&mut string)
-            .map(|_| string)
-            .chain_err(|| ErrorKind::FailedToReadString)
+            .chain_err(|| ErrorKind::FailedToReadString)?;
+
+        debug!("read string {}", string);
+
+        Ok(string)
     }
 }

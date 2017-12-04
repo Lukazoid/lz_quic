@@ -150,16 +150,22 @@ impl Tag {
 
 impl Writable for Tag {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        Ok(self.as_u32().write(writer)?)
+        trace!("writing tag {:?}", self);
+        self.as_u32().write(writer)?;
+        debug!("written tag {:?}", self);
+
+        Ok(())
     }
 }
 
 impl Readable for Tag {
     fn read<R: Read>(reader: &mut R) -> Result<Tag> {
+        trace!("reading tag");
         let mut bytes = [0; 4];
         let tag = reader.read_exact(&mut bytes)
             .chain_err(|| ErrorKind::FailedToReadBytes)
             .map(|_| Self::from(bytes))?;
+        debug!("read tag {:?}", tag);
 
         Ok(tag)
     }

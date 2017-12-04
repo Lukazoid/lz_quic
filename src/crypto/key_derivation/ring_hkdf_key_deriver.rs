@@ -6,7 +6,7 @@ use crypto::certificates::Certificate;
 use crypto::{InitializationVector, SharedKey, SecretKey, DiversificationNonce};
 use ring::hkdf;
 use ring::hmac::SigningKey;
-use ring::digest::{self, Algorithm};
+use ring::digest::Algorithm;
 use protocol::Writable;
 
 #[derive(Debug)]
@@ -71,8 +71,8 @@ impl RingHkdfKeyDeriver {
     }
 
     fn diversify(&self, key: &mut SecretKey, iv: &mut InitializationVector, diversification_nonce: &DiversificationNonce) {
-        let mut key_len;
-        let mut iv_len;
+        let key_len;
+        let iv_len;
         let mut out;
         {
             let key_bytes = key.bytes();    
@@ -181,12 +181,12 @@ mod tests {
 
         let client_hello_message = ClientHelloMessage {
             server_name: Some("localhost".to_owned()),
-            source_address_token: Some(vec![218, 222, 106, 114, 56, 12, 239, 92]),
+            source_address_token: Some([218u8, 222, 106, 114, 56, 12, 239, 92][..].into()),
             proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![85, 92, 54, 198],
             cached_certificates: vec![162, 78, 217],
             version: version::DRAFT_IETF_01,
-            leaf_certificate: 65462344,
+            leaf_certificate: Some(65462344),
         };
 
         let server_configuration = ServerConfiguration {

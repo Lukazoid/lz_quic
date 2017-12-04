@@ -1,31 +1,55 @@
 use errors::*;
 use protocol::ConnectionId;
-use packets::{PacketCodec, Packet};
-use futures::stream::{BoxStream, Stream};
-use futures::sink::BoxSink;
+use packets::{InboundPacketStore, Packet, PacketCodec};
 use tokio_core::net::{UdpFramed, UdpSocket};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
+use std::net::SocketAddr;
+use std::collections::HashMap;
+use futures::stream::Stream;
+use futures::sink::Sink;
 
+struct DebuggableFramed(UdpFramed<PacketCodec>);
+
+impl Debug for DebuggableFramed {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        write!(f, "UdpFramed<PacketCodec>")
+    }
+}
+
+#[derive(Debug)]
 pub struct PacketDispatcher {
-    // packet_stores: Hashmap<ConnectionId, InboundPacketStore>
-    framed: UdpFramed<PacketCodec>,
+    inbound_packet_stores: HashMap<ConnectionId, InboundPacketStore>,
+    framed: DebuggableFramed,
 }
 
 impl PacketDispatcher {
     pub fn new(udp_socket: UdpSocket) -> Self {
         let framed = udp_socket.framed(PacketCodec::default());
-        
+
         Self {
-            framed: framed
+            inbound_packet_stores: HashMap::new(),
+            framed: DebuggableFramed(framed),
         }
     }
 
-    pub fn incoming_stream(&self, connection_id: ConnectionId) -> BoxStream<Packet, Error> {
-
-        unimplemented!()
+    pub fn local_addr(&self) -> Result<SocketAddr> {
+        self.framed
+            .0
+            .get_ref()
+            .local_addr()
+            .chain_err(|| ErrorKind::FailedToGetLocalAddress)
     }
 
-    pub fn outgoing_sink(&self, connection_id: ConnectionId) -> BoxSink<Packet, Error> {
+    // pub fn incoming_stream(
+    //     &self,
+    //     connection_id: ConnectionId,
+    // ) -> Box<Stream<Item = Packet, Error = Error> + Send> {
 
-        unimplemented!()
-    }
+    //     unimplemented!()
+    // }
+
+    // pub fn outgoing_sink(&self, connection_id: ConnectionId) -> Box<Sink<Packet, Error> + Send> {
+
+    //     unimplemented!()
+    // }
 }

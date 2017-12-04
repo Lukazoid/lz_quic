@@ -25,10 +25,15 @@ bitflags!(
         const SIX_BYTE_PACKET_NUMBER    = 0x30,
     }
 );
+
 impl Readable for PublicHeader {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
+        trace!("reading public header");
+
+        trace!("reading public header flags");
         let flags = u8::read(reader).chain_err(|| ErrorKind::FailedToReadPublicPacketHeaderFlags)?;
         let flags = PublicHeaderBitFlags::from_bits_truncate(flags);
+        debug!("read public header flags {:?}", flags);
 
         let reset_flag = flags.intersects(PUBLIC_FLAG_VERSION);
 
@@ -62,18 +67,24 @@ impl Readable for PublicHeader {
 
         let partial_packet_number = PartialPacketNumber::read(reader, partial_packet_number_length)?;
 
-        Ok(Self {
+        let public_header = Self {
             reset_flag: reset_flag,
             connection_id: connection_id,
             version: version,
             diversification_nonce: diversification_nonce,
             partial_packet_number: partial_packet_number
-        })
+        };
+
+        debug!("read public header {:?}", public_header);
+
+        Ok(public_header)
     }
 }
 
 impl Writable for PublicHeader {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing public header {:?}", self);
+
         let mut flags = PublicHeaderBitFlags::empty();
         if self.version.is_some() {
             flags |= PUBLIC_FLAG_VERSION;
@@ -111,6 +122,8 @@ impl Writable for PublicHeader {
 
         self.partial_packet_number.write(writer)?;
 
+        debug!("written public header {:?}", self);
+        
         Ok(())
     }
 }

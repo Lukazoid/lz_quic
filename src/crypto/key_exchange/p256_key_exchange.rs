@@ -10,10 +10,11 @@ pub struct P256KeyExchange {
 
 impl P256KeyExchange {
     pub fn new() -> Result<Self> {
+        trace!("creating new p256 key exchange");
         let inner = RingKeyExchange::new(&agreement::ECDH_P256)?;
-        Ok(Self {
-            inner: inner
-        })     
+        let key_exchange = Self { inner: inner };
+        trace!("created new p256 key exchange");
+        Ok(key_exchange)
     }
 }
 

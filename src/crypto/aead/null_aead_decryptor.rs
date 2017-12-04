@@ -17,6 +17,8 @@ impl AeadDecryptor for NullAeadDecryptor {
         cipher_text: &[u8],
         packet_number: PacketNumber,
     ) -> Result<Vec<u8>> {
+        trace!("decrypting data");
+
         let hash_length = mem::size_of::<u64>() + mem::size_of::<u32>();
         let cipher_text_length = cipher_text.len();
 
@@ -46,6 +48,8 @@ impl AeadDecryptor for NullAeadDecryptor {
         if (test_high as u32) != actual_high || test_low != actual_low {
             bail!(ErrorKind::FailedToAuthenticateReceivedData);
         }
+
+        debug!("decrypted data");
 
         Ok(plain_text.to_vec())
     }

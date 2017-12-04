@@ -29,6 +29,8 @@ enum CompressedCertificateEntry {
 
 impl Writable for CompressedCertificateEntry {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing compressed certificate entry {:?}", self);
+
         match *self {
             CompressedCertificateEntry::EndOfList => {
                 0u8.write(writer)
@@ -54,6 +56,7 @@ impl Writable for CompressedCertificateEntry {
                 index.write(writer).chain_err(|| ErrorKind::FailedToWriteCommonCertificateIndex)?;
             }
         };
+        debug!("written compressed certificate entry {:?}", self);
 
         Ok(())
     }
@@ -61,6 +64,8 @@ impl Writable for CompressedCertificateEntry {
 
 impl Readable for CompressedCertificateEntry {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
+        trace!("reading compressed certificate entry");
+
         let entry_type = u8::read(reader)
             .chain_err(|| ErrorKind::FailedToReadCompressedCertificateEntryType)?;
 
@@ -86,6 +91,8 @@ impl Readable for CompressedCertificateEntry {
             }
             entry_type @ _ => bail!(ErrorKind::InvalidCompressedCertificateEntryType(entry_type)),
         };
+
+        debug!("read compressed certificate entry {:?}", intermediate_entry);
 
         Ok(intermediate_entry)
     }
@@ -195,18 +202,23 @@ static COMMON_SUBSTRINGS: &'static [u8] =
 
 impl CertificateCompressor {
     pub fn new<I: IntoIterator<Item = CertificateSet>>(common_certificate_sets: I) -> Self {
-        Self {
+        trace!("creating certificate compressor");
+
+        let certificate_compressor = Self {
             common_certificate_sets: common_certificate_sets.into_iter()
                 .map(|certificate_set| (certificate_set.hash(), certificate_set))
                 .collect(),
-        }
+        };
+        debug!("created certificate compressor");
+
+        certificate_compressor
     }
 
     fn match_common_certificate(&self,
                                 certificate: &Certificate,
                                 known_common_certificate_set_hashes: &HashSet<u64>)
                                 -> Option<CompressedCertificateEntry> {
-
+        trace!("attempting to match common certificate");
         let known_common_certificate_sets = self.common_certificate_sets
             .values()
             .map(|c| (c, c.hash()))
@@ -214,13 +226,16 @@ impl CertificateCompressor {
 
         for known_common_certificate_set in known_common_certificate_sets {
             if let Some(index) = known_common_certificate_set.0.index_of(certificate) {
-                return Some(CompressedCertificateEntry::Common {
+                let compressed_certificate_entry = CompressedCertificateEntry::Common {
                     set_hash: known_common_certificate_set.1,
                     index: index as u32,
-                });
+                };
+                debug!("matched common certificate {:?}", compressed_certificate_entry);
+                return Some(compressed_certificate_entry);
             }
         }
 
+        debug!("failed to match common certificate");
         None
     }
 
@@ -229,25 +244,34 @@ impl CertificateCompressor {
                            known_common_certificate_set_hashes: &HashSet<u64>,
                            cached_certificate_hashes: &HashSet<u64>)
                            -> CompressedCertificateEntry {
-        match_cached_certificate(certificate, cached_certificate_hashes)
+        trace!("getting compressed certificate entry");
+        let compressed_entry = match_cached_certificate(certificate, cached_certificate_hashes)
             .or_else(|| {
                 self.match_common_certificate(certificate, known_common_certificate_set_hashes)
             })
-            .unwrap_or(CompressedCertificateEntry::Compressed)
+            .unwrap_or(CompressedCertificateEntry::Compressed);
+
+        debug!("got compressed certificate entry {:?}", compressed_entry);
+        compressed_entry
     }
 
     fn get_known_certificate(&self,
                              compressed_certificate_entry: &CompressedCertificateEntry,
                              cached_certificates: &HashMap<u64, Certificate>)
                              -> Option<Result<Certificate>> {
+        trace!("attempting to get known certificate for {:?}", compressed_certificate_entry);
+
         match *compressed_certificate_entry {
             CompressedCertificateEntry::Cached { hash } => {
                 let cached_certificate = cached_certificates.get(&hash)
                     .cloned()
+                    .map(|c| {
+                        debug!("got cached certificate");
+                        c
+                    })
                     .ok_or_else(|| {
                         Error::from(ErrorKind::FailedToFindCachedCertificateWithHash(hash))
                     });
-
                 Some(cached_certificate)
             }
             CompressedCertificateEntry::Common { set_hash, index } => {
@@ -260,11 +284,18 @@ impl CertificateCompressor {
                             common_certificate_set.certificate(index)
                                 .cloned()
                                 .ok_or_else(||Error::from(ErrorKind::FailedToFindCommonCertificateWithIndexInSet(index, set_hash)))
+                        })
+                        .map(|c| {
+                            debug!("got common certificate");
+                            c 
                         });
 
                 Some(common_certificate)
             }
-            CompressedCertificateEntry::Compressed => None,
+            CompressedCertificateEntry::Compressed => {
+                debug!("got compressed certificate");
+                None
+            },
             CompressedCertificateEntry::EndOfList => {
                 panic!("end of list entries should not be available at this point")
             }
@@ -275,14 +306,17 @@ impl CertificateCompressor {
                                                  cached_certificates: &HashMap<u64, Certificate>,
                                                  reader: &mut R)
                                                  -> Result<CertificateChain> {
+        trace!("decompressing certificate chain");
 
         let compressed_certificate_entries = deserialize_entries(reader)?;
 
         // TODO LH A better way to detect we are at the end of the reader
+        trace!("reading uncompressed certificates length");
         let uncompressed_length = u32::read(reader)
             .chain_err(|| ErrorKind::FailedToReadCompressedCertificatesUncompressedLength)
             .unwrap_or(0) as usize;
-
+        debug!("read uncompressed certificates length {}", uncompressed_length);
+        
         // Check no clients attempt to allocate a too large buffer
         if uncompressed_length > 128 * 1024 {
             bail!(ErrorKind::CompressedCertificatesUncompressedLengthIsTooLarge(uncompressed_length));
@@ -291,6 +325,7 @@ impl CertificateCompressor {
         let mut all_decompressed_certificates =
             Vec::with_capacity(compressed_certificate_entries.len());
 
+        trace!("decompressing known certificates");
         for compressed_certificate_entry in compressed_certificate_entries {
             if let Some(result) =
                    self.get_known_certificate(&compressed_certificate_entry, cached_certificates) {
@@ -299,8 +334,10 @@ impl CertificateCompressor {
                 all_decompressed_certificates.push(None);
             }
         }
+        debug!("decompressed known certificates");
 
         if uncompressed_length > 0 {
+            trace!("decompressing compressed certificates");
             let decompressed_certificates = {
                 let known_certificates: Vec<_> =
                     all_decompressed_certificates.iter().filter_map(|x| x.as_ref()).collect();
@@ -309,6 +346,9 @@ impl CertificateCompressor {
             };
 
             all_decompressed_certificates.as_mut_slice().replace_nones(decompressed_certificates)?;
+            debug!("decompressed compressed certificates");
+        } else {
+            debug!("there are no compressed certificates to decompress");
         }
 
         let mut certificates = Vec::with_capacity(all_decompressed_certificates.len());
@@ -321,6 +361,7 @@ impl CertificateCompressor {
             }
         }
 
+        debug!("compressed certificate chain");
         Ok(certificates.into())
     }
 
@@ -331,7 +372,8 @@ impl CertificateCompressor {
          cached_certificate_hashes: &HashSet<u64>,
          writer: &mut W)
          -> Result<()> {
-
+    
+        trace!("compressing certificate chain");
         let certificate_compression_entries: Vec<_> = certificates.into_iter()
             .map(|certificate| {
                 let compressed_entry = self.to_compressed_entry(certificate,
@@ -342,6 +384,7 @@ impl CertificateCompressor {
             })
             .collect();
 
+        trace!("calculating uncompressed certificates length");
         let uncompressed_length: usize = certificate_compression_entries.iter()
             .filter_map(|&(ref certificate, ref compressed_entry)| match *compressed_entry {
                 CompressedCertificateEntry::Compressed => Some(certificate),
@@ -352,11 +395,11 @@ impl CertificateCompressor {
                 4 + certificate.bytes().len()
             })
             .sum();
+        debug!("calculated uncompressed certificates length {}", uncompressed_length);
 
         serialize_entries(certificate_compression_entries.iter()
                               .map(|&(_, ref compressed_entry)| compressed_entry),
-                          writer)
-            ?;
+                          writer)?;
 
         if uncompressed_length > 0 {
             (uncompressed_length as u32)
@@ -385,7 +428,6 @@ impl CertificateCompressor {
                 .map(|certificates| certificates.as_slice())
                 .unwrap_or(&[]);
 
-
             // Only compress the unknown certificates
             let certificates_to_compress = certificates_by_known.get(&false)
                 .map(|certificates| certificates.as_slice())
@@ -406,19 +448,25 @@ impl CertificateCompressor {
 fn match_cached_certificate(certificate: &Certificate,
                             cached_certificate_hashes: &HashSet<u64>)
                             -> Option<CompressedCertificateEntry> {
+    trace!("matching certificate with cached certificate");
 
     let mut hasher = Fnv1a::<u64>::default();
     certificate.hash(&mut hasher);
     let certificate_hash = hasher.finish();
 
     if cached_certificate_hashes.contains(&certificate_hash) {
-        Some(CompressedCertificateEntry::Cached { hash: certificate_hash })
+        let compressed_entry = CompressedCertificateEntry::Cached { hash: certificate_hash };
+        debug!("matched certificate with cached entry {:?}", compressed_entry);
+        Some(compressed_entry)
     } else {
+        debug!("failed to match certificate with cached entry");
         None
     }
 }
 
 fn zlib_dictionary_for_entries(certificates: &[&Certificate]) -> Vec<u8> {
+    trace!("building zlib initialization dictionary");
+
     let total_size = certificates.iter()
         .map(|c| c.bytes().len())
         .sum::<usize>() + COMMON_SUBSTRINGS.len();
@@ -433,6 +481,7 @@ fn zlib_dictionary_for_entries(certificates: &[&Certificate]) -> Vec<u8> {
     zlib_dictionary.extend(bytes);
     zlib_dictionary.extend(COMMON_SUBSTRINGS);
 
+    debug!("build zlib initialization dictionary");
     zlib_dictionary
 }
 
@@ -440,6 +489,7 @@ fn serialize_entries<'a, I: IntoIterator<Item = &'a CompressedCertificateEntry>,
     (compressed_certificate_entries: I,
      writer: &mut W)
      -> Result<()> {
+    trace!("serializing compressed certificate entries");
     for compressed_entry in compressed_certificate_entries {
         compressed_entry.write(writer)
             .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntry)?;
@@ -448,10 +498,12 @@ fn serialize_entries<'a, I: IntoIterator<Item = &'a CompressedCertificateEntry>,
     CompressedCertificateEntry::EndOfList.write(writer)
         .chain_err(|| ErrorKind::FailedToWriteCompressedCertificateEntry)?;
 
+    debug!("serialized compressed certificate entries");
     Ok(())
 }
 
 fn deserialize_entries<R: Read>(reader: &mut R) -> Result<Vec<CompressedCertificateEntry>> {
+    trace!("deserializing compressed certificate entries");
     let mut compressed_certificate_entries = Vec::new();
     loop {
         let compressed_certificate_entry = CompressedCertificateEntry::read(reader)
@@ -461,6 +513,7 @@ fn deserialize_entries<R: Read>(reader: &mut R) -> Result<Vec<CompressedCertific
         }
         compressed_certificate_entries.push(compressed_certificate_entry);
     }
+    debug!("deserialized compressed certificate entries");
 
     Ok(compressed_certificate_entries)
 }
@@ -469,6 +522,7 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
                                     uncompressed_length: usize,
                                     reader: &mut R)
                                     -> Result<Vec<Certificate>> {
+    trace!("decompressing certificates");
 
     let mut decompressed = Vec::with_capacity(uncompressed_length);
 
@@ -482,10 +536,12 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
         .chain_err(|| ErrorKind::FailedToDecompressCompressedCertificates)?;
 
     if let Status::NeedDictionary { .. } = decompress_result {
+        trace!("initializing zlib dictionary");
         assert_eq!(decompressed.len(), 0);
 
         let zlib_dictionary = zlib_dictionary_for_entries(known_certificates);
         decompress.set_dictionary(&zlib_dictionary);
+        debug!("initialized zlib dictionary");
 
         let processed_in = decompress.total_in() as usize;
 
@@ -494,17 +550,21 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
                             Flush::Finish)
             .chain_err(|| ErrorKind::FailedToDecompressCompressedCertificates)?;
     }
+    debug!("decompressed certificate bytes");
 
+    trace!("reading certificates from decompressed bytes");
     let decompressed_length = decompressed.len();
 
     let mut decompressed_reader = Cursor::new(decompressed);
 
     let mut certificates = Vec::new();
     while (decompressed_reader.position() as usize) < decompressed_length {
+        trace!("reading uncompressed length of certificate");
         let uncompressed_length = u32::read(&mut decompressed_reader)
             .chain_err(|| {
                 ErrorKind::FailedToReadCompressedCertificateUncompressedLength
             })? as usize;
+        debug!("read uncompressed length of certificate as {} bytes ", uncompressed_length);
 
         let mut certificate_bytes = Vec::with_capacity(uncompressed_length);
         certificate_bytes.resize(uncompressed_length, 0);
@@ -514,6 +574,7 @@ fn decompress_certificates<R: Read>(known_certificates: &[&Certificate],
 
         certificates.push(Certificate::from(certificate_bytes));
     }
+    debug!("read certificates from decompressed bytes");
 
     Ok(certificates)
 }
@@ -558,7 +619,7 @@ fn compress_certificates<W: Write>(known_certificates: &[&Certificate],
                                    certificates: &[&Certificate],
                                    writer: &mut W)
                                    -> Result<()> {
-
+    trace!("compressing certificates");
     let zlib_dictionary = zlib_dictionary_for_entries(known_certificates);
 
     let mut compress = Compress::new(Compression::Default, true);
@@ -595,7 +656,7 @@ fn compress_certificates<W: Write>(known_certificates: &[&Certificate],
         writer.write_all(&buffer).chain_err(|| ErrorKind::FailedToWriteCompressedChunk)?;
         buffer.clear();
     }
-
+    debug!("compressed certificates");
     Ok(())
 }
 

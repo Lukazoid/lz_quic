@@ -19,25 +19,33 @@ impl Debug for RingKeyExchange {
 }
 
 impl RingKeyExchange {
-    /// Consructs a new `RingKeyExchange`.
+    /// Constructs a new `RingKeyExchange`.
     ///
     /// # Errors
     /// When key exchange private or public key could not be calculated, this could be due to an issue with the system crypto random number generator.
     pub fn new(algorithm: &'static Algorithm) -> Result<Self> {
-        let rng = SystemRandom::new();
+        trace!("creating new ring key exchange");
 
+        let rng = SystemRandom::new();
+        trace!("creating ephemeral private key");
         let ephemeral_private_key = EphemeralPrivateKey::generate(algorithm, &rng)
             .chain_err(||ErrorKind::FailedToCreateEphemerealPrivateKey)?;
-      
+        debug!("create ephemeral private key");
+
+        trace!("computing public key");
         let mut public_key_bytes = vec![0u8; ephemeral_private_key.public_key_len()];
 
         ephemeral_private_key.compute_public_key(&mut public_key_bytes)
             .chain_err(||ErrorKind::FailedToComputePublicKey)?;
+        debug!("computed public key");
 
-        Ok(Self {
+        let key_exchange = Self {
             ephemeral_private_key: ephemeral_private_key,
             public_key: public_key_bytes.as_slice().into()
-        })     
+        };
+        debug!("created new ring key exchange");
+
+        Ok(key_exchange)     
     }
 }
 
@@ -47,6 +55,8 @@ impl KeyExchange for RingKeyExchange {
     }
 
     fn calculate_shared_key(self, other_public_key: &PublicKey) -> Result<SharedKey> {
+        trace!("calculating shared key");
+
         let ephemeral_private_key = self.ephemeral_private_key;
 
         let peer_public_key = Input::from(other_public_key.bytes());
@@ -56,7 +66,11 @@ impl KeyExchange for RingKeyExchange {
             algorithm, 
             peer_public_key,
             Error::from(ErrorKind::FailedToPerformKeyAgreement),
-            |shared_key| Ok(SharedKey::from(shared_key)))
+            |shared_key| {
+                let shared_key = SharedKey::from(shared_key);
+                debug!("calculated shared key {:?}", shared_key);
+                Ok(shared_key)
+            })
     }
 }
 

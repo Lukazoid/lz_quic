@@ -1,54 +1,42 @@
 use errors::*;
 use futures::{Future, Stream};
-use futures::stream::{self, BoxStream};
-use DataStream;
+use {DataStream, NewDataStream, NewDataStreams, Perspective};
+use handshake::HandshakeCodec;
 use protocol::ConnectionId;
-use tokio_core::net::UdpSocket;
-use std::sync::{Arc, RwLock};
+use tokio_core::net::UdpFramed;
+use tokio_io::codec::Framed;
+use packets::{PacketCodec, PacketDispatcher};
+use std::sync::Arc;
 
-#[derive(Debug)]
-enum Perspective {
-    Server {
-        // TODO LH Eventually it won't be the UdpSocket we are sharing but something which dispatches to the correct sessions
-        udp_socket: Arc<RwLock<UdpSocket>>,
-    },
-    Client {
-        // TODO LH Eventually it won't be the UdpSocket we are sharing but something which dispatches packets to the client session
-        udp_socket: UdpSocket,
-    },
-}
 
 /// The session exists so a single client-server session may span multiple physical connections.
 #[derive(Debug)]
-pub struct Session {
+pub struct Session<P> {
     connection_id: ConnectionId,
-    perspective: Perspective,
+    perspective: P,
 }
 
-pub fn new_client_session(connection_id: ConnectionId, udp_socket: UdpSocket) -> Session {
-    Session::new(connection_id,
-        Perspective::Client { udp_socket: udp_socket })
+impl<P> Drop for Session<P> {
+    fn drop(&mut self) {
+        // TODO LH Inform the packet dispatcher that this connection has closed
+    }
 }
 
-pub fn new_server_session(connection_id: ConnectionId, udp_socket: Arc<RwLock<UdpSocket>>) -> Session {
-    Session::new(connection_id,
-        Perspective::Server { udp_socket: udp_socket })
-}
+impl<P: Perspective> Session<P> {
+    pub fn new(connection_id: ConnectionId, perspective: P) -> Self {
+        debug!("created new session with connection id {:?}", connection_id);
 
-impl Session {
-    fn new(connection_id: ConnectionId, perspective: Perspective) -> Self {
         Self {
             connection_id: connection_id,
             perspective: perspective,
         }
     }
 
-    pub fn open_stream(&self) -> DataStream {
+    fn crypto_stream(&self) -> Framed<DataStream<P>, HandshakeCodec> {
         unimplemented!()
     }
 
-    pub fn incoming_streams(&self) -> BoxStream<DataStream, Error> {
-        stream::empty::<DataStream, Error>().boxed()
+    pub fn handshake(&self) -> Box<Future<Item = (), Error = Error> + Send + Sync> {
+        unimplemented!()
     }
 }
-

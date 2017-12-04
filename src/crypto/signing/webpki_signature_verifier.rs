@@ -9,6 +9,8 @@ pub struct WebPkiSignatureVerifier;
 
 impl SignatureVerifier for WebPkiSignatureVerifier {
     fn verify(&self, certificate: &Certificate, data: &[u8], signature: &Signature) -> Result<()> {
+        trace!("verifying signature {:?}", signature);
+
         // We have to map the error as webpki::Error does not currently implement the Error trait (see https://github.com/briansmith/webpki/pull/3)
         let end_entity_cert = EndEntityCert::from(Input::from(certificate.bytes()))
             .map_err(|e| Error::from(format!("{:?}", e)))
@@ -28,6 +30,7 @@ impl SignatureVerifier for WebPkiSignatureVerifier {
         for algorithm in algorithms.into_iter() {
             match end_entity_cert.verify_signature(algorithm, data, signature) {
                 Ok(_) => {
+                    debug!("verified signature {:?}", signature);
                     return Ok(());
                 }
                 Err(webpki::Error::UnsupportedSignatureAlgorithmForPublicKey) => {
@@ -47,6 +50,7 @@ impl SignatureVerifier for WebPkiSignatureVerifier {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crypto::signing::Signature;
 
     #[test]
     fn verify_verifies_correctly() {
@@ -54,7 +58,7 @@ mod tests {
 
         let certificate = Certificate::from(include_bytes!("../certificates/example.cer").to_vec());
         let signature_data = include_bytes!("readme.signature.dat");
-        let signature = Signature::from(signature_data as &[u8]);
+        let signature = Signature::from(&signature_data[..]);
         let data = include_bytes!("readme.md");
 
         proof_verifier.verify(&certificate, data, &signature).unwrap();

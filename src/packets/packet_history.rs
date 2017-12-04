@@ -43,7 +43,7 @@ impl PacketHistory {
     pub fn ignore_packets_up_to_including(&mut self, packet_number: PacketNumber) {
         self.forgotten_up_to = Some(self.forgotten_up_to.map_or(packet_number, |f| cmp::max(f, packet_number)));
 
-        let (_, mut greater) = self.seen_packet_ranges.split(Cow::Owned(packet_number));
+        let (_, greater) = self.seen_packet_ranges.split(Cow::Owned(packet_number));
 
         self.seen_packet_ranges = greater;
     }
