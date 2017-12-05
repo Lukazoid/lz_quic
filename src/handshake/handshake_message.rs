@@ -100,26 +100,36 @@ impl HandshakeMessage {
 
 impl Writable for HandshakeMessage {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing handshake message {:?}", self);
+
         match *self {
             HandshakeMessage::Rejection(ref rejection_message) => {
-                Self::write_rejection(writer, rejection_message)
+                Self::write_rejection(writer, rejection_message)?;
             }
             HandshakeMessage::ClientHello(ref client_hello_message) => {
-                Self::write_client_hello(writer, client_hello_message)
+                Self::write_client_hello(writer, client_hello_message)?;
             }
             HandshakeMessage::ServerConfiguration(ref server_configuration) => {
-                Self::write_server_configuration(writer, server_configuration)
+                Self::write_server_configuration(writer, server_configuration)?;
             }
             HandshakeMessage::ServerHello(ref server_hello_message) => {
-                Self::write_server_hello(writer, server_hello_message)
+                Self::write_server_hello(writer, server_hello_message)?;
             }
         }
+
+        debug!("written handshake message {:?}", self);
+
+        Ok(())
     }
 }
 
 fn read_quic_tag_value_map<R: Read>(reader: &mut R) -> Result<TagValueMap> {
+    trace!("reading how many tag values there are");
+
     let tag_value_count = u16::read(reader)
         .chain_err(|| ErrorKind::FailedToReadTagValueMapLength)?;
+
+    trace!("determined there are {} tag values", tag_value_count);
 
     // Ignore the two bytes of padding
     let mut padding = [0; 2];
@@ -132,39 +142,45 @@ fn read_quic_tag_value_map<R: Read>(reader: &mut R) -> Result<TagValueMap> {
 
 impl Readable for HandshakeMessage {
     fn read<R: Read>(reader: &mut R) -> Result<HandshakeMessage> {
+        trace!("reading handshake message");
+
         let tag = Tag::read(reader)
             .chain_err(|| ErrorKind::FailedToReadCryptoMessageTag)?;
 
-        match tag {
+        let handshake_message = match tag {
             Tag::Rejection => {
                 let tag_value_map = read_quic_tag_value_map(reader)?;
 
                 RejectionMessage::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::FailedToReadCryptoRejectionMessage)
-                    .map(HandshakeMessage::Rejection)
+                    .map(HandshakeMessage::Rejection)?
             }
             Tag::ClientHello => {
                 let tag_value_map = read_quic_tag_value_map(reader)?;
 
                 ClientHelloMessage::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::FailedToReadCryptoClientHelloMessage)
-                    .map(HandshakeMessage::ClientHello)
+                    .map(HandshakeMessage::ClientHello)?
             }
             Tag::ServerConfiguration => {
                 let tag_value_map = read_quic_tag_value_map(reader)?;
 
                 ServerConfiguration::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::FailedToReadCryptoServerConfigurationMessage)
-                    .map(HandshakeMessage::ServerConfiguration)
+                    .map(HandshakeMessage::ServerConfiguration)?
             }
             Tag::ServerHello => {
                 let tag_value_map = read_quic_tag_value_map(reader)?;
 
                 ServerHelloMessage::from_tag_value_map(&tag_value_map)
                     .chain_err(|| ErrorKind::FailedToReadCryptoServerHelloMessage)
-                    .map(HandshakeMessage::ServerHello)
+                    .map(HandshakeMessage::ServerHello)?
             }
             tag @ _ => bail!(ErrorKind::InvalidHandshakeMessage(tag)),
-        }
+        };
+
+        debug!("read handshake message {:?}", handshake_message);
+
+        Ok(handshake_message)
     }
 }

@@ -17,6 +17,11 @@ pub struct ClientHelloMessage {
 
 impl ClientHelloMessage {
     pub fn from_tag_value_map(tag_value_map: &TagValueMap) -> Result<Self> {
+        trace!(
+            "building client hello message from tag value map {:?}",
+            tag_value_map
+        );
+
         let server_name = tag_value_map.get_optional_value(Tag::ServerNameIndication)?;
         let source_address_token = tag_value_map.get_optional_value(Tag::SourceAddressToken)?;
         let proof_demands = tag_value_map.get_required_values(Tag::ProofDemand)?;
@@ -26,7 +31,7 @@ impl ClientHelloMessage {
         let version = tag_value_map.get_required_value(Tag::Version)?;
         let leaf_certificate = tag_value_map.get_optional_value(Tag::Fnv1aHash)?;
 
-        Ok(ClientHelloMessage {
+        let client_hello_message = ClientHelloMessage {
             server_name: server_name,
             source_address_token: source_address_token,
             proof_demands: proof_demands,
@@ -34,10 +39,23 @@ impl ClientHelloMessage {
             cached_certificates: cached_certificates,
             version: version,
             leaf_certificate: leaf_certificate,
-        })
+        };
+
+        debug!(
+            "built client hello message {:?} from tag value map {:?}",
+            client_hello_message,
+            tag_value_map
+        );
+
+        Ok(client_hello_message)
     }
 
     pub fn to_tag_value_map(&self) -> TagValueMap {
+        trace!(
+            "building tag value map from client hello message {:?}",
+            self
+        );
+
         let mut tag_value_map = TagValueMap::default();
 
         if let Some(ref server_name) = self.server_name {
@@ -63,6 +81,12 @@ impl ClientHelloMessage {
         if let Some(ref leaf_certificate_hash) = self.leaf_certificate {
             tag_value_map.set_value(Tag::Fnv1aHash, &leaf_certificate_hash);
         }
+
+        debug!(
+            "built tag value map {:?} from client hello message {:?} ",
+            tag_value_map,
+            self
+        );
 
         tag_value_map
     }

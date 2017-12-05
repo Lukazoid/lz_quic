@@ -16,6 +16,8 @@ pub struct ServerHelloMessage {
 
 impl ServerHelloMessage {
     pub fn from_tag_value_map(tag_value_map: &TagValueMap) -> Result<Self> {
+        trace!("building server hello message from tag value map {:?}", tag_value_map);
+
         let server_configuration = if let Some(server_configuration_handshake_message) =
                                           tag_value_map.get_optional_value(Tag::ServerConfiguration)? {
             if let HandshakeMessage::ServerConfiguration(server_configuration) =
@@ -35,7 +37,7 @@ impl ServerHelloMessage {
         let compressed_certificate_chain: Option<Vec<u8>> = tag_value_map.get_optional_value(Tag::CertificateChain)?;
         let server_proof = tag_value_map.get_optional_value(Tag::ProofOfAuthenticity)?;
 
-        Ok(Self {
+        let server_hello = Self {
             server_configuration: server_configuration,
             source_address_token: source_address_token,
             server_nonce: server_nonce,
@@ -43,10 +45,16 @@ impl ServerHelloMessage {
             public_key: public_key,
             compressed_certificate_chain: compressed_certificate_chain,
             server_proof: server_proof,
-        })
+        };
+
+        debug!("built server hello message {:?} from tag value map {:?}", server_hello, tag_value_map);
+
+        Ok(server_hello)
     }
 
     pub fn to_tag_value_map(&self) -> TagValueMap {
+        trace!("building tag value map from server hello message {:?}", self);
+
         let mut tag_value_map = TagValueMap::default();
 
         if let Some(ref server_configuration) = self.server_configuration {
@@ -78,6 +86,7 @@ impl ServerHelloMessage {
             tag_value_map.set_value(Tag::ProofOfAuthenticity, server_proof);
         }
 
+        debug!("build tag value map {:?} from server hello message {:?}", tag_value_map, self);
         tag_value_map
     }
 }

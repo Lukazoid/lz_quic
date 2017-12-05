@@ -43,6 +43,8 @@ impl Default for CryptoStage {
 
 impl CryptoStage {
     pub fn upgrade_to_non_forward_secure(&mut self, derived_keys: DerivedKeys) -> Result<()> {
+        trace!("upgrading crypto stage to non-forward secure");
+
         // temporarily take ownership of self
         match mem::replace(self, CryptoStage::Unencrypted) {
             CryptoStage::Unencrypted => {
@@ -50,6 +52,8 @@ impl CryptoStage {
                     aead: AeadPair::new(derived_keys),
                     decrypted_packet: AtomicBool::new(false),
                 };
+
+                debug!("upgraded crypto state to non-forward secure");
 
                 Ok(())
             }
@@ -63,6 +67,8 @@ impl CryptoStage {
     }
 
     pub fn upgrade_to_forward_secure(&mut self, derived_keys: DerivedKeys) -> Result<()> {
+        trace!("upgrading crypto stage to forward secure");
+
         // temporarily take ownership of self
         match mem::replace(self, CryptoStage::Unencrypted) {
             original @ CryptoStage::Unencrypted => {
@@ -75,6 +81,8 @@ impl CryptoStage {
                     non_forward_secure: aead,
                     forward_secure: AeadPair::new(derived_keys),
                 };
+
+                debug!("upgraded crypto state to forward secure");
 
                 Ok(())
             }
@@ -101,8 +109,12 @@ impl CryptoStage {
     ) -> Result<(EncryptionLevel, Vec<u8>)> {
         match *self {
             CryptoStage::Unencrypted => {
+                trace!("decrypting unencrypted data");
+
                 let decryptor = NullAeadDecryptor::default();
                 let decrypted = decryptor.decrypt(associated_data, raw, packet_number)?;
+
+                debug!("decrypted unencrypted data");
 
                 Ok((EncryptionLevel::Unencrypted, decrypted))
             }
@@ -110,9 +122,13 @@ impl CryptoStage {
                 ref aead,
                 ref decrypted_packet,
             } => {
+                trace!("decrypting non-forward secure encrypted data");
+
                 let decrypted = aead.decryptor.decrypt(associated_data, raw, packet_number)?;
 
                 decrypted_packet.store(true, Ordering::Release);
+
+                debug!("decrypting non-forward secure encrypted data");
 
                 Ok((EncryptionLevel::NonForwardSecure, decrypted))
             }
@@ -120,7 +136,11 @@ impl CryptoStage {
                 forward_secure: ref aead,
                 ..
             } => {
+                trace!("decrypting forward secure encrypted data");
+
                 let decrypted = aead.decryptor.decrypt(associated_data, raw, packet_number)?;
+
+                debug!("decrypted forward secure encrypted data");
 
                 Ok((EncryptionLevel::ForwardSecure, decrypted))
             }
@@ -170,25 +190,45 @@ impl CryptoStage {
         packet_number: PacketNumber,
         encryption_level: EncryptionLevel,
     ) -> Result<Vec<u8>> {
-        match encryption_level {
+        let encrypted = match encryption_level {
             EncryptionLevel::Unencrypted => {
+                trace!("encrypting data at unencrypted level");
+
                 let encryptor = self.unencrypted_encryptor();
 
-                encryptor.encrypt(associated_data, raw, packet_number)
+                let encrypted = encryptor.encrypt(associated_data, raw, packet_number)?;
+
+                debug!("encrypted data at unencrypted level");
+
+                encrypted
             }
             EncryptionLevel::NonForwardSecure => {
+                trace!("encrypting data at non-forward secure level");
+
                 let encryptor = self.non_forward_secure_encryptor()
                     .ok_or_else(|| Error::from(ErrorKind::NoNonForwardSecureAead))?;
 
-                encryptor.encrypt(associated_data, raw, packet_number)
+                let encrypted = encryptor.encrypt(associated_data, raw, packet_number)?;
+
+                debug!("encrypted data at non-forward secure level");
+
+                encrypted
             }
             EncryptionLevel::ForwardSecure => {
+                trace!("encrypting data at forward secure level");
+
                 let encryptor = self.forward_secure_encryptor()
                     .ok_or_else(|| Error::from(ErrorKind::NoForwardSecureAead))?;
 
-                encryptor.encrypt(associated_data, raw, packet_number)
+                let encrypted = encryptor.encrypt(associated_data, raw, packet_number)?;
+
+                debug!("encrypted data at forward secure level");
+
+                encrypted
             }
-        }
+        };
+
+        Ok(encrypted)
     }
 
     pub fn encrypt(
@@ -197,26 +237,11 @@ impl CryptoStage {
         raw: &[u8],
         packet_number: PacketNumber,
     ) -> Result<(EncryptionLevel, Vec<u8>)> {
-        match *self {
-            CryptoStage::Unencrypted => {
-                let encryptor = NullAeadEncryptor::default();
-                let encrypted = encryptor.encrypt(associated_data, raw, packet_number)?;
+        let encryption_level = self.encryption_level();
 
-                Ok((EncryptionLevel::Unencrypted, encrypted))
-            }
-            CryptoStage::NonForwardSecure { aead: ref aead, .. } => {
-                let encrypted = aead.encryptor.encrypt(associated_data, raw, packet_number)?;
+        let encrypted =
+            self.encrypt_at_level(associated_data, raw, packet_number, encryption_level)?;
 
-                Ok((EncryptionLevel::NonForwardSecure, encrypted))
-            }
-            CryptoStage::ForwardSecure {
-                forward_secure: ref aead,
-                ..
-            } => {
-                let encrypted = aead.encryptor.encrypt(associated_data, raw, packet_number)?;
-
-                Ok((EncryptionLevel::ForwardSecure, encrypted))
-            }
-        }
+        Ok((encryption_level, encrypted))
     }
 }

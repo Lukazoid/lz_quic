@@ -14,6 +14,8 @@ pub struct RejectionMessage {
 
 impl RejectionMessage {
     pub fn from_tag_value_map(tag_value_map: &TagValueMap) -> Result<Self> {
+        trace!("building rejection message from tag value map {:?}", tag_value_map);
+
         let server_configuration = if let Some(server_configuration_handshake_message) =
                                           tag_value_map.get_optional_value(Tag::ServerConfiguration)? {
             if let HandshakeMessage::ServerConfiguration(server_configuration) =
@@ -34,17 +36,23 @@ impl RejectionMessage {
 
         let server_proof = tag_value_map.get_optional_value(Tag::ProofOfAuthenticity)?;
 
-        Ok(Self {
+        let rejection_message = Self {
             server_configuration: server_configuration,
             source_address_token: source_address_token,
             server_nonce: server_nonce,
             seconds_to_live: seconds_to_live,
             compressed_certificate_chain: compressed_certificate_chain,
             server_proof: server_proof,
-        })
+        };
+
+        debug!("built rejection message {:?} from tag value map {:?}", rejection_message, tag_value_map);
+
+        Ok(rejection_message)
     }
 
     pub fn to_tag_value_map(&self) -> TagValueMap {
+        trace!("building tag value map from rejection message {:?}", self);
+
         let mut tag_value_map = TagValueMap::default();
 
         if let Some(ref server_configuration) = self.server_configuration {
@@ -74,6 +82,9 @@ impl RejectionMessage {
             tag_value_map.set_value(Tag::ProofOfAuthenticity, server_proof);
         }
     
+    
+        debug!("built tag value map {:?} from rejection message {:?}", tag_value_map, self);
+
         tag_value_map
     }
 }

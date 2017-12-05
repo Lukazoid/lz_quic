@@ -41,6 +41,8 @@ impl<S: Stream> Stream for TakeUntilForwardSecureEncryption<S> {
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         let crypto_stage = self.crypto_stage.read().unwrap();
         if matches!(crypto_stage.encryption_level(), EncryptionLevel::ForwardSecure) {
+            debug!("encryption level has reached forward secure");
+
             return Ok(Async::Ready(None));
         }
 
@@ -87,7 +89,7 @@ impl ClientCryptoInitializer {
         }
 
         let server_orbit = server_configuration.orbit;
-        
+
         let mut rng = OsRng::new()
             .chain_err(|| {
                 ErrorKind::FailedToCreateCryptographicRandomNumberGenerator
@@ -144,6 +146,8 @@ impl ClientCryptoInitializer {
             self.certificate_manager.verify(&self.hostname)?;
 
             self.has_verified_server = true;
+            
+            debug!("successfully verified server");
         }
 
         Ok(())
@@ -155,6 +159,8 @@ impl ClientCryptoInitializer {
     }
 
     fn handle_server_hello_message(&mut self, server_hello_message: ServerHelloMessage) -> Result<()> {
+        trace!("handling server hello {:?}", server_hello_message);
+
         // Only handle encrypted server hello messages
         if !self.has_decrypted_packet() {
             bail!(ErrorKind::ReceivedUnencryptedServerHello);
@@ -164,6 +170,9 @@ impl ClientCryptoInitializer {
         self.cache_server_nonce(server_hello_message.server_nonce);
         self.cache_server_configuration(server_hello_message.server_configuration)?;
         self.cache_server_proof(server_hello_message.server_proof)?;
+
+        trace!("updated cached information to {:?}", self.cached_server_information);
+
         self.set_certificates(server_hello_message.compressed_certificate_chain)?;
 
         let derived_keys = self.derive_keys(true, None)?;
@@ -171,14 +180,21 @@ impl ClientCryptoInitializer {
         let mut crypto_stage = self.crypto_stage.write().unwrap();
         crypto_stage.upgrade_to_forward_secure(derived_keys)?;
 
+        debug!("handled server hello");
+
         Ok(())
     }
 
     fn handle_rejection_message(&mut self, rejection_message: RejectionMessage) -> Result<()> {
+        trace!("handling server rejection {:?}", rejection_message);
+
         self.cache_source_address_token(rejection_message.source_address_token);
         self.cache_server_nonce(rejection_message.server_nonce);
         self.cache_server_configuration(rejection_message.server_configuration)?;
         self.cache_server_proof(rejection_message.server_proof)?;
+        
+        trace!("updated cached information to {:?}", self.cached_server_information);
+
         self.set_certificates(rejection_message.compressed_certificate_chain)?;
 
         Ok(())
@@ -233,7 +249,10 @@ impl ClientCryptoInitializer {
         let client_hellos = TakeUntilForwardSecureEncryption {
             crypto_stage: crypto_stage,
             stream: client_hellos
-        };
+        }.map(|client_hello| {
+            trace!("sending client hello {:?}", client_hello);
+            client_hello
+        });
 
         let future = crypto_sink.send_all(client_hellos)
             .chain_err(|| ErrorKind::FailedToPerformClientHandshake)

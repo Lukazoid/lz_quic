@@ -19,6 +19,8 @@ impl Decoder for HandshakeCodec {
         if src.is_empty() {
             Ok(None)
         } else {
+            trace!("decoding handshake message");
+
             let handshake_message;
             let bytes_read;
             {
@@ -31,6 +33,8 @@ impl Decoder for HandshakeCodec {
                 // If we read a handshake message, move the buffer forward
                 src.split_to(bytes_read);
             }
+
+            debug!("decoded handshake message {:?}", handshake_message);
 
             Ok(handshake_message)
         }
@@ -46,10 +50,14 @@ impl Encoder for HandshakeCodec {
         item: Self::Item, 
         dst: &mut BytesMut
     ) -> Result<(), Self::Error> {
+        trace!("encoding handshake message {:?}", item);
+
         let mut vec = Vec::new();
         item.write_to_vec(&mut vec);
 
         dst.extend_from_slice(vec.as_slice());
+        
+        debug!("encoded handshake message {:?}", item);
 
         Ok(())
     }

@@ -10,6 +10,8 @@ pub struct ClientNonce([u8;32]);
 
 impl ClientNonce {
     pub fn generate<R: Rng>(rng: &mut R, server_orbit: u64) -> Result<Self> {
+        trace!("generating new client nonce with server orbit {}", server_orbit);
+
         let mut nonce = [0u8;32];
 
         let seconds_since_epoch = time::now_utc().to_timespec().sec as u32;
@@ -23,7 +25,11 @@ impl ClientNonce {
         // 20 bytes of random data
         rng.fill_bytes(&mut nonce[12..32]);
 
-        Ok(ClientNonce(nonce))
+        let client_nonce = ClientNonce(nonce);
+
+        debug!("generated new client nonce {:?}", client_nonce);
+
+        Ok(client_nonce)
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -33,18 +39,30 @@ impl ClientNonce {
 
 impl Writable for ClientNonce {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing client nonce {:?}", self);
+
         writer
             .write_all(&self.0)
-            .chain_err(|| ErrorKind::FailedToWriteClientNonce)
+            .chain_err(|| ErrorKind::FailedToWriteClientNonce)?;
+        
+        debug!("written client nonce {:?}", self);
+
+        Ok(())
     }
 }
 impl Readable for ClientNonce {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
+        trace!("reading client nonce");
+
         let mut value = [0u8; 32];
         reader
             .read_exact(&mut value)
             .chain_err(|| ErrorKind::FailedToReadClientNonce)?;
 
-        Ok(ClientNonce(value))
+        let client_nonce = ClientNonce(value);
+
+        debug!("read client nonce {:?}", client_nonce);
+
+        Ok(client_nonce)
     }
 }
