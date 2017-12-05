@@ -35,6 +35,8 @@ bitflags!(
 
 impl Writable for Frame {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing frame {:?}", self);
+
         match self {
             &Frame::Stream(ref stream_frame) => {
                 let mut type_flags = STREAM.bits();
@@ -135,6 +137,9 @@ impl Writable for Frame {
                     .chain_err(|| ErrorKind::FailedToWritePingFrame)?;
             }
         }
+
+        debug!("written frame {:?}", self);
+        
         Ok(())
     }
 }

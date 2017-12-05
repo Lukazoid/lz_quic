@@ -38,6 +38,8 @@ bitflags!(
 
 impl From<AckFrameTypeProperties> for AckFrameTypeFlags {
     fn from(value: AckFrameTypeProperties) -> AckFrameTypeFlags {
+        trace!("building ack frame type flags from {:?}", value);
+
         let mut ack_frame_type_flags = AckFrameTypeFlags::empty();
 
         if value.multiple_ack_range {
@@ -64,6 +66,8 @@ impl From<AckFrameTypeProperties> for AckFrameTypeFlags {
             };
 
         ack_frame_type_flags.insert(missing_packet_delta_length_flags);
+
+        debug!("built ack frame type flags {:?} from {:?}", ack_frame_type_flags, value);
 
         ack_frame_type_flags
     }

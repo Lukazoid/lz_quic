@@ -62,16 +62,24 @@ impl From<u64> for StreamOffset {
 
 impl StreamOffset {
     pub fn read<R: Read>(reader: &mut R, length: StreamOffsetLength) -> Result<StreamOffset> {
+        trace!("reading stream offset of length {:?}", length);
+
         let byte_count: usize = length.into();
 
         let inner = reader
             .read_uint::<LittleEndian>(byte_count)
             .chain_err(|| ErrorKind::FailedToReadStreamOffset)? as u64;
 
-        Ok(StreamOffset(inner))
+        let stream_offset = StreamOffset(inner);
+
+        debug!("read stream offset {:?}", stream_offset);
+
+        Ok(stream_offset)
     }
 
     pub fn write<W: Write>(&self, writer: &mut W) -> Result<StreamOffsetLength> {
+        trace!("writing stream offset {:?}", self);
+
         let offset = self.0;
         let leading_zeros = offset.leading_zeros();
         let leading_bytes = leading_zeros / 8;
@@ -85,6 +93,9 @@ impl StreamOffset {
                 .write_uint::<LittleEndian>(offset, byte_count)
                 .chain_err(|| ErrorKind::FailedToWriteBytes(byte_count))?;
         }
+
+        debug!("written stream offset {:?} of length {:?}", self, header_length);
+
         Ok(header_length)
     }
 }
