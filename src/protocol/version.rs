@@ -7,6 +7,34 @@ use std::collections::HashSet;
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Version(u32);
 
+const IETF_DRAFT_MASK: u32 = 0xff000000;
+
+impl Version {
+    pub fn is_force_negotiation(self) -> bool {
+        const FORCE_NEGOTATION_MASK: u32 = 0x0a0a0a0a;
+
+        (self.0 & FORCE_NEGOTATION_MASK) == FORCE_NEGOTATION_MASK
+    }
+
+    pub fn is_ietf_consensus_reserved(self) -> bool {
+        const IETF_CONSENSUS_MASK: u32 = 0x0000FFFF;
+
+        (self.0 & IETF_CONSENSUS_MASK) == self.0
+    }
+
+    pub fn is_ietf_draft(self) -> bool {
+        (self.0 & IETF_DRAFT_MASK) == IETF_DRAFT_MASK
+    }
+
+    pub fn ietf_draft_number(self) -> Option<u32> {
+        if self.is_ietf_draft() {
+            Some(self.0 - IETF_DRAFT_MASK)
+        } else {
+            None
+        }
+    }
+}
+
 impl Display for Version {
     fn fmt(&self, f: &mut Formatter) -> FmtResult {
         self.0.fmt(f)
