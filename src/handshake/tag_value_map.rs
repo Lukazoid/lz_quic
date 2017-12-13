@@ -217,13 +217,13 @@ mod tests {
     fn get_optional_value_for_existent_returns_value() {
         // Arrange
         let mut tag_value_map = TagValueMap::default();
-        tag_value_map.set_value(Tag::Version, &version::DRAFT_IETF_01);
+        tag_value_map.set_value(Tag::Version, &version::DRAFT_IETF_08);
 
         // Act
         let result = tag_value_map.get_optional_value::<Version>(Tag::Version);
 
         // Assert
-        assert!(matches!(result, Ok(Some(version::DRAFT_IETF_01))));
+        assert!(matches!(result, Ok(Some(version::DRAFT_IETF_08))));
     }
 
     #[test]
@@ -243,7 +243,7 @@ mod tests {
         let mut vec = Vec::new();
 
         let mut tag_value_map = TagValueMap::default();
-        tag_value_map.set_value(Tag::Version, &version::DRAFT_IETF_01);
+        tag_value_map.set_value(Tag::Version, &version::DRAFT_IETF_08);
 
         tag_value_map.write_to_vec(&mut vec);
 

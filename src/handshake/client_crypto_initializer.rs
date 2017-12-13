@@ -221,7 +221,7 @@ impl ClientCryptoInitializer {
             proof_demands: SmallVec::from_buf([Proof::X509]),
             common_certificate_sets: self.certificate_manager.common_certificate_set_hashes(),
             cached_certificates: Vec::with_capacity(0),
-            version: version::DRAFT_IETF_01,
+            version: version::DRAFT_IETF_08,
             leaf_certificate: self.certificate_manager.leaf_certificate_hash(),
         }
     }

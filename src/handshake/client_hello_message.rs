@@ -107,7 +107,7 @@ mod tests {
             proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![5435435, 654123],
             cached_certificates: vec![929080, 7897897],
-            version: version::DRAFT_IETF_01,
+            version: version::DRAFT_IETF_08,
             leaf_certificate: Some(8123678),
         };
         let tag_value_map = chlo.to_tag_value_map();

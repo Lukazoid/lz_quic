@@ -32,9 +32,9 @@ impl Readable for Version {
     }
 }
 
-pub const DRAFT_IETF_01: Version = Version(0x100000FF);
+pub const DRAFT_IETF_08: Version = Version(0xff000008);
 
-pub static SUPPORTED_VERSIONS: &'static [Version] = &[DRAFT_IETF_01];
+pub static SUPPORTED_VERSIONS: &'static [Version] = &[DRAFT_IETF_08];
 
 impl Version {
     pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {

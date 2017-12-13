@@ -178,7 +178,7 @@ mod tests {
             proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![],
             cached_certificates: vec![],
-            version: version::DRAFT_IETF_01,
+            version: version::DRAFT_IETF_08,
             leaf_certificate: certificate_manager.leaf_certificate_hash(),
         };
 

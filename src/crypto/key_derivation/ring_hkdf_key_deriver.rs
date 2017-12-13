@@ -185,7 +185,7 @@ mod tests {
             proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![85, 92, 54, 198],
             cached_certificates: vec![162, 78, 217],
-            version: version::DRAFT_IETF_01,
+            version: version::DRAFT_IETF_08,
             leaf_certificate: Some(65462344),
         };
 
@@ -196,7 +196,7 @@ mod tests {
             public_keys: [PublicKey::from([7u8,3,6].as_ref())].as_ref().into(),
             orbit: 654656,
             expiry_time: 65474234,
-            versions: [version::DRAFT_IETF_01].as_ref().into(),
+            versions: [version::DRAFT_IETF_08].as_ref().into(),
             shared_key: SharedKey::from([165u8, 123, 765].as_ref()),
         };
 
