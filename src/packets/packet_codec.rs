@@ -1,5 +1,5 @@
 use tokio_core::net::UdpCodec;
-use packets::{InboundPacket, OutboundPacket, PublicHeader};
+use packets::{InboundPacket, OutboundPacket, PacketHeader};
 use std::io::{Cursor, Error as IoError, ErrorKind as IoErrorKind, Result as IoResult};
 use std::net::SocketAddr;
 use protocol::{Readable, Writable};
@@ -16,7 +16,7 @@ impl UdpCodec for PacketCodec {
         trace!("decoding inbound packet");
 
         let mut buf_cursor = Cursor::new(buf);
-        let public_header = PublicHeader::read(&mut buf_cursor)
+        let packet_header = PacketHeader::read(&mut buf_cursor)
             .map_err(|e| IoError::new(IoErrorKind::InvalidData, e.to_string()))?;
 
         // The data is everything after the header in the datagram
@@ -24,7 +24,7 @@ impl UdpCodec for PacketCodec {
 
         let inbound_packet = InboundPacket {
             source_address: *src,
-            public_header: public_header,
+            packet_header: packet_header,
             data: data,
             received_at: UTC::now(),
         };
@@ -37,7 +37,7 @@ impl UdpCodec for PacketCodec {
     fn encode(&mut self, msg: Self::Out, buf: &mut Vec<u8>) -> SocketAddr {
         trace!("encoding outbound packet {:?}", msg);
 
-        msg.public_header
+        msg.packet_header
             .write(buf)
             .and(msg.data.write(buf))
             .expect("there should be no error writing the public header to an in-memory buffer");

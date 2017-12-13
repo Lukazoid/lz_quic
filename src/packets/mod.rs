@@ -3,8 +3,17 @@ pub use self::packet_number::PacketNumber;
 pub use self::packet_number::PartialPacketNumber;
 pub use self::packet_number::PartialPacketNumberLength;
 
-mod public_header;
-pub use self::public_header::PublicHeader;
+mod short_header;
+pub use self::short_header::ShortHeader;
+
+mod long_header_packet_type;
+pub use self::long_header_packet_type::LongHeaderPacketType;
+
+mod long_header;
+pub use self::long_header::LongHeader;
+
+mod packet_header;
+pub use self::packet_header::PacketHeader;
 
 mod inbound_packet;
 pub use self::inbound_packet::InboundPacket;

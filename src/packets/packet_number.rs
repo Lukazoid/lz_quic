@@ -40,8 +40,7 @@ impl AdjacentBound for PacketNumber {
 pub enum PartialPacketNumberLength {
     OneByte,
     TwoBytes,
-    FourBytes,
-    SixBytes,
+    FourBytes
 }
 
 /// This represents a partial packet number consisting of only the lower bytes.
@@ -49,8 +48,7 @@ pub enum PartialPacketNumberLength {
 pub enum PartialPacketNumber {
     OneByte(u8),
     TwoBytes(u16),
-    FourBytes(u32),
-    SixBytes(U48),
+    FourBytes(u32)
 }
 
 impl PacketNumber {
@@ -104,6 +102,18 @@ impl Add<u64> for PacketNumber {
     }
 }
 
+impl Readable for PacketNumber {
+    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+        trace!("reading packet number");
+
+        let inner = u64::read(reader)?;
+        let packet_number = PacketNumber(inner);
+
+        debug!("read packet number {:?}", packet_number);
+        Ok(packet_number)
+    }
+}
+
 impl Writable for PacketNumber {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing packet number {:?}", self);
@@ -134,7 +144,6 @@ impl PartialPacketNumberLength {
             PartialPacketNumberLength::OneByte => 1,
             PartialPacketNumberLength::TwoBytes => 2,
             PartialPacketNumberLength::FourBytes => 4,
-            PartialPacketNumberLength::SixBytes => 6,
         }
     }
 
@@ -160,8 +169,6 @@ impl PartialPacketNumber {
             PartialPacketNumber::TwoBytes(packet_number.0 as u16)
         } else if diff < PartialPacketNumberLength::FourBytes.threshold() {
             PartialPacketNumber::FourBytes(packet_number.0 as u32)
-        } else if diff < PartialPacketNumberLength::SixBytes.threshold() {
-            PartialPacketNumber::SixBytes(packet_number.0.approx_by::<Wrapping>().unwrap_ok())
         } else {
             bail!(ErrorKind::FailedToBuildPartialPacketNumber)
         };
@@ -207,7 +214,6 @@ impl PartialPacketNumber {
             PartialPacketNumber::OneByte(_) => PartialPacketNumberLength::OneByte,
             PartialPacketNumber::TwoBytes(_) => PartialPacketNumberLength::TwoBytes,
             PartialPacketNumber::FourBytes(_) => PartialPacketNumberLength::FourBytes,
-            PartialPacketNumber::SixBytes(_) => PartialPacketNumberLength::SixBytes,
         }
     }
 
@@ -227,10 +233,6 @@ impl PartialPacketNumber {
                 let value = u32::read(reader).chain_err(||ErrorKind::FailedToReadPartialPacketNumber)?;
                 PartialPacketNumber::FourBytes(value)
             }
-            PartialPacketNumberLength::SixBytes => {
-                let value = U48::read(reader).chain_err(||ErrorKind::FailedToReadPartialPacketNumber)?;
-                PartialPacketNumber::SixBytes(value)
-            }
         };
 
         debug!("read partial packet number {:?}", partial_packet_number);
@@ -247,7 +249,6 @@ impl Writable for PartialPacketNumber {
             PartialPacketNumber::OneByte(value) => value.write(writer),
             PartialPacketNumber::TwoBytes(value) => value.write(writer),
             PartialPacketNumber::FourBytes(value) => value.write(writer),
-            PartialPacketNumber::SixBytes(value) => value.write(writer),
         }.chain_err(||ErrorKind::FailedToWritePartialPacketNumber)?;
 
         debug!("written partial packet number {:?}", self);
@@ -263,7 +264,6 @@ impl From<PartialPacketNumber> for u64 {
             PartialPacketNumber::OneByte(value) => value as u64,
             PartialPacketNumber::TwoBytes(value) => value as u64,
             PartialPacketNumber::FourBytes(value) => value as u64,
-            PartialPacketNumber::SixBytes(value) => value.into(),
         }
     }
 }

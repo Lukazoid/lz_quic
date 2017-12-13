@@ -318,10 +318,10 @@ error_chain! {
         FailedToReadPartialPacketNumber{
             description("failed to read partial packet number")
         }
-        FailedToWritePublicPacketHeaderFlags {
+        FailedToWritePacketHeaderFlags {
             description("failed to write public packet header flags")
         }
-        FailedToReadPublicPacketHeaderFlags {
+        FailedToReadPacketHeaderFlags {
             description("failed to read public packet header flags")
         }
         FailedToBuildPartialPacketNumber {
@@ -480,6 +480,14 @@ error_chain! {
         }
         FailedToPerformClientHandshake {
             description("failed to perform client handshake")
+        }
+        InvalidLongHeaderPacketType(packet_type: u8) {
+            description("invalid long header packet type")
+            display("invalid long header packet type '{}'", packet_type)
+        }
+        InvalidShortHeaderPacketType(packet_type: u8) {
+            description("invalid short header packet type")
+            display("invalid short header packet type '{}'", packet_type)
         }
     }
 }
