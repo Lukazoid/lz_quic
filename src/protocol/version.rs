@@ -83,3 +83,44 @@ impl Version {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Version;
+    use std::collections::HashSet;
+
+    #[test]
+    pub fn force_negotation_version_works() {
+        let version = Version(0x1a2a3a4a);
+
+        assert!(version.is_force_negotiation());
+    }
+
+    #[test]
+    pub fn ietf_draft_version_works() {
+        let version = Version(0xff00000D);
+
+        assert!(version.is_ietf_draft());
+        assert_eq!(version.ietf_draft_number(), Some(13));
+    }
+
+    #[test]
+    pub fn find_highest_supported_returns_none_for_unsupported() {
+        let mut available = HashSet::new();
+        available.insert(Version(0x00001234));
+
+        let highest_supported = Version::find_highest_supported(&available);
+
+        assert_eq!(highest_supported, None);
+    }
+
+    #[test]
+    pub fn find_highest_supported_returns_version_for_supported() {
+        let mut available = HashSet::new();
+        available.insert(super::DRAFT_IETF_08);
+
+        let highest_supported = Version::find_highest_supported(&available);
+
+        assert_eq!(highest_supported, Some(super::DRAFT_IETF_08));
+    }
+}
