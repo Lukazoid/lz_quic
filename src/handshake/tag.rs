@@ -1,6 +1,6 @@
 use errors::*;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use byteorder::{ByteOrder, LittleEndian};
+use byteorder::{ByteOrder, NetworkEndian};
 use std::io::{Read, Write};
 use std::cmp::Ordering;
 use std::str;
@@ -144,7 +144,7 @@ build_lookups!{
 impl Tag {
     fn as_u32(&self) -> u32 {
         let bytes = self.bytes();
-        LittleEndian::read_u32(bytes)
+        NetworkEndian::read_u32(bytes)
     }
 }
 

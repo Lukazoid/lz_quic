@@ -1,7 +1,7 @@
 use errors::*;
 use protocol::{Writable, Readable};
 use std::io::{Read, Write};
-use byteorder::{BigEndian, ByteOrder};
+use byteorder::{NetworkEndian, ByteOrder};
 use rand::Rng;
 use time;
 
@@ -17,7 +17,7 @@ impl ClientNonce {
         let seconds_since_epoch = time::now_utc().to_timespec().sec as u32;
 
         // 4 bytes of timestamp (big-endian, UNIX epoch seconds)
-        BigEndian::write_u32(&mut nonce[0..4], seconds_since_epoch);
+        NetworkEndian::write_u32(&mut nonce[0..4], seconds_since_epoch);
 
         // 8 bytes of server orbit
         server_orbit.write_to_slice(&mut nonce[4..12]);

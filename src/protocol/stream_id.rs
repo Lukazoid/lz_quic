@@ -1,7 +1,7 @@
 use errors::*;
 use rand::Rng;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Write};
 use conv::TryFrom;
 use num::Integer;
@@ -65,7 +65,7 @@ impl StreamId {
         assert!(byte_count > 0);
         trace!("writing {} bytes of stream id {:?}", byte_count, self);
         writer
-            .write_uint::<LittleEndian>(inner as u64, byte_count)
+            .write_uint::<NetworkEndian>(inner as u64, byte_count)
             .chain_err(|| ErrorKind::FailedToWriteBytes(byte_count))?;
         debug!("written stream id {:?} with length {:?}", self, header_length);
         
@@ -76,7 +76,7 @@ impl StreamId {
         trace!("reading stream id of length {:?}", length);
         let byte_count: usize = length.into();
         let inner = reader
-            .read_uint::<LittleEndian>(byte_count)
+            .read_uint::<NetworkEndian>(byte_count)
             .chain_err(|| ErrorKind::FailedToReadBytes)? as u32;
         let stream_id = StreamId(inner);
         debug!("read stream id {:?}", stream_id);

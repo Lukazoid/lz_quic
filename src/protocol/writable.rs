@@ -1,6 +1,6 @@
 use errors::*;
 use std::io::{Write, Cursor};
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{NetworkEndian, WriteBytesExt};
 use primitives::{U24, U48, WriteQuicPrimitives};
 use smallvec::{Array, SmallVec};
 use debugit::DebugIt;
@@ -85,7 +85,7 @@ impl Writable for u16 {
         trace!("writing 16-bit unsigned integer {}", self);
 
         writer
-            .write_u16::<LittleEndian>(*self)
+            .write_u16::<NetworkEndian>(*self)
             .chain_err(|| ErrorKind::FailedToWriteU16(*self))?;
 
         debug!("written 16-bit unsigned integer {}", self);
@@ -98,7 +98,7 @@ impl Writable for U24 {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing 24-bit unsigned integer {}", self);
 
-        WriteQuicPrimitives::write_u24::<LittleEndian>(writer, *self)
+        WriteQuicPrimitives::write_u24::<NetworkEndian>(writer, *self)
             .chain_err(|| ErrorKind::FailedToWriteU24(*self))?;
 
         debug!("written 24-bit unsigned integer {}", self);
@@ -112,7 +112,7 @@ impl Writable for u32 {
         trace!("writing 32-bit unsigned integer {}", self);
 
         writer
-            .write_u32::<LittleEndian>(*self)
+            .write_u32::<NetworkEndian>(*self)
             .chain_err(|| ErrorKind::FailedToWriteU32(*self))?;
             
         debug!("written 32-bit unsigned integer {}", self);
@@ -126,7 +126,7 @@ impl Writable for U48 {
         trace!("writing 48-bit unsigned integer {}", self);
 
         writer
-            .write_u48::<LittleEndian>(*self)
+            .write_u48::<NetworkEndian>(*self)
             .chain_err(|| ErrorKind::FailedToWriteU48(*self))?;
             
         debug!("written 48-bit unsigned integer {}", self);
@@ -140,7 +140,7 @@ impl Writable for u64 {
         trace!("writing 64-bit unsigned integer {}", self);
 
         writer
-            .write_u64::<LittleEndian>(*self)
+            .write_u64::<NetworkEndian>(*self)
             .chain_err(|| ErrorKind::FailedToWriteU64(*self))?;
 
         debug!("written 64-bit unsigned integer {}", self);

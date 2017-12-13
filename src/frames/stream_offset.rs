@@ -1,7 +1,7 @@
 use errors::*;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use conv::TryFrom;
-use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
+use byteorder::{NetworkEndian, WriteBytesExt, ReadBytesExt};
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -67,7 +67,7 @@ impl StreamOffset {
         let byte_count: usize = length.into();
 
         let inner = reader
-            .read_uint::<LittleEndian>(byte_count)
+            .read_uint::<NetworkEndian>(byte_count)
             .chain_err(|| ErrorKind::FailedToReadStreamOffset)? as u64;
 
         let stream_offset = StreamOffset(inner);
@@ -90,7 +90,7 @@ impl StreamOffset {
         let byte_count = header_length.into();
         if byte_count > 0 {
             writer
-                .write_uint::<LittleEndian>(offset, byte_count)
+                .write_uint::<NetworkEndian>(offset, byte_count)
                 .chain_err(|| ErrorKind::FailedToWriteBytes(byte_count))?;
         }
 

@@ -1,6 +1,6 @@
 use errors::*;
 use std::io::{Cursor, Read};
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{NetworkEndian, ReadBytesExt};
 use primitives::{ReadQuicPrimitives, U24, U48};
 use std::marker::PhantomData;
 use std::iter::FromIterator;
@@ -116,7 +116,7 @@ impl Readable for u16 {
         trace!("reading unsigned 16-bit integer");
 
         let value = reader
-            .read_u16::<LittleEndian>()
+            .read_u16::<NetworkEndian>()
             .chain_err(|| ErrorKind::FailedToReadU16)?;
 
         debug!("read unsigned 16-bit integer {}", value);
@@ -132,7 +132,7 @@ impl Readable for U24 {
     {
         trace!("reading unsigned 24-bit integer");
 
-        let value = ReadQuicPrimitives::read_u24::<LittleEndian>(reader)
+        let value = ReadQuicPrimitives::read_u24::<NetworkEndian>(reader)
             .chain_err(|| ErrorKind::FailedToReadU24)?;
 
         debug!("read unsigned 24-bit integer {}", value);
@@ -149,7 +149,7 @@ impl Readable for u32 {
         trace!("reading unsigned 32-bit integer");
 
         let value = reader
-            .read_u32::<LittleEndian>()
+            .read_u32::<NetworkEndian>()
             .chain_err(|| ErrorKind::FailedToReadU32)?;
 
         debug!("read unsigned 32-bit integer {}", value);
@@ -166,7 +166,7 @@ impl Readable for U48 {
         trace!("reading unsigned 48-bit integer");
 
         let value = reader
-            .read_u48::<LittleEndian>()
+            .read_u48::<NetworkEndian>()
             .chain_err(|| ErrorKind::FailedToReadU48)?;
 
         debug!("read unsigned 48-bit integer {}", value);
@@ -183,7 +183,7 @@ impl Readable for u64 {
         trace!("reading unsigned 64-bit integer");
 
         let value = reader
-            .read_u64::<LittleEndian>()
+            .read_u64::<NetworkEndian>()
             .chain_err(|| ErrorKind::FailedToReadU64)?;
 
         debug!("read unsigned 64-bit integer {}", value);
