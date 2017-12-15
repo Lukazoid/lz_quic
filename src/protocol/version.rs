@@ -11,9 +11,7 @@ const IETF_DRAFT_MASK: u32 = 0xff000000;
 
 impl Version {
     pub fn is_force_negotiation(self) -> bool {
-        const FORCE_NEGOTATION_MASK: u32 = 0x0a0a0a0a;
-
-        (self.0 & FORCE_NEGOTATION_MASK) == FORCE_NEGOTATION_MASK
+        (self.0 & 0x0f0f0f0f) == 0x0a0a0a0a
     }
 
     pub fn is_ietf_consensus_reserved(self) -> bool {
@@ -90,10 +88,17 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    pub fn force_negotation_version_works() {
+    pub fn is_force_negotation_returns_true_for_force_negotation_version() {
         let version = Version(0x1a2a3a4a);
 
         assert!(version.is_force_negotiation());
+    }
+
+    #[test]
+    pub fn is_force_negotation_returns_false_for_normal_version() {
+        let version = Version(0x162a3a4a);
+
+        assert_eq!(version.is_force_negotiation(), false);
     }
 
     #[test]
