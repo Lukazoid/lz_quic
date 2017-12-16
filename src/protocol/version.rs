@@ -9,7 +9,17 @@ pub struct Version(u32);
 
 const IETF_DRAFT_MASK: u32 = 0xff000000;
 
+static SUPPORTED_VERSIONS: &'static [Version] = &[Version::DRAFT_IETF_08];
+
 impl Version {
+    pub const NEGOTATION: Version = Version(0);
+
+    pub const DRAFT_IETF_08: Version = Version(0xff000008);
+
+    pub fn is_version_negotation(self) -> bool {
+        self.0 == 0    
+    }
+
     pub fn is_force_negotiation(self) -> bool {
         (self.0 & 0x0f0f0f0f) == 0x0a0a0a0a
     }
@@ -28,6 +38,24 @@ impl Version {
         if self.is_ietf_draft() {
             Some(self.0 - IETF_DRAFT_MASK)
         } else {
+            None
+        }
+    }
+    
+    pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
+        trace!("finding highest supported version from {:?}", other);
+        // Find the first supported version going from highest -> lowest
+        let highest_version = SUPPORTED_VERSIONS
+            .iter()
+            .rev()
+            .find(|v| other.contains(v))
+            .map(|v| *v);
+
+        if let Some(highest_version) = highest_version {
+            debug!("found supported version {:?}", highest_version);
+            Some(highest_version)
+        } else {
+            debug!("unable to find supported version");
             None
         }
     }
@@ -58,35 +86,22 @@ impl Readable for Version {
     }
 }
 
-static SUPPORTED_VERSIONS: &'static [Version] = &[Version::DRAFT_IETF_08];
-
-impl Version {
-    
-    pub const DRAFT_IETF_08: Version = Version(0xff000008);
-
-    pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
-        trace!("finding highest supported version from {:?}", other);
-        // Find the first supported version going from highest -> lowest
-        let highest_version = SUPPORTED_VERSIONS
-            .iter()
-            .rev()
-            .find(|v| other.contains(v))
-            .map(|v| *v);
-
-        if let Some(highest_version) = highest_version {
-            debug!("found supported version {:?}", highest_version);
-            Some(highest_version)
-        } else {
-            debug!("unable to find supported version");
-            None
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::Version;
     use std::collections::HashSet;
+
+    #[test]
+    pub fn is_version_negotation_returns_true_for_negotation() {
+        assert!(Version::NEGOTATION.is_version_negotation());    
+    }
+    
+    #[test]
+    pub fn is_version_negotation_returns_false_for_other_version() {
+        let version = Version(15);
+
+        assert_eq!(version.is_version_negotation(), false);    
+    }
 
     #[test]
     pub fn is_force_negotation_returns_true_for_force_negotation_version() {
