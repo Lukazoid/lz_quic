@@ -4,7 +4,7 @@ pub use self::readable::Readable;
 mod writable;
 pub use self::writable::Writable;
 
-pub mod version;
+mod version;
 pub use self::version::Version;
 
 mod connection_id;

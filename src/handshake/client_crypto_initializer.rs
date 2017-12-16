@@ -5,8 +5,7 @@ use crypto::key_derivation::{Sha256HkdfKeyDeriver, KeyDeriver, DerivedKeys};
 use crypto::certificates::CertificateManager;
 use crypto::signing::Signature;
 use crypto::{DiversificationNonce, Proof};
-use protocol::{ConnectionId, Perspective, EncryptionLevel};
-use protocol::version;
+use protocol::{ConnectionId, Perspective, EncryptionLevel, Version};
 use handshake::{ServerConfiguration, HandshakeMessage, ClientHelloMessage, ServerHelloMessage, RejectionMessage,
     ClientNonce, ServerNonce, SourceAddressToken, HandshakeCodec};
 use futures::{Async, Future, Poll};
@@ -221,7 +220,7 @@ impl ClientCryptoInitializer {
             proof_demands: SmallVec::from_buf([Proof::X509]),
             common_certificate_sets: self.certificate_manager.common_certificate_set_hashes(),
             cached_certificates: Vec::with_capacity(0),
-            version: version::DRAFT_IETF_08,
+            version: Version::DRAFT_IETF_08,
             leaf_certificate: self.certificate_manager.leaf_certificate_hash(),
         }
     }

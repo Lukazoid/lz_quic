@@ -58,11 +58,12 @@ impl Readable for Version {
     }
 }
 
-pub const DRAFT_IETF_08: Version = Version(0xff000008);
-
-pub static SUPPORTED_VERSIONS: &'static [Version] = &[DRAFT_IETF_08];
+static SUPPORTED_VERSIONS: &'static [Version] = &[Version::DRAFT_IETF_08];
 
 impl Version {
+    
+    pub const DRAFT_IETF_08: Version = Version(0xff000008);
+
     pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
         trace!("finding highest supported version from {:?}", other);
         // Find the first supported version going from highest -> lowest
@@ -122,10 +123,10 @@ mod tests {
     #[test]
     pub fn find_highest_supported_returns_version_for_supported() {
         let mut available = HashSet::new();
-        available.insert(super::DRAFT_IETF_08);
+        available.insert(Version::DRAFT_IETF_08);
 
         let highest_supported = Version::find_highest_supported(&available);
 
-        assert_eq!(highest_supported, Some(super::DRAFT_IETF_08));
+        assert_eq!(highest_supported, Some(Version::DRAFT_IETF_08));
     }
 }

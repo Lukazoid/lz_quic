@@ -140,7 +140,7 @@ mod tests {
     use crypto::certificates::{Certificate, CertificateChain, CERTIFICATE_COMPRESSOR};
     use crypto::signing::{RsaSigner, WebPkiSignatureVerifier};
     use crypto::{Proof, SharedKey};
-    use protocol::version;
+    use protocol::Version;
     use std::collections::HashSet;
     use smallvec::SmallVec;
     use untrusted::Input;
@@ -178,7 +178,7 @@ mod tests {
             proof_demands: [Proof::X509].as_ref().into(),
             common_certificate_sets: vec![],
             cached_certificates: vec![],
-            version: version::DRAFT_IETF_08,
+            version: Version::DRAFT_IETF_08,
             leaf_certificate: certificate_manager.leaf_certificate_hash(),
         };
 

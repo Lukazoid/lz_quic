@@ -153,8 +153,7 @@ impl Writable for PacketHeader {
 #[cfg(test)]
 mod tests {
     use packets::{PacketNumber, LongHeader, LongHeaderPacketType, ShortHeader, PartialPacketNumber};
-    use protocol::{ConnectionId, Readable, Writable};
-    use protocol::version;
+    use protocol::{ConnectionId, Readable, Writable, Version};
     use rand;
     use super::PacketHeader;
 
@@ -163,7 +162,7 @@ mod tests {
         let long_header = LongHeader {
             packet_type: LongHeaderPacketType::Handshake,
             connection_id: ConnectionId::generate(&mut rand::thread_rng()),
-            version: version::DRAFT_IETF_08,
+            version: Version::DRAFT_IETF_08,
             packet_number: PacketNumber::from(5u64),
         };
         let packet_header = PacketHeader::Long(long_header);
