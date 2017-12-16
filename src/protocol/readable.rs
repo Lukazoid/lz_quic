@@ -45,6 +45,21 @@ pub trait Readable {
         Ok(read_value)
     }
 
+    fn collect<C: FromIterator<Self>, R: Read>(reader: &mut R) -> Result<C>
+    where
+        Self: Sized,
+    {
+        trace!("collecting from reader");
+
+        let bytes: Vec<u8> = Readable::read(reader)?;
+
+        let collection = Readable::collect_from_bytes(&bytes[..])?;
+
+        debug!("collected {:?} from reader", DebugIt(&collection));
+
+        Ok(collection)
+    }
+
     fn iterator_from_bytes<'a>(bytes: &'a [u8]) -> ReadableIterator<'a, Self>
     where
         Self: Sized,
