@@ -4,6 +4,9 @@ pub use self::readable::Readable;
 mod writable;
 pub use self::writable::Writable;
 
+mod var_int;
+pub use self::var_int::VarInt;
+
 mod version;
 pub use self::version::Version;
 
