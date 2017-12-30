@@ -12,7 +12,7 @@ use debugit::DebugIt;
 pub struct VarInt<T>(T);
 
 impl<T> VarInt<T> {
-    fn unwrap(self) -> T {
+    pub fn into_inner(self) -> T {
         self.0
     }
 }
