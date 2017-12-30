@@ -1,5 +1,5 @@
 use errors::*;
-use frames::stream_offset::{StreamOffset, StreamOffsetLength};
+use frames::stream_offset::StreamOffset;
 use protocol::{Writable};
 use frames::{StreamFrame, AckFrame};
 use std::io::Write;
@@ -44,30 +44,19 @@ impl Writable for Frame {
 
                 let mut payload = Vec::with_capacity(12);
 
-                let stream_id_length = stream_frame
+                stream_frame
                     .stream_id
                     .write(&mut payload)
                     .chain_err(|| ErrorKind::FailedToWriteStreamId(stream_frame.stream_id))
                     .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
 
                 // TODO LH Check this is all still correct
-                
-                let offset_header_length = stream_frame
+
+                stream_frame
                     .offset
                     .write(&mut payload)
                     .chain_err(|| ErrorKind::FailedToWriteStreamOffset(stream_frame.offset))
                     .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
-
-                type_flags |= match offset_header_length {
-                    StreamOffsetLength::ZeroBytes => 0,
-                    StreamOffsetLength::TwoBytes => 0b00100,
-                    StreamOffsetLength::ThreeBytes => 0b01000,
-                    StreamOffsetLength::FourBytes => 0b01100,
-                    StreamOffsetLength::FiveBytes => 0b10000,
-                    StreamOffsetLength::SixBytes => 0b10100,
-                    StreamOffsetLength::SevenBytes => 0b11000,
-                    StreamOffsetLength::EightBytes => 0b11100,
-                };
 
                 writer
                     .write_u8(type_flags)

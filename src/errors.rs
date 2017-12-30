@@ -141,10 +141,6 @@ error_chain! {
             description("integer value is too large to be stored as a variable width integer")
             display("integer value '{}' is too large to be stored as a variable width integer", value)
         }
-        InvalidStreamOffsetLength(length: usize) {
-            description("invalid stream offset length")
-            display("invalid stream offset length '{}'", length)
-        }
         FailedToWriteStreamId(stream_id: StreamId){
             description("failed to write stream id")
             display("failed to write stream id '{}'", stream_id)
