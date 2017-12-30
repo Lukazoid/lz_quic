@@ -1,6 +1,6 @@
 use errors::*;
 use frames::stream_offset::{StreamOffset, StreamOffsetLength};
-use protocol::{Writable, StreamId, StreamIdLength};
+use protocol::{Writable};
 use frames::{StreamFrame, AckFrame};
 use std::io::Write;
 use byteorder::WriteBytesExt;
@@ -50,13 +50,8 @@ impl Writable for Frame {
                     .chain_err(|| ErrorKind::FailedToWriteStreamId(stream_frame.stream_id))
                     .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
 
-                type_flags |= match stream_id_length {
-                    StreamIdLength::OneByte => 0b00,
-                    StreamIdLength::TwoBytes => 0b01,
-                    StreamIdLength::ThreeBytes => 0b10,
-                    StreamIdLength::FourBytes => 0b11,
-                };
-
+                // TODO LH Check this is all still correct
+                
                 let offset_header_length = stream_frame
                     .offset
                     .write(&mut payload)

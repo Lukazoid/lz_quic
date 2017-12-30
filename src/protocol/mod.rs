@@ -19,9 +19,11 @@ pub use self::server_id::ServerId;
 mod perspective;
 pub use self::perspective::Perspective;
 
+mod stream_type;
+pub use self::stream_type::StreamType;
+
 mod stream_id;
 pub use self::stream_id::StreamId;
-pub use self::stream_id::StreamIdLength;
 
 mod encryption_level;
 pub use self::encryption_level::EncryptionLevel;

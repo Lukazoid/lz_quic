@@ -133,9 +133,13 @@ error_chain! {
         FailedToWriteCryptoHandshakeTagValueMap {
             description("failed to write crypto handshake message tag-value map")
         }
-        InvalidStreamIdLength(length: usize) {
-            description("invalid stream id length")
-            display("invalid stream id length '{}'", length)
+        VarIntValueIsTooLargeToFitInIntegerOfSize(bytes: u64, integer_size: usize) {
+            description("variable width integer value is too large to fit in integer")
+            display("variable width integer value '{}' is too large to fit in integer of size '{}'", bytes, integer_size)
+        }
+        IntegerValueIsTooLargeToBeStoredAsAVarInt(value: u64) {
+            description("integer value is too large to be stored as a variable width integer")
+            display("integer value '{}' is too large to be stored as a variable width integer", value)
         }
         InvalidStreamOffsetLength(length: usize) {
             description("invalid stream offset length")
@@ -396,10 +400,6 @@ error_chain! {
             description("invalid crypto message type")
             display("invalid crypto message type '{}'", tag)
         }
-        InvalidStreamId(value: u32) {
-            description("invalid stream id")
-            display("invalid stream id '{}'", value)
-        }
         ReceivedUnencryptedServerHello {
             description("received unencrypted server hello")
         }
@@ -488,6 +488,9 @@ error_chain! {
         InvalidShortHeaderPacketType(packet_type: u8) {
             description("invalid short header packet type")
             display("invalid short header packet type '{}'", packet_type)
+        }
+        ReachedMaximumPacketNumber {
+            description("reached maximum packet number")
         }
     }
 }
