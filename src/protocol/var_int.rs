@@ -6,6 +6,7 @@ use byteorder::{NetworkEndian, ReadBytesExt};
 use std::mem;
 use conv::TryFrom;
 use std::ops::Deref;
+use debugit::DebugIt;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarInt<T>(T);
@@ -69,6 +70,8 @@ impl<T: FromPrimitive + Unsigned> Readable for VarInt<T> {
             _ => unreachable!(),
         };
 
+        trace!("reading variable length integer of length {:?}", total_length);
+
         let remaining_bytes_count = total_length - 1;
 
         let all_bytes = if remaining_bytes_count > 0 {
@@ -82,7 +85,11 @@ impl<T: FromPrimitive + Unsigned> Readable for VarInt<T> {
         };
 
         if let Some(inner) = T::from_u64(all_bytes) {
-            Ok(VarInt(inner))
+            let var_int = VarInt(inner);
+
+            debug!("read variable length integer {:?}", DebugIt(&var_int));
+
+            Ok(var_int)
         } else {
             bail!(ErrorKind::VarIntValueIsTooLargeToFitInIntegerOfSize(
                 all_bytes,
@@ -94,6 +101,8 @@ impl<T: FromPrimitive + Unsigned> Readable for VarInt<T> {
 
 impl<T: Copy + Into<u64>> Writable for VarInt<T> {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing variable length integer '{:?}'", DebugIt(self));
+
         let int_value: u64 = self.0.into();
 
         match int_value {
@@ -105,6 +114,8 @@ impl<T: Copy + Into<u64>> Writable for VarInt<T> {
                 int_value
             )),
         };
+
+        debug!("written variable length integer '{:?}'", DebugIt(self));
 
         Ok(())
     }
