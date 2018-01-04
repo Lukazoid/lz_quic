@@ -12,8 +12,8 @@ pub use self::long_header_packet_type::LongHeaderPacketType;
 mod long_header;
 pub use self::long_header::LongHeader;
 
-mod version_negotation_packet;
-pub use self::version_negotation_packet::VersionNegotationPacket;
+mod version_negotiation_packet;
+pub use self::version_negotiation_packet::VersionNegotiationPacket;
 
 mod packet_header;
 pub use self::packet_header::PacketHeader;

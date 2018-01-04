@@ -6,7 +6,9 @@ use frames::Frame;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum PacketContent {
-    VersionNegotiation { supported_versions: Vec<Version> },
+    VersionNegotiation {
+        supported_versions: Vec<Version>,
+    },
     PublicReset {
         nonce_proof: u64,
         rejected_packet_number: PacketNumber,

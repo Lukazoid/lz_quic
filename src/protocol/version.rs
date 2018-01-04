@@ -12,11 +12,11 @@ const IETF_DRAFT_MASK: u32 = 0xff000000;
 static SUPPORTED_VERSIONS: &'static [Version] = &[Version::DRAFT_IETF_08];
 
 impl Version {
-    pub const NEGOTATION: Version = Version(0);
+    pub const NEGOTIATION: Version = Version(0);
 
     pub const DRAFT_IETF_08: Version = Version(0xff000008);
 
-    pub fn is_version_negotation(self) -> bool {
+    pub fn is_version_negotiation(self) -> bool {
         self.0 == 0    
     }
 
@@ -92,26 +92,26 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
-    pub fn is_version_negotation_returns_true_for_negotation() {
-        assert!(Version::NEGOTATION.is_version_negotation());    
+    pub fn is_version_negotiation_returns_true_for_negotiation() {
+        assert!(Version::NEGOTIATION.is_version_negotiation());    
     }
     
     #[test]
-    pub fn is_version_negotation_returns_false_for_other_version() {
+    pub fn is_version_negotiation_returns_false_for_other_version() {
         let version = Version(15);
 
-        assert_eq!(version.is_version_negotation(), false);    
+        assert_eq!(version.is_version_negotiation(), false);    
     }
 
     #[test]
-    pub fn is_force_negotation_returns_true_for_force_negotation_version() {
+    pub fn is_force_negotiation_returns_true_for_force_negotiation_version() {
         let version = Version(0x1a2a3a4a);
 
         assert!(version.is_force_negotiation());
     }
 
     #[test]
-    pub fn is_force_negotation_returns_false_for_normal_version() {
+    pub fn is_force_negotiation_returns_false_for_normal_version() {
         let version = Version(0x162a3a4a);
 
         assert_eq!(version.is_force_negotiation(), false);

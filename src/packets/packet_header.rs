@@ -1,7 +1,7 @@
 use errors::*;
 use protocol::{ConnectionId, Version};
 use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
-              PartialPacketNumberLength, ShortHeader, VersionNegotationPacket};
+              PartialPacketNumberLength, ShortHeader, VersionNegotiationPacket};
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
 
@@ -9,7 +9,7 @@ use std::io::{Read, Write};
 pub enum PacketHeader {
     Long(LongHeader),
     Short(ShortHeader),
-    VersionNegotation(VersionNegotationPacket),
+    VersionNegotiation(VersionNegotiationPacket),
 }
 
 bitflags!(
@@ -41,15 +41,16 @@ impl Readable for PacketHeader {
         let packet_header = if flags.intersects(LONG_HEADER) {
             let connection_id = ConnectionId::read(reader)?;
             let version = Version::read(reader)?;
-            if version.is_version_negotation() {
+            if version.is_version_negotiation() {
                 let supported_versions = Version::collect(reader)?;
 
-                PacketHeader::VersionNegotation(VersionNegotationPacket {
+                PacketHeader::VersionNegotiation(VersionNegotiationPacket {
                     connection_id: connection_id,
                     supported_versions: supported_versions,
                 })
             } else {
-                let packet_type_flags = PacketHeaderBitFlags::from_bits_truncate(flags.bits() & 0x7F);
+                let packet_type_flags =
+                    PacketHeaderBitFlags::from_bits_truncate(flags.bits() & 0x7F);
                 let packet_type = match packet_type_flags {
                     LONG_PACKET_TYPE_INITIAL => LongHeaderPacketType::Initial,
                     LONG_PACKET_TYPE_RETRY => LongHeaderPacketType::Retry,
@@ -108,16 +109,16 @@ impl Writable for PacketHeader {
         trace!("writing packet header {:?}", self);
 
         match *self {
-            PacketHeader::VersionNegotation(ref version_negotiation) => {
+            PacketHeader::VersionNegotiation(ref version_negotiation) => {
                 let flags = LONG_HEADER;
-                
+
                 flags
                     .bits()
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePacketHeaderFlags)?;
 
                 version_negotiation.connection_id.write(writer)?;
-                Version::NEGOTATION.write(writer)?;
+                Version::NEGOTIATION.write(writer)?;
                 version_negotiation.supported_versions.write(writer)?;
             }
             PacketHeader::Long(ref long_header) => {
@@ -174,18 +175,19 @@ impl Writable for PacketHeader {
 
 #[cfg(test)]
 mod tests {
-    use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber, ShortHeader, VersionNegotationPacket};
+    use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
+                  ShortHeader, VersionNegotiationPacket};
     use protocol::{ConnectionId, Readable, Version, Writable};
     use rand;
     use super::PacketHeader;
 
     #[test]
-    pub fn read_write_version_negotation_packet_header() {
-        let version_negotation_packet = VersionNegotationPacket {
+    pub fn read_write_version_negotiation_packet_header() {
+        let version_negotiation_packet = VersionNegotiationPacket {
             connection_id: ConnectionId::generate(&mut rand::thread_rng()),
             supported_versions: vec![Version::DRAFT_IETF_08],
         };
-        let packet_header = PacketHeader::VersionNegotation(version_negotation_packet);
+        let packet_header = PacketHeader::VersionNegotiation(version_negotiation_packet);
 
         let mut bytes = Vec::new();
 
