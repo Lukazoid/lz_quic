@@ -12,6 +12,16 @@ pub enum PacketHeader {
     VersionNegotiation(VersionNegotiationPacket),
 }
 
+impl PacketHeader {
+    pub fn connection_id(&self) -> Option<ConnectionId> {
+        match *self {
+            PacketHeader::Long(ref long_header) => Some(long_header.connection_id),
+            PacketHeader::Short(ref short_header) => short_header.connection_id,
+            PacketHeader::VersionNegotiation(ref version_negotiation) => Some(version_negotiation.connection_id),
+        }
+    }
+}
+
 bitflags!(
     flags PacketHeaderBitFlags : u8 {
         const KEY_PHASE                             = 0x20,
