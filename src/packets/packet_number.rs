@@ -324,6 +324,26 @@ mod tests {
     }
 
     #[test]
+    fn partial_packet_number_from_packet_number_calculates_correctly_1(){
+        let lowest_unacknowledged = PacketNumber(0x6afa2f);
+        let packet_number = PacketNumber(0x6b4264);
+
+        let partial_packet_number = PartialPacketNumber::from_packet_number(packet_number, lowest_unacknowledged).unwrap();
+
+        assert_matches!(partial_packet_number, PartialPacketNumber::TwoBytes(0x4264));
+    }
+
+    #[test]
+    fn partial_packet_number_from_packet_number_calculates_correctly_2(){
+        let lowest_unacknowledged = PacketNumber(0x6afa2f);
+        let packet_number = PacketNumber(0x6bc107);
+
+        let partial_packet_number = PartialPacketNumber::from_packet_number(packet_number, lowest_unacknowledged).unwrap();
+
+        assert_matches!(partial_packet_number, PartialPacketNumber::FourBytes(0x6bc107));
+    }
+
+    #[test]
     fn infer_of_first_packet_returns_correct_packet_number() {
         // Act
         let packet_number = PartialPacketNumber::OneByte(1)
