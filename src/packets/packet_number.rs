@@ -349,6 +349,20 @@ mod tests {
     }
 
     #[test]
+    fn infer_of_two_byte_partial_packet_number_returns_correct_packet_number() {
+        // Arrange
+        let largest_acknowledged = Some(PacketNumber(0xaa82f30e));
+
+        // Act
+        let packet_number = PartialPacketNumber::TwoBytes(0x1f94)
+            .infer_packet_number(largest_acknowledged)
+            .unwrap();
+
+        // Assert
+        assert_eq!(packet_number, PacketNumber(0xaa831f94));
+    }
+
+    #[test]
     fn next_returns_none_on_overflow() {
         // Arrange
         let packet_number = PacketNumber::max_value();
