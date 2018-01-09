@@ -488,6 +488,9 @@ error_chain! {
         ReachedMaximumPacketNumber {
             description("reached maximum packet number")
         }
+        ValueExceedsTheMaximumPacketNumberValue {
+            description("value exeeds the maximum packet number value")
+        }
     }
 }
 

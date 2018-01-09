@@ -1,14 +1,26 @@
 use errors::*;
-use primitives::{U48, AbsDelta};
+use primitives::AbsDelta;
 use std::ops::Add;
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
-use conv::{ConvAsUtil, UnwrapOk, Wrapping};
+use conv::{Wrapping, TryFrom};
 use smallvec::SmallVec;
+use rand::Rng;
 use lz_diet::AdjacentBound;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PacketNumber(u64);
+
+impl TryFrom<u64> for PacketNumber {
+    type Err = Error;
+
+    fn try_from(value: u64) -> Result<PacketNumber> {
+        if value > PacketNumber::MAX.0 {
+            bail!(ErrorKind::ValueExceedsTheMaximumPacketNumberValue);
+        }
+        Ok(PacketNumber(value))
+    }
+}
 
 impl AdjacentBound for PacketNumber {
     fn is_immediately_before(&self, other: &Self) -> bool{
@@ -20,19 +32,25 @@ impl AdjacentBound for PacketNumber {
     }
 
     fn increment(&self) -> Self {
-        (self.0 + 1).into()
+        let incremented = self.0 + 1;
+
+        PacketNumber::try_from(incremented)
+            .unwrap_or(PacketNumber(0))
     }
 
     fn decrement(&self) -> Self{
-        (self.0 - 1).into()
+        let decremented = self.0 - 1;
+        
+        PacketNumber::try_from(decremented)
+            .unwrap_or(PacketNumber::MAX)
     }
 
     fn increment_ref(&mut self){
-        self.0 += 1;
+        *self = self.increment();
     }
 
     fn decrement_ref(&mut self){
-        self.0 -= 1;
+        *self = self.decrement();
     }
 }
 
@@ -52,14 +70,31 @@ pub enum PartialPacketNumber {
 }
 
 impl PacketNumber {
+    pub const MAX: PacketNumber = PacketNumber(4611686018427387903);
+
     /// Attempts to get the next `PacketNumber`.
     /// `Option::None` is returned if the next packet number would exceed `PacketNumber::max_value()`.
     pub fn next(self) -> Option<PacketNumber> {
-        self.0.checked_add(1).map(PacketNumber)
+        let incremented = self.0 + 1;
+        
+        PacketNumber::try_from(incremented)
+            .ok()
     }
 
     pub fn max_value() -> PacketNumber {
-        PacketNumber(u64::max_value())
+        Self::MAX
+    }
+
+    pub fn generate<R: Rng>(rng: &mut R) -> PacketNumber {
+        trace!("generating new packet number");
+
+        // The initial value for packet number MUST be selected randomly from a
+        // range between 0 and 2^32 - 1025 (inclusive)
+        let inner = rng.gen_range(0u32, 4294966272u32);
+        let packet_number = PacketNumber(inner as u64);
+        debug!("generated new packet number {:?}", packet_number);
+        
+        packet_number
     }
 
     /// Returns the "epochs" around this `PacketNumber` given the specified number of trailing bits are removed.
@@ -77,13 +112,13 @@ impl PacketNumber {
         let mut result = SmallVec::new();
 
         if let Some(first) = epoch.checked_sub(delta) {
-            result.push(first.into());
+            result.push(PacketNumber(first));
         }
 
-        result.push(epoch.into());
+        result.push(PacketNumber(epoch));
 
         if let Some(last) = epoch.checked_add(delta) {
-            result.push(last.into())
+            result.push(PacketNumber(last))
         }
 
         debug!("calculated epochs {:?} of packet {:?} after removal of {} trailing bits", result, self, remove_trailing_bits);
@@ -92,21 +127,15 @@ impl PacketNumber {
     }
 }
 
-impl Add<u64> for PacketNumber {
-    type Output = PacketNumber;
-
-    fn add(self, rhs: u64) -> Self::Output {
-        let packet_number_value = u64::from(self) + rhs;
-
-        PacketNumber::from(packet_number_value)
-    }
-}
-
 impl Readable for PacketNumber {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
         trace!("reading packet number");
 
         let inner = u64::read(reader)?;
+        if inner > PacketNumber::MAX.0 {
+            bail!(ErrorKind::ValueExceedsTheMaximumPacketNumberValue);
+        }
+
         let packet_number = PacketNumber(inner);
 
         debug!("read packet number {:?}", packet_number);
@@ -128,12 +157,6 @@ impl Writable for PacketNumber {
 impl From<PacketNumber> for u64 {
     fn from(value: PacketNumber) -> Self {
         value.0
-    }
-}
-
-impl From<u64> for PacketNumber {
-    fn from(value: u64) -> Self {
-        PacketNumber(value)
     }
 }
 
@@ -183,11 +206,13 @@ impl PartialPacketNumber {
                                -> Result<PacketNumber> {
         trace!("infering packet number from partial packet number {:?} with a largest acknowledged packet number of {:?}", self, largest_acknowledged);
 
+        let self_as_integer = u32::from(self) as u64;
+
         let packet_number = if let Some(largest_acknowledged) = largest_acknowledged {
             if let Some(next) = largest_acknowledged.next() {
                 let epochs = largest_acknowledged.epochs(self.len().bit_len());
 
-                let possible_packet_numbers = epochs.into_iter().map(|epoch| epoch + self);
+                let possible_packet_numbers = epochs.into_iter().flat_map(|epoch| PacketNumber::try_from(epoch.0 + self_as_integer).ok());
 
                 let next_u64: u64 = next.into();
 
@@ -201,7 +226,7 @@ impl PartialPacketNumber {
                 bail!(ErrorKind::FailedToInferPacketNumber);
             }
         } else {
-            PacketNumber::from(u64::from(self))
+            PacketNumber(self_as_integer)
         };
 
         debug!("infered packet number {:?} from partial packet number {:?} with a largest acknowledged packet number of {:?}", packet_number, self, largest_acknowledged);
@@ -257,25 +282,13 @@ impl Writable for PartialPacketNumber {
     }
 }
 
-
-impl From<PartialPacketNumber> for u64 {
-    fn from(value: PartialPacketNumber) -> u64 {
+impl From<PartialPacketNumber> for u32 {
+    fn from(value: PartialPacketNumber) -> u32 {
         match value {
-            PartialPacketNumber::OneByte(value) => value as u64,
-            PartialPacketNumber::TwoBytes(value) => value as u64,
-            PartialPacketNumber::FourBytes(value) => value as u64,
+            PartialPacketNumber::OneByte(value) => value as u32,
+            PartialPacketNumber::TwoBytes(value) => value as u32,
+            PartialPacketNumber::FourBytes(value) => value as u32,
         }
-    }
-}
-
-
-impl Add<PartialPacketNumber> for PacketNumber {
-    type Output = PacketNumber;
-
-    fn add(self, rhs: PartialPacketNumber) -> Self::Output {
-        let packet_number_value = u64::from(self) + u64::from(rhs);
-
-        PacketNumber::from(packet_number_value)
     }
 }
 
@@ -286,9 +299,9 @@ mod tests {
 
     #[test]
     fn partial_packet_number_from_small_packet_number_gets_inferred_correctly() {
-        let lowest_unacknowledged = PacketNumber::from(1);
+        let lowest_unacknowledged = PacketNumber(1);
         for i in 1..10000 {
-            let packet_number = PacketNumber::from(i);
+            let packet_number = PacketNumber(i);
             let partial_packet_number = PartialPacketNumber::from_packet_number(packet_number, lowest_unacknowledged).unwrap();
 
             let inferred_packet_number = partial_packet_number.infer_packet_number(Some(lowest_unacknowledged)).unwrap();
@@ -300,8 +313,8 @@ mod tests {
     #[test]
     fn partial_packet_number_from_small_packet_number_with_increasing_acknowledged_gets_inferred_correctly() {
         for i in 1..10000 {
-            let packet_number = PacketNumber::from(i);
-            let lowest_unacknowledged = PacketNumber::from(i/2);
+            let packet_number = PacketNumber(i);
+            let lowest_unacknowledged = PacketNumber(i/2);
             let partial_packet_number = PartialPacketNumber::from_packet_number(packet_number, lowest_unacknowledged).unwrap();
 
             let inferred_packet_number = partial_packet_number.infer_packet_number(Some(lowest_unacknowledged)).unwrap();
@@ -318,13 +331,13 @@ mod tests {
             .unwrap();
 
         // Assert
-        assert_eq!(packet_number, PacketNumber::from(1));
+        assert_eq!(packet_number, PacketNumber(1));
     }
 
     #[test]
     fn infer_of_packet_returns_correct_packet_number() {
         // Arrange
-        let largest_acknowledged = Some(PacketNumber::from(5436534));
+        let largest_acknowledged = Some(PacketNumber(5436534));
 
         // Act
         let packet_number = PartialPacketNumber::OneByte(234)
@@ -332,7 +345,7 @@ mod tests {
             .unwrap();
 
         // Assert
-        assert_eq!(packet_number, PacketNumber::from(5436650));
+        assert_eq!(packet_number, PacketNumber(5436650));
     }
 
     #[test]
@@ -350,37 +363,37 @@ mod tests {
     #[test]
     fn epochs_returns_correct_epochs() {
         // Arrange
-        let packet_number = PacketNumber::from(5436534);
+        let packet_number = PacketNumber(5436534);
 
         // Act
         let epochs = packet_number.epochs(8);
 
         // Assert
-        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber::from(5436160), PacketNumber::from(5436416), PacketNumber::from(5436672)]));
+        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber(5436160), PacketNumber(5436416), PacketNumber(5436672)]));
     }
 
     #[test]
     fn epochs_returns_correct_epochs_2() {
         // Arrange
-        let packet_number = PacketNumber::from(5436534);
+        let packet_number = PacketNumber(5436534);
 
         // Act
         let epochs = packet_number.epochs(16);
 
         // Assert
-        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber::from(5308416), PacketNumber::from(5373952), PacketNumber::from(5439488)]));
+        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber(5308416), PacketNumber(5373952), PacketNumber(5439488)]));
     }
 
     #[test]
     fn epochs_returns_correct_epochs_3() {
         // Arrange
-        let packet_number = PacketNumber::from(5436534);
+        let packet_number = PacketNumber(5436534);
 
         // Act
         let epochs = packet_number.epochs(1);
 
         // Assert
-        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber::from(5436532), PacketNumber::from(5436534), PacketNumber::from(5436536)]));
+        assert_eq!(epochs, SmallVec::<[PacketNumber; 3]>::from_slice(&[PacketNumber(5436532), PacketNumber(5436534), PacketNumber(5436536)]));
     }
 
 }

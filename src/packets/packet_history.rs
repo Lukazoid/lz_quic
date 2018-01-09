@@ -79,41 +79,52 @@ impl PacketHistory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use conv::TryFrom;
 
     #[test]
     fn is_duplicate_returns_false_for_empty() {
         let packet_history = PacketHistory::new();
 
-        assert_eq!(packet_history.is_duplicate(5.into()), false);
+        let packet_number = PacketNumber::try_from(5).unwrap();
+        assert_eq!(packet_history.is_duplicate(packet_number), false);
     }
 
     #[test]
     fn is_duplicate_returns_true_for_received() {
         let mut packet_history = PacketHistory::new();
 
-        packet_history.push_packet_number(5.into());
+        let packet_number = PacketNumber::try_from(5).unwrap();
+        packet_history.push_packet_number(packet_number);
 
-        assert!(packet_history.is_duplicate(5.into()));
+        assert!(packet_history.is_duplicate(packet_number));
     }
 
     #[test]
     fn is_duplicate_returns_true_for_ignored() {
         let mut packet_history = PacketHistory::new();
 
-        packet_history.push_packet_number(5.into());
-        packet_history.ignore_packets_up_to_including(200.into());
+        let packet_number = PacketNumber::try_from(5).unwrap();
+        packet_history.push_packet_number(packet_number);
 
-        assert!(packet_history.is_duplicate(5.into()));
+        let ignored = PacketNumber::try_from(200).unwrap();
+        packet_history.ignore_packets_up_to_including(ignored);
+
+        assert!(packet_history.is_duplicate(packet_number));
     }
 
     #[test]
     fn ignore_packets_up_to_including_does_nothing_when_ignoring_already_ignored() {
         let mut packet_history = PacketHistory::new();
 
-        packet_history.push_packet_number(5.into());
-        packet_history.ignore_packets_up_to_including(200.into());
-        packet_history.ignore_packets_up_to_including(4.into());
+        let packet_number = PacketNumber::try_from(5).unwrap();
+        packet_history.push_packet_number(packet_number);
 
-        assert!(packet_history.is_duplicate(5.into()));
+        let ignored = PacketNumber::try_from(200).unwrap();
+        packet_history.ignore_packets_up_to_including(ignored);
+
+        let ignored_lower = PacketNumber::try_from(4).unwrap();
+        packet_history.ignore_packets_up_to_including(ignored_lower);
+
+        assert!(packet_history.is_duplicate(packet_number));
     }
 }

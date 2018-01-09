@@ -190,6 +190,7 @@ mod tests {
     use protocol::{ConnectionId, Readable, Version, Writable};
     use rand;
     use super::PacketHeader;
+    use conv::TryFrom;
 
     #[test]
     pub fn read_write_version_negotiation_packet_header() {
@@ -214,7 +215,7 @@ mod tests {
             packet_type: LongHeaderPacketType::Handshake,
             connection_id: ConnectionId::generate(&mut rand::thread_rng()),
             version: Version::DRAFT_IETF_08,
-            packet_number: PacketNumber::from(5u64),
+            packet_number: PacketNumber::try_from(5u64).unwrap(),
         };
         let packet_header = PacketHeader::Long(long_header);
 
