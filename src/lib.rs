@@ -32,6 +32,7 @@ extern crate binary_tree;
 extern crate bytes;
 #[macro_use] extern crate log;
 extern crate debugit;
+extern crate bimap;
 
 #[cfg(all(feature = "unstable", test))]
 extern crate test;
@@ -52,6 +53,9 @@ mod handshake;
 mod frames;
 mod crypto;
 mod packets;
+
+mod connection_map;
+use self::connection_map::ConnectionMap;
 
 mod connection_termination_mode;
 pub use self::connection_termination_mode::ConnectionTerminationMode;
