@@ -11,6 +11,7 @@ use futures::sync::oneshot;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[test]
+#[ignore]
 pub fn client_connecting_to_server() {
     let any_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 0);
 
