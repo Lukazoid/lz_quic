@@ -1,6 +1,5 @@
 use errors::*;
 use {ClientConfiguration, ClientPerspective, NewClient, NewDataStream, NewDataStreams, Session};
-use handshake::ClientCryptoInitializer;
 use rand::OsRng;
 use futures::{Future, IntoFuture};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};

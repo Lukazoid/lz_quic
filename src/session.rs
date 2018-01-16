@@ -1,7 +1,6 @@
 use errors::*;
 use futures::{Future, Stream};
 use {DataStream, NewDataStream, NewDataStreams, Perspective};
-use handshake::HandshakeCodec;
 use protocol::ConnectionId;
 use tokio_core::net::UdpFramed;
 use tokio_io::codec::Framed;
@@ -30,10 +29,6 @@ impl<P: Perspective> Session<P> {
             connection_id: connection_id,
             perspective: perspective,
         }
-    }
-
-    fn crypto_stream(&self) -> Framed<DataStream<P>, HandshakeCodec> {
-        unimplemented!()
     }
 
     pub fn handshake(&self) -> Box<Future<Item = (), Error = Error> + Send + Sync> {
