@@ -1,4 +1,4 @@
-use Session;
+use Connection;
 use tokio_io::{AsyncRead, AsyncWrite};
 use futures::Poll;
 use std::io::{Error as IoError, Read, Result as IoResult, Write};
@@ -9,7 +9,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct DataStream<P> {
     stream_id: StreamId,
-    session: Arc<Session<P>>,
+    connection: Arc<Connection<P>>,
 }
 
 impl<P> DataStream<P> {

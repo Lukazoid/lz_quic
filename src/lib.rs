@@ -61,8 +61,8 @@ pub use self::connection_termination_mode::ConnectionTerminationMode;
 mod new_data_streams;
 pub use self::new_data_streams::NewDataStreams;
 
-mod session;
-use self::session::Session;
+mod connection;
+use self::connection::Connection;
 
 mod data_stream;
 pub use self::data_stream::DataStream;

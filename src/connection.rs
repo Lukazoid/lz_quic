@@ -8,22 +8,22 @@ use packets::{PacketCodec, PacketDispatcher};
 use std::sync::Arc;
 
 
-/// The session exists so a single client-server session may span multiple physical connections.
+/// The connection exists so a single client-server connection may span multiple physical connections.
 #[derive(Debug)]
-pub struct Session<P> {
+pub struct Connection<P> {
     connection_id: ConnectionId,
     perspective: P,
 }
 
-impl<P> Drop for Session<P> {
+impl<P> Drop for Connection<P> {
     fn drop(&mut self) {
         // TODO LH Inform the packet dispatcher that this connection has closed
     }
 }
 
-impl<P: Perspective> Session<P> {
+impl<P: Perspective> Connection<P> {
     pub fn new(connection_id: ConnectionId, perspective: P) -> Self {
-        debug!("created new session with connection id {:?}", connection_id);
+        debug!("created new connection with connection id {:?}", connection_id);
 
         Self {
             connection_id: connection_id,

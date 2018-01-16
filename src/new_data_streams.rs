@@ -1,17 +1,17 @@
 use errors::*;
-use {DataStream, Session};
+use {DataStream, Connection};
 use futures::stream::Stream;
 use futures::Poll;
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct NewDataStreams<P> {
-    session: Arc<Session<P>>,
+    connection: Arc<Connection<P>>,
 }
 
 impl<P> NewDataStreams<P> {
-    pub(crate) fn new(session: Arc<Session<P>>) -> Self {
-        Self { session: session }
+    pub(crate) fn new(connection: Arc<Connection<P>>) -> Self {
+        Self { connection: connection }
     }
 }
 

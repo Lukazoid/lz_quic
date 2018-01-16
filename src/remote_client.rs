@@ -1,10 +1,10 @@
-use {NewDataStream, NewDataStreams, Session, ServerPerspective};
+use {NewDataStream, NewDataStreams, Connection, ServerPerspective};
 use std::sync::Arc;
 
 /// A client which has connected to this `Server`.
 #[derive(Debug)]
 pub struct RemoteClient {
-    session: Arc<Session<ServerPerspective>>,
+    connection: Arc<Connection<ServerPerspective>>,
 }
 
 impl RemoteClient {

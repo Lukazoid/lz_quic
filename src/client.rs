@@ -1,5 +1,5 @@
 use errors::*;
-use {ClientConfiguration, ClientPerspective, NewClient, NewDataStream, NewDataStreams, Session};
+use {ClientConfiguration, ClientPerspective, NewClient, NewDataStream, NewDataStreams, Connection};
 use rand::OsRng;
 use futures::{Future, IntoFuture};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Client {
-    session: Arc<Session<ClientPerspective>>,
+    connection: Arc<Connection<ClientPerspective>>,
 }
 
 fn bind_udp_socket(handle: &Handle) -> Result<UdpSocket> {
@@ -32,14 +32,14 @@ fn generate_connection_id() -> Result<ConnectionId> {
     Ok(ConnectionId::generate(&mut rng))
 }
 
-fn new_session(udp_socket: UdpSocket) -> Result<Session<ClientPerspective>> {
+fn new_session(udp_socket: UdpSocket) -> Result<Connection<ClientPerspective>> {
     let connection_id = generate_connection_id()?;
 
     let client_perspective = ClientPerspective::new(udp_socket);
 
-    let session = Session::new(connection_id, client_perspective);
+    let connection = Connection::new(connection_id, client_perspective);
 
-    Ok(session)
+    Ok(connection)
 }
 
 impl Client {
@@ -52,10 +52,10 @@ impl Client {
         let future = bind_udp_socket(handle)
             .and_then(new_session)
             .into_future()
-            .and_then(|session| {
-                session.handshake().map(|_| {
+            .and_then(|connection| {
+                connection.handshake().map(|_| {
                     Client {
-                        session: Arc::new(session),
+                        connection: Arc::new(connection),
                     }
                 })
             });
@@ -64,10 +64,10 @@ impl Client {
     }
 
     pub fn open_stream(&self) -> NewDataStream<ClientPerspective> {
-        NewDataStream::new(self.session.clone())
+        NewDataStream::new(self.connection.clone())
     }
 
     pub fn incoming_streams(&self) -> NewDataStreams<ClientPerspective> {
-        NewDataStreams::new(self.session.clone())
+        NewDataStreams::new(self.connection.clone())
     }
 }

@@ -36,7 +36,7 @@ impl Server {
         // stream::empty::<(), Error>()
         //     .map(move |_|{
         //         let connection_id = ConnectionId::generate(&mut ::rand::thread_rng());
-        //         Session::new_server(connection_id)
+        //         Connection::new_server(connection_id)
         //     })
         //     .boxed()
     }
