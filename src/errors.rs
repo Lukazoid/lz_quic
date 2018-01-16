@@ -3,7 +3,6 @@ use frames::StreamOffset;
 use std::net::SocketAddr;
 use futures::{Async, Poll, Future, Stream};
 use std::error::Error as StdError;
-use primitives::{U24, U48};
 
 error_chain! {
     foreign_links {
@@ -22,17 +21,9 @@ error_chain! {
             description("failed to write 16-bit unsigned integer")
             display("failed to write 16-bit unsigned integer '{}'", value)
         }
-        FailedToWriteU24(value: U24) {
-            description("failed to write 24-bit unsigned integer")
-            display("failed to write 24-bit unsigned integer '{}'", value)
-        }
         FailedToWriteU32(value: u32) {
             description("failed to write 32-bit unsigned integer")
             display("failed to write 32-bit unsigned integer '{}'", value)
-        }
-        FailedToWriteU48(value: U48) {
-            description("failed to write 48-bit unsigned integer")
-            display("failed to write 48-bit unsigned integer '{}'", value)
         }
         FailedToWriteU64(value: u64) {
             description("failed to write 64-bit unsigned integer")
@@ -44,14 +35,8 @@ error_chain! {
         FailedToReadU16 {
             description("failed to read 16-bit unsigned integer")
         }
-        FailedToReadU24 {
-            description("failed to read 24-bit unsigned integer")
-        }
         FailedToReadU32 {
             description("failed to read 32-bit unsigned integer")
-        }
-        FailedToReadU48 {
-            description("failed to read 48-bit unsigned integer")
         }
         FailedToReadU64 {
             description("failed to read 64-bit unsigned integer")

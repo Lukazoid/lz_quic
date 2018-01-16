@@ -1,5 +1,3 @@
-use primitives::{U24, U48};
-
 /// A trait for getting the absolute delta between two values.
 pub trait AbsDelta<RHS = Self> {
     /// The type of the delta.
@@ -23,7 +21,7 @@ macro_rules! unsigned_impl {
     };
 }
 
-unsigned_impl!(u64 U48 u32 U24 u16 u8 usize);
+unsigned_impl!(u64 u32 u16 u8 usize);
 
 macro_rules! signed_impl {
     ($($type:ty => $delta_type:ty), *) => {
@@ -51,8 +49,6 @@ signed_impl!(i64 => u64, i32 => u32, i16 => u16, i8 => u8, isize => usize);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use primitives::u48::U48;
-    use primitives::u24::U24;
 
     macro_rules! abs_delta_tests {
         ($($name:ident: $values:expr => $result:expr), *) => {
@@ -96,21 +92,11 @@ mod tests {
         maximum_u64_ascending_range_delta: (u64::min_value(), u64::max_value()) => u64::max_value(),
         u64_descending_range_delta: (6u64, 5u64) => 1u64,
         u64_ascending_range_delta: (5u64, 6u64) => 1u64,
-
-        maximum_u48_descending_range_delta: (U48::max_value(), U48::min_value()) => U48::max_value(),
-        maximum_u48_ascending_range_delta: (U48::min_value(), U48::max_value()) => U48::max_value(),
-        u48_descending_range_delta: (U48::from(6u32), U48::from(5u32)) => U48::from(1u32),
-        u48_ascending_range_delta: (U48::from(5u32), U48::from(6u32)) => U48::from(1u32),
         
         maximum_u32_descending_range_delta: (u32::max_value(), u32::min_value()) => u32::max_value(),
         maximum_u32_ascending_range_delta: (u32::min_value(), u32::max_value()) => u32::max_value(),
         u32_descending_range_delta: (6u32, 5u32) => 1u32,
         u32_ascending_range_delta: (5u32, 6u32) => 1u32,
-
-        maximum_u24_descending_range_delta: (U24::max_value(), U24::min_value()) => U24::max_value(),
-        maximum_u24_ascending_range_delta: (U24::min_value(), U24::max_value()) => U24::max_value(),
-        u24_descending_range_delta: (U24::from(6u16), U24::from(5u16)) => U24::from(1u16),
-        u24_ascending_range_delta: (U24::from(5u16), U24::from(6u16)) => U24::from(1u16),
 
         maximum_u16_descending_range_delta: (u16::max_value(), u16::min_value()) => u16::max_value(),
         maximum_u16_ascending_range_delta: (u16::min_value(), u16::max_value()) => u16::max_value(),

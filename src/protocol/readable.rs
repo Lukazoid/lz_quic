@@ -1,7 +1,6 @@
 use errors::*;
 use std::io::{Cursor, Read};
 use byteorder::{NetworkEndian, ReadBytesExt};
-use primitives::{ReadQuicPrimitives, U24, U48};
 use std::marker::PhantomData;
 use std::iter::FromIterator;
 use debugit::DebugIt;
@@ -100,7 +99,8 @@ impl Readable for Vec<u8> {
 
         let mut vec = Vec::new();
 
-        reader.read_to_end(&mut vec)
+        reader
+            .read_to_end(&mut vec)
             .chain_err(|| ErrorKind::FailedToReadBytes)?;
 
         debug!("read byte vector {:?}", vec);
@@ -140,22 +140,6 @@ impl Readable for u16 {
     }
 }
 
-impl Readable for U24 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        trace!("reading unsigned 24-bit integer");
-
-        let value = ReadQuicPrimitives::read_u24::<NetworkEndian>(reader)
-            .chain_err(|| ErrorKind::FailedToReadU24)?;
-
-        debug!("read unsigned 24-bit integer {}", value);
-
-        Ok(value)
-    }
-}
-
 impl Readable for u32 {
     fn read<R: Read>(reader: &mut R) -> Result<Self>
     where
@@ -168,23 +152,6 @@ impl Readable for u32 {
             .chain_err(|| ErrorKind::FailedToReadU32)?;
 
         debug!("read unsigned 32-bit integer {}", value);
-
-        Ok(value)
-    }
-}
-
-impl Readable for U48 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
-    where
-        Self: Sized,
-    {
-        trace!("reading unsigned 48-bit integer");
-
-        let value = reader
-            .read_u48::<NetworkEndian>()
-            .chain_err(|| ErrorKind::FailedToReadU48)?;
-
-        debug!("read unsigned 48-bit integer {}", value);
 
         Ok(value)
     }

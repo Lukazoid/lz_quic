@@ -1,7 +1,6 @@
 use errors::*;
-use std::io::{Write, Cursor};
+use std::io::{Cursor, Write};
 use byteorder::{NetworkEndian, WriteBytesExt};
-use primitives::{U24, U48, WriteQuicPrimitives};
 use smallvec::{Array, SmallVec};
 use debugit::DebugIt;
 
@@ -52,7 +51,7 @@ impl<E: Writable> Writable for [E] {
     }
 }
 
-impl<A: Array<Item=E>, E: Writable> Writable for SmallVec<A> {
+impl<A: Array<Item = E>, E: Writable> Writable for SmallVec<A> {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         self.as_ref().write(writer)
     }
@@ -94,19 +93,6 @@ impl Writable for u16 {
     }
 }
 
-impl Writable for U24 {
-    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        trace!("writing 24-bit unsigned integer {}", self);
-
-        WriteQuicPrimitives::write_u24::<NetworkEndian>(writer, *self)
-            .chain_err(|| ErrorKind::FailedToWriteU24(*self))?;
-
-        debug!("written 24-bit unsigned integer {}", self);
-
-        Ok(())
-    }
-}
-
 impl Writable for u32 {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing 32-bit unsigned integer {}", self);
@@ -114,23 +100,9 @@ impl Writable for u32 {
         writer
             .write_u32::<NetworkEndian>(*self)
             .chain_err(|| ErrorKind::FailedToWriteU32(*self))?;
-            
+
         debug!("written 32-bit unsigned integer {}", self);
 
-        Ok(())
-    }
-}
-
-impl Writable for U48 {
-    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        trace!("writing 48-bit unsigned integer {}", self);
-
-        writer
-            .write_u48::<NetworkEndian>(*self)
-            .chain_err(|| ErrorKind::FailedToWriteU48(*self))?;
-            
-        debug!("written 48-bit unsigned integer {}", self);
-        
         Ok(())
     }
 }
@@ -144,7 +116,7 @@ impl Writable for u64 {
             .chain_err(|| ErrorKind::FailedToWriteU64(*self))?;
 
         debug!("written 64-bit unsigned integer {}", self);
-        
+
         Ok(())
     }
 }
