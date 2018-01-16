@@ -49,9 +49,7 @@ pub use self::protocol::ServerId;
 
 mod primitives;
 mod utils;
-mod handshake;
 mod frames;
-mod crypto;
 mod packets;
 
 mod connection_map;

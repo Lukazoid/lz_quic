@@ -1,4 +1,3 @@
-use handshake::Tag;
 use protocol::{ConnectionId, StreamId, Version};
 use frames::StreamOffset;
 use std::net::SocketAddr;
@@ -71,56 +70,13 @@ error_chain! {
             description("failed to write bytes")
             display("failed to write '{}' bytes", length)
         }
-        InvalidTagValue(tag: Tag) {
-            description("invalid QUIC tag value")
-            display("invalid value for QUIC tag '{}'", tag)
-        }
-        MissingTag(tag: Tag) {
-            description("missing QUIC tag value")
-            display("missing QUIC tag '{}'", tag)
-        }
-        InvalidProofType(tag: Tag) {
-            description("invalid proof type")
-            display("QUIC tag '{}' is an invalid proof type", tag)
-        }
-        InvalidHandshakeMessage(tag: Tag) {
-            description("invalid crypto handshake message")
-            display("QUIC tag '{}' is an invalid crypto handshake message", tag)
-        }
         FailedToWriteConnectionId(connection_id: ConnectionId) {
             description("failed to write QUIC connection id")
             display("failed to write QUIC connection id '{}'", connection_id)
         }
-        FailedToWriteCryptoMessageTag(tag: Tag) {
-            description("failed to write crypto message QUIC tag")
-            display("failed to write crypto message QUIC tag '{}'", tag)
-        }
-        FailedToReadCryptoMessageTag {
-            description("failed to read crypo message QUIC tag")
-        }
         FailedToWriteQuicVersion(version: Version) {
             description("failed to write QUIC version")
             display("failed to write QUIC version '{}'", version)
-        }
-        FailedToWriteTagValueMapLength {
-            description("failed to write QUIC tag-value map length")
-        }
-        FailedToReadTagValueMapLength {
-            description("failed to read QUIC tag-value map length")
-        }
-        FailedToReadTagValueMap {
-            description("failed to read QUIC tag-value map")
-        }
-        FailedToWriteTagValueMapEndOffset(end_offset: u32) {
-            description("failed to write QUIC tag-value map end offset")
-            display("failed to write QUIC tag-value map end offset '{}'", end_offset)
-        }
-        FailedToWriteTagValue(tag: Tag) {
-            description("failed to write QUIC tag value")
-            display("failed to write value for QUIC tag '{}'", tag)
-        }
-        FailedToWriteTagValueMap {
-            description("failed to write QUIC tag-value map")
         }
         FailedToWritePadding(num_bytes: usize) {
             description("failed to write padding")
@@ -129,9 +85,6 @@ error_chain! {
         FailedToReadPadding(num_bytes: usize) {
             description("failed to read padding")
             display("failed to read '{}' padding bytes", num_bytes)
-        }
-        FailedToWriteCryptoHandshakeTagValueMap {
-            description("failed to write crypto handshake message tag-value map")
         }
         VarIntValueIsTooLargeToFitInIntegerOfSize(bytes: u64, integer_size: usize) {
             description("variable width integer value is too large to fit in integer")
@@ -191,111 +144,11 @@ error_chain! {
         FailedToWriteRegularPacket {
             description("failed to write regular packet")
         }
-        FailedToReadCryptoRejectionMessage {
-            description("failed to read crypto rejection message")
-        }
-        FailedToReadCryptoClientHelloMessage {
-            description("failed to read crypto client hello message")
-        }
-        FailedToReadCryptoServerConfigurationMessage {
-            description("failed to read crypto server configuration message")
-        }
-        FailedToReadCryptoServerHelloMessage {
-            description("failed to read crypto server hello message")
-        }
-        FailedToReadCompressedCertificateEntryType {
-            description("failed to read compressed certificate entry type")
-        }
-        FailedToWriteCompressedCertificateEntryType {
-            description("failed to write compressed certificate entry type")
-        }
-        FailedToReadCachedCertificateHash {
-            description("failed to read cached certificate hash")
-        }
-        FailedToWriteCachedCertificateHash {
-            description("failed to write cached certificate hash")
-        }
-        FailedToReadCommonCertificateSetHash {
-            description("failed to read common certificate set hash")
-        }
-        FailedToWriteCommonCertificateSetHash {
-            description("failed to write common certificate set hash")
-        }
-        FailedToReadCommonCertificateIndex {
-            description("failed to read common certificate index")
-        }
-        FailedToWriteCommonCertificateIndex {
-            description("failed to write common certificate index")
-        }
-        InvalidCompressedCertificateEntryType (entry_type: u8) {
-            description("invalid compressed certificate entry type")
-            display("invalid compressed certificate entry type '{}'", entry_type)
-        }
-        FailedToReadCompressedCertificatesUncompressedLength {
-            description("failed to read compressed certificates uncompressed length")
-        }
-        FailedToWriteCompressedCertificateUncompressedLength (length: usize) {
-            description("failed to write compressed certificate uncompressed length")
-            display("failed to write compressed certificate uncompressed length '{}'", length)
-        }
-        FailedToReadCompressedCertificateUncompressedLength  {
-            description("failed to read compressed certificate uncompressed length")
-        }
-        FailedToWriteCompressedCertificatesUncompressedLength (length: usize) {
-            description("failed to write compressed certificates uncompressed length")
-            display("failed to write compressed certificates uncompressed length '{}'", length)
-        }
-        FailedToWriteCompressedCertificateEntry {
-            description("failed to write compressed certificate entry")
-        }
-        FailedToReadCompressedCertificateEntry {
-            description("failed to read compressed certificate entry")
-        }
-        FailedToWriteCompressedChunk {
-            description("failed to write compressed chunk")
-        }
-        FailedToWriteCertificateBytes {
-            description("failed to write certificate bytes")
-        }
-        FailedToReadCertificateBytes {
-            description("failed to read certificate bytes")
-        }
-        FailedToWriteCompressedCertificates {
-            description("failed to write compressed certificates")
-        }
-        FailedToReadCompressedCertificates {
-            description("failed to read compressed certificates")
-        }
-        FailedToFindCachedCertificateWithHash (hash: u64) {
-            description("failed to find cached certificate with hash")
-            display("failed to find cached certificate with hash '{}'", hash)
-        }
-        FailedToFindCommonCertificateSetWithHash (hash: u64) {
-            description("failed to find common certificate set with hash")
-            display("failed to find common certificate set with hash '{}'", hash)
-        }
-        FailedToFindCommonCertificateWithIndexInSet (index: usize, set_hash: u64) {
-            description("failed to find certificate with index in certificate set with hash")
-            display("failed to find certificate with index '{}' in certificate set with hash '{}'", index, set_hash)
-        }
-        CompressedCertificatesUncompressedLengthIsTooLarge (length: usize) {
-            description("compress certificates uncompressed length is too large")
-            display("compress certificates uncompressed length '{}' is too large", length)
-        }
-        NotEnoughCompressedCertificates {
-            description("not enough compressed certificates")
-        }
-        FailedToDecompressCompressedCertificates {
-            description("failed to decompress compressed certificates")
-        }
         NotEnoughReplacementValues {
             description("not enough replacement values")
         }
         NotEnoughValuesToReplace {
             description("not enough values to replace")
-        }
-        DecryptionFailed {
-            description("decryption failed")
         }
         FailedToInferPacketNumber {
             description("failed to infer packet number")
@@ -305,12 +158,6 @@ error_chain! {
         }
         FailedToBindUdpSocket {
             description("failed to bind UDP socket")
-        }
-        FailedToWriteDiversificationNonce {
-            description("failed to write diversification nonce")
-        }
-        FailedToReadDiversificationNonce {
-            description("failed to read diversification nonce")
         }
         FailedToWritePartialPacketNumber{
             description("failed to write partial packet number")
@@ -327,155 +174,8 @@ error_chain! {
         FailedToBuildPartialPacketNumber {
             description("failed to build the partial packet number")
         }
-        CipherTextTooShort (actual_length: usize, minimum_length: usize) {
-            description("the cipher text is too short")
-            display("the cipher text of length '{}' is too short and must be atleast {} bytes", actual_length, minimum_length)
-        }
-        FailedToAuthenticateReceivedData {
-            description("failed to authenticate received data")
-        }
-        FailedToCreateEphemerealPrivateKey {
-            description("failed to create ephemereal private key")
-        }
-        FailedToComputePublicKey {
-            description("failed to compute public key")
-        }
-        FailedToPerformKeyAgreement {
-            description("failed to perform key agreement")
-        }
-        FailedToParseCertificateFromCertificateChain {
-            description("failed to parse certificate from certificate chain")
-        }
-        FailedToParseCertificate {
-            description("failed to parse certificate")
-        }
-        FailedToVerifyServerProof { 
-            description("failed to verify server proof")
-        }
-        CertificateInvalidForDnsName(dns_name: String){
-            description("certificate invalid for dns name")
-            display("certificate invalid for dns name '{}'", dns_name)
-        }
-        InvalidTlsCertificate {
-            description("invalid TLS certificate")
-        }
-        CertificateChainIsEmpty {
-            description("certificate chain is empty")
-        }
-        FailedToPerformAesGcmEncryption {
-            description("failed to perform AES GCM encryption")
-        }
-        FailedToPerformAesGcmDecryption {
-            description("failed to perform AES GCM decryption")
-        }
         FailedToGetLocalAddress {
             description("failed to get local address")
-        }
-        APublicKeyMustBeSpecified {
-            description("a public key must be specified")
-        }
-        PublicKeyBytesTooLongForU24 {
-            description("public key bytes too long for U24")
-        }
-        FailedToReadPublicKeyBytes {
-            description("failed to read public key bytes")
-        }
-        FailedToWritePublicKeyBytes {
-            description("failed to write public key bytes")
-        }
-        ASupportedKeyExchangeAlgorithmMustBeSpecified {
-            description("a supported key exchange algorithm must be specified")
-        }
-        NoNonForwardSecureAead {
-            description("no non-forward secure AEAD")
-        }
-        NoForwardSecureAead {
-            description("no forward secure AEAD")
-        }
-        InvalidCryptoMessageType(tag: Tag) {
-            description("invalid crypto message type")
-            display("invalid crypto message type '{}'", tag)
-        }
-        ReceivedUnencryptedServerHello {
-            description("received unencrypted server hello")
-        }
-        KeyExchangeAlgorithmAndPublicKeyCountsMustMatch {
-            description("key exchange algorithm and public key counts must match")
-        }
-        ServerConfigurationIsRequiredBeforeForwardSecureEncryptionCanBeEstablished {
-            description("server configuration is required before forward secure encryption can be established")
-        }
-        UnableToVerifyWithoutACertificateChain {
-            description("unable to verify without a certificate chain")
-        }
-        UnableToSignWithoutACertificateChain {
-            description("unable to sign without a certificate chain")
-        }
-        UnableToDeriveKeysWithoutALeafCertificate {
-            description("unable to derive keys without a leaf certificate")
-        }
-        TheClientNonceHasAlreadyBeenGenerated {
-            description("the client nonce has already been generated")
-        }
-        FailedToReadClientNonce {
-            description("failed to read client nonce")
-        }
-        FailedToWriteClientNonce {
-            description("failed to write client nonce")
-        }
-        FailedToReadServerNonce {
-            description("failed to read server nonce")
-        }
-        FailedToWriteServerNonce {
-            description("failed to write server nonce")
-        }
-        ServerConfigurationExpired {
-            description("server configuration expired")
-        }
-        FailedToWriteSourceAddressToken {
-            description("failed to write source address token")
-        }
-        FailedToReadSourceAddressToken {
-            description("failed to read source address token")
-        }
-        FailedToParseRsaKeyPair {
-            description("failed to parse RSA key-pair")
-        }
-        FailedToDetermineTimeSinceUnixEpoch {
-            description("failed to determine time since unix epoch")
-        }
-        FailedToBuildRsaSigningState {
-            description("failed to build RSA signing state")
-        }
-        FailedToSignServerProof {
-            description("failed to sign server proof")
-        }
-        ServerProofProvidedBeforeClientHelloSent {
-            description("server proof provided before client hello sent")
-        }
-        FailedToReadSignatureBytes {
-            description("failed to read signature bytes")
-        }
-        FailedToWriteSignatureBytes {
-            description("failed to write signature bytes")
-        }
-        ClientNonceIsRequiredBeforeForwardSecureEncryptionCanBeEstablished {
-            description("client nonce is required before forward secure encryption can be established")
-        }
-        ServerNonceIsRequiredBeforeForwardSecureEncryptionCanBeEstablished {
-            description("server nonce is required before forward secure encryption can be established")
-        }
-        UnableToUpgradeCryptoAsItIsAlreadyAtNonForwardSecureStage {
-            description("unable to upgrade crypto as it is already at non-forward secure stage")
-        }
-        UnableToUpgradeCryptoAsItIsAlreadyAtForwardSecureStage {
-            description("unable to upgrade crypto as it is already at forward secure stage")
-        }
-        UnableToUpgradeCryptoFromUnencryptedToForwardSecureStage {
-            description("unable to upgrade crypto from unencrypted to forward secure stage")
-        }
-        FailedToPerformClientHandshake {
-            description("failed to perform client handshake")
         }
         InvalidLongHeaderPacketType(packet_type: u8) {
             description("invalid long header packet type")
