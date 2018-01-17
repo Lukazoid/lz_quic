@@ -1,5 +1,5 @@
 use errors::*;
-use {ClientConfiguration, ClientPerspective, NewClient, NewDataStream, NewDataStreams, Connection};
+use {ClientConfiguration, ClientPerspective, NewClient, DataStream, NewDataStreams, Connection};
 use rand::OsRng;
 use futures::{Future, IntoFuture};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -63,8 +63,8 @@ impl Client {
         NewClient::new(Box::new(future))
     }
 
-    pub fn open_stream(&self) -> NewDataStream<ClientPerspective> {
-        NewDataStream::new(self.connection.clone())
+    pub fn open_stream(&self) -> DataStream<ClientPerspective> {
+        DataStream::new(self.connection.clone())
     }
 
     pub fn incoming_streams(&self) -> NewDataStreams<ClientPerspective> {

@@ -73,9 +73,6 @@ use self::stream_map::StreamMap;
 mod client_configuration;
 pub use self::client_configuration::ClientConfiguration;
 
-mod new_data_stream;
-pub use self::new_data_stream::NewDataStream;
-
 mod new_client;
 pub use self::new_client::NewClient;
 

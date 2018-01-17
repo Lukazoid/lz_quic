@@ -1,12 +1,11 @@
 use errors::*;
 use futures::{Future, Stream};
-use {DataStream, NewDataStream, NewDataStreams, Perspective};
+use {DataStream, NewDataStreams, Perspective};
 use protocol::ConnectionId;
 use tokio_core::net::UdpFramed;
 use tokio_io::codec::Framed;
 use packets::{PacketCodec, PacketDispatcher};
 use std::sync::Arc;
-
 
 /// The connection exists so a single client-server connection may span multiple physical connections.
 #[derive(Debug)]
