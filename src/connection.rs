@@ -1,7 +1,7 @@
 use errors::*;
 use futures::{Future, Stream};
 use {DataStream, NewDataStreams, Perspective};
-use protocol::ConnectionId;
+use protocol::{ConnectionId, StreamId};
 use tokio_core::net::UdpFramed;
 use tokio_io::codec::Framed;
 use packets::{PacketCodec, PacketDispatcher};
@@ -31,6 +31,10 @@ impl<P: Perspective> Connection<P> {
     }
 
     pub fn handshake(&self) -> Box<Future<Item = (), Error = Error> + Send + Sync> {
+        unimplemented!()
+    }
+
+    pub fn new_stream_id(&self) -> StreamId {
         unimplemented!()
     }
 }

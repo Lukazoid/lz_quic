@@ -64,7 +64,7 @@ impl Client {
     }
 
     pub fn open_stream(&self) -> DataStream<ClientPerspective> {
-        DataStream::new(self.connection.clone())
+        DataStream::new(self.connection.new_stream_id(), self.connection.clone())
     }
 
     pub fn incoming_streams(&self) -> NewDataStreams<ClientPerspective> {
