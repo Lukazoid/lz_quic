@@ -176,6 +176,14 @@ error_chain! {
         ValueExceedsTheMaximumPacketNumberValue {
             description("value exeeds the maximum packet number value")
         }
+        HostIsNotAValidDomainName(host: String) {
+            description("host is not a valid domain name")
+            display("host '{}' is not a valid domain name", host)
+        }
+        FailedToPerformTlsHandshake(host: String) {
+            description("failed to perform TLS handshake")
+            display("failed to perform TLS handshake to host '{}'", host)
+        }
     }
 }
 

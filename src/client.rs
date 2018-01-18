@@ -1,5 +1,6 @@
 use errors::*;
-use {ClientConfiguration, ClientPerspective, NewClient, DataStream, NewDataStreams, Connection};
+use {ClientConfiguration, ClientPerspective, Connection, DataStream, NewClient, NewDataStreams,
+     SharedConnection};
 use rand::OsRng;
 use futures::{Future, IntoFuture};
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
@@ -17,7 +18,8 @@ fn bind_udp_socket(handle: &Handle) -> Result<UdpSocket> {
     let any_port = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 0).into();
     trace!("binding udp socket to {:?}", any_port);
 
-    let udp_socket = UdpSocket::bind(&any_port, handle).chain_err(|| ErrorKind::FailedToBindUdpSocket)?;
+    let udp_socket =
+        UdpSocket::bind(&any_port, handle).chain_err(|| ErrorKind::FailedToBindUdpSocket)?;
 
     debug!("bound udp socket to {:?}", any_port);
 
@@ -32,10 +34,14 @@ fn generate_connection_id() -> Result<ConnectionId> {
     Ok(ConnectionId::generate(&mut rng))
 }
 
-fn new_session(udp_socket: UdpSocket) -> Result<Connection<ClientPerspective>> {
+fn new_connection(
+    server_id: ServerId,
+    udp_socket: UdpSocket,
+    client_configuration: ClientConfiguration,
+) -> Result<Connection<ClientPerspective>> {
     let connection_id = generate_connection_id()?;
 
-    let client_perspective = ClientPerspective::new(udp_socket);
+    let client_perspective = ClientPerspective::new(udp_socket, client_configuration, server_id);
 
     let connection = Connection::new(connection_id, client_perspective);
 
@@ -50,12 +56,16 @@ impl Client {
         handle: &Handle,
     ) -> NewClient {
         let future = bind_udp_socket(handle)
-            .and_then(new_session)
+            .and_then(|udp_socket| {
+                new_connection(server_id, udp_socket, client_configuration)
+            })
             .into_future()
             .and_then(|connection| {
+                let connection = Arc::new(connection);
+                let connection_copy = connection.clone();
                 connection.handshake().map(|_| {
                     Client {
-                        connection: Arc::new(connection),
+                        connection: connection_copy,
                     }
                 })
             });

@@ -1,21 +1,21 @@
 use errors::*;
-use {DataStream, Connection};
+use {DataStream, Connection, Perspective};
 use futures::stream::Stream;
 use futures::Poll;
 use std::sync::Arc;
 
 #[derive(Debug)]
-pub struct NewDataStreams<P> {
+pub struct NewDataStreams<P: Perspective> {
     connection: Arc<Connection<P>>,
 }
 
-impl<P> NewDataStreams<P> {
+impl<P: Perspective> NewDataStreams<P> {
     pub(crate) fn new(connection: Arc<Connection<P>>) -> Self {
         Self { connection: connection }
     }
 }
 
-impl<P> Stream for NewDataStreams<P> {
+impl<P: Perspective> Stream for NewDataStreams<P> {
     type Item = DataStream<P>;
     type Error = Error;
 

@@ -33,6 +33,8 @@ extern crate bytes;
 #[macro_use] extern crate log;
 extern crate debugit;
 extern crate bimap;
+extern crate rustls;
+extern crate tokio_rustls;
 
 #[cfg(all(feature = "unstable", test))]
 extern crate test;
@@ -63,6 +65,9 @@ pub use self::new_data_streams::NewDataStreams;
 
 mod connection;
 use self::connection::Connection;
+
+mod shared_connection;
+use self::shared_connection::SharedConnection;
 
 mod data_stream;
 pub use self::data_stream::DataStream;
