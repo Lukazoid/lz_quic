@@ -19,6 +19,19 @@ pub trait Writable {
         debug!("written {:?} to slice {:?}", DebugIt(self), slice);
     }
 
+    fn write_to_small_vec<A: Array<Item = u8>>(&self, small_vec: &mut SmallVec<A>) {
+        trace!("writing {:?} to small vector", DebugIt(self));
+
+        self.write(small_vec)
+            .expect("writing to a small vector should result in no errors");
+
+        debug!(
+            "written {:?} to small vector {:?}",
+            DebugIt(self),
+            small_vec
+        );
+    }
+
     fn write_to_vec(&self, vec: &mut Vec<u8>) {
         trace!("writing {:?} to vector", DebugIt(self));
 
