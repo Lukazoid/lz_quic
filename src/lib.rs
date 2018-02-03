@@ -35,6 +35,7 @@ extern crate debugit;
 extern crate bimap;
 extern crate rustls;
 extern crate tokio_rustls;
+extern crate lz_shared_udp;
 
 #[cfg(all(feature = "unstable", test))]
 extern crate test;
