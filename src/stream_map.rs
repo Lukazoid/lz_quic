@@ -1,14 +1,31 @@
 use errors::*;
+use StreamState;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use protocol::{Perspective, StreamId};
 use std::sync::Arc;
+use futures::sync::mpsc::{self, Receiver, Sender};
+use bytes::Bytes;
+use std::sync::Mutex;
 
 #[derive(Debug)]
 pub struct StreamMap {
-    opened_streams: HashMap<StreamId, Arc<()>>,
+    opened_streams: HashMap<StreamId, Arc<Mutex<StreamState>>>,
     next_outgoing_stream_id: StreamId,
     next_incoming_stream_id: StreamId,
+}
+
+fn new_stream(
+    opened_streams: &mut HashMap<StreamId, Arc<Mutex<StreamState>>>,
+    next_stream_id: &mut StreamId,
+) -> (StreamId, Arc<Mutex<StreamState>>) {
+    let id = *next_stream_id;
+    *next_stream_id = next_stream_id.next();
+
+    let new_stream_state = Arc::new(Mutex::new(StreamState::new(id)));
+    opened_streams.insert(id, new_stream_state.clone());
+
+    (id, new_stream_state)
 }
 
 impl StreamMap {
@@ -28,30 +45,28 @@ impl StreamMap {
         }
     }
 
-    pub fn next_outgoing_stream_id(&mut self) -> StreamId {
-        let id = self.next_outgoing_stream_id;
-        self.next_outgoing_stream_id = self.next_outgoing_stream_id.next();
-
-        id
+    pub fn next_outgoing_stream(&mut self) -> (StreamId, Arc<Mutex<StreamState>>) {
+        new_stream(&mut self.opened_streams, &mut self.next_outgoing_stream_id)
     }
 
-    pub fn next_incoming_stream_id(&mut self) -> StreamId {
-        let id = self.next_incoming_stream_id;
-        self.next_incoming_stream_id = self.next_incoming_stream_id.next();
-
-        id
+    pub fn next_incoming_stream(&mut self) -> (StreamId, Arc<Mutex<StreamState>>) {
+        new_stream(&mut self.opened_streams, &mut self.next_incoming_stream_id)
     }
 
-    pub fn stream_state(&mut self, stream_id: StreamId) -> Result<&Arc<()>> {
-        
-        if let Some(data_stream_state) = self.opened_streams.get(&stream_id) {
-            return Ok(data_stream_state);
-        } 
+    pub fn crypto_stream(&mut self) -> (StreamId, Arc<Mutex<StreamState>>) {
+        let id = StreamId::crypto_stream_id();
 
-        unimplemented!();
+        let stream_state = self.opened_streams
+            .entry(id)
+            .or_insert_with(|| Arc::new(Mutex::new(StreamState::new(id))))
+            .clone();
+
+        (id, stream_state)
     }
 
-    pub fn accepted_stream(&mut self, stream_id: StreamId, data_stream: Arc<()>) -> Result<()> {
-        unimplemented!();
+    pub fn stream_state(&mut self, stream_id: StreamId) -> Result<&Arc<Mutex<StreamState>>> {
+        self.opened_streams
+            .get(&stream_id)
+            .ok_or_else(|| ErrorKind::UnknownStreamId(stream_id).into())
     }
 }

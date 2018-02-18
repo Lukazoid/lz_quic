@@ -1,5 +1,5 @@
 use errors::*;
-use DataStream;
+use {DataStream, StreamMap};
 use rustls::Session;
 use tokio_rustls::TlsStream;
 use futures::Future;
@@ -13,4 +13,6 @@ pub trait Perspective {
     ) -> Box<Future<Item = TlsStream<DataStream<Self>, Self::TlsSession>, Error = Error> + Send>
     where
         Self: Sized;
+
+    fn create_stream_map() -> StreamMap;
 }

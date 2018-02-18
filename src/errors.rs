@@ -3,6 +3,7 @@ use frames::StreamOffset;
 use std::net::SocketAddr;
 use futures::{Async, Poll, Future, Stream};
 use std::error::Error as StdError;
+use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 error_chain! {
     foreign_links {
@@ -78,6 +79,10 @@ error_chain! {
         IntegerValueIsTooLargeToBeStoredAsAVarInt(value: u64) {
             description("integer value is too large to be stored as a variable width integer")
             display("integer value '{}' is too large to be stored as a variable width integer", value)
+        }
+        UnknownStreamId(stream_id: StreamId) {
+            description("unknown stream id")
+            display("unknown stream id '{}'", stream_id)
         }
         FailedToWriteStreamId(stream_id: StreamId){
             description("failed to write stream id")
@@ -184,6 +189,34 @@ error_chain! {
             description("failed to perform TLS handshake")
             display("failed to perform TLS handshake to host '{}'", host)
         }
+        DataStreamClosed {
+            description("the data stream has been closed")
+        }
+        FailedToReadStreamData(stream_id: StreamId) {
+            description("failed to read stream data")
+            display("failed to read stream data for stream '{}'", stream_id)
+        }
+    }
+}
+
+impl<'a> From<&'a ErrorKind> for IoErrorKind {
+    fn from(error: &'a ErrorKind) -> Self {
+        match *error {
+            ErrorKind::DataStreamClosed => IoErrorKind::NotConnected,
+            _ => IoErrorKind::Other,
+        }
+    }
+}
+
+impl From<ErrorKind> for IoErrorKind {
+    fn from(error: ErrorKind) -> Self {
+        IoErrorKind::from(&error)
+    }
+}
+
+impl From<Error> for IoError {
+    fn from(error: Error) -> Self {        
+        IoError::new(error.kind().into(), error.to_string())
     }
 }
 

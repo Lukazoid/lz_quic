@@ -1,5 +1,5 @@
 use errors::*;
-use {ClientConfiguration, DataStream, Perspective};
+use {ClientConfiguration, DataStream, Perspective, StreamMap};
 use protocol::ServerId;
 use tokio_core::net::UdpSocket;
 use webpki::DNSNameRef;
@@ -74,5 +74,9 @@ impl Perspective for ClientPerspective {
             .flatten();
 
         Box::new(when_connected)
+    }
+
+    fn create_stream_map() -> StreamMap {
+        StreamMap::new_client_stream_map()
     }
 }

@@ -1,9 +1,8 @@
 use errors::*;
 use primitives::AbsDelta;
-use std::ops::Add;
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
-use conv::{Wrapping, TryFrom};
+use conv::TryFrom;
 use smallvec::SmallVec;
 use rand::Rng;
 use lz_diet::AdjacentBound;
@@ -24,11 +23,11 @@ impl TryFrom<u64> for PacketNumber {
 
 impl AdjacentBound for PacketNumber {
     fn is_immediately_before(&self, other: &Self) -> bool{
-        (self.0 + 1) == other.0
+        self.increment() == *other
     }
 
     fn is_immediately_after(&self, other: &Self) -> bool{
-        self.0 == (other.0 + 1)
+        other.is_immediately_before(self)
     }
 
     fn increment(&self) -> Self {

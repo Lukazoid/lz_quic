@@ -4,6 +4,7 @@ use std::io::{Cursor, Error as IoError, ErrorKind as IoErrorKind, Result as IoRe
 use std::net::SocketAddr;
 use protocol::{Readable, Writable};
 use chrono::UTC;
+use bytes::Bytes;
 
 #[derive(Debug, Clone, Default)]
 pub struct PacketCodec;
@@ -16,11 +17,10 @@ impl UdpCodec for PacketCodec {
         trace!("decoding inbound packet");
 
         let mut buf_cursor = Cursor::new(buf);
-        let packet_header = PacketHeader::read(&mut buf_cursor)
-            .map_err(|e| IoError::new(IoErrorKind::InvalidData, e.to_string()))?;
+        let packet_header = PacketHeader::read(&mut buf_cursor)?;
 
         // The data is everything after the header in the datagram
-        let data = buf[buf_cursor.position() as usize..].to_vec();
+        let data = Bytes::from(&buf[buf_cursor.position() as usize..]);
 
         let inbound_packet = InboundPacket {
             source_address: *src,

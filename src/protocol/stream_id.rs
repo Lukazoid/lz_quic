@@ -49,6 +49,10 @@ impl StreamId {
         StreamId(1)
     }
 
+    pub fn crypto_stream_id() -> Self {
+        StreamId(0)
+    }
+
     pub fn is_crypto_stream(self) -> bool {
         self.0 == 0
     }

@@ -1,41 +1,49 @@
-#![recursion_limit="1024"]
+#![recursion_limit = "1024"]
 #![cfg_attr(feature = "unstable", feature(test))]
-
 #![allow(dead_code)]
 
+extern crate bimap;
+extern crate binary_tree;
+#[macro_use]
+extern crate bitflags;
 extern crate byteorder;
-extern crate tokio_core;
-extern crate tokio_io;
-extern crate rand;
+extern crate bytes;
 extern crate chrono;
 extern crate conv;
-extern crate hex;
-extern crate num;
-extern crate lz_fnv;
+extern crate debugit;
+#[macro_use]
+extern crate error_chain;
+extern crate extprim;
 extern crate flate2;
+#[macro_use]
+extern crate futures;
+extern crate hex;
 extern crate itertools;
-#[macro_use] extern crate error_chain;
-#[macro_use] extern crate bitflags;
-#[macro_use] extern crate futures;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
+#[macro_use]
+extern crate log;
+extern crate lz_diet;
+extern crate lz_fnv;
+extern crate lz_shared_udp;
+extern crate lz_stream_io;
+#[macro_use]
+extern crate matches;
+extern crate num;
 extern crate openssl;
+extern crate rand;
 extern crate ring;
-extern crate webpki;
-extern crate untrusted;
-#[macro_use] extern crate matches;
+extern crate rustls;
 extern crate smallvec;
 extern crate time;
-#[cfg(test)] extern crate webpki_roots;
-extern crate lz_diet;
-extern crate extprim;
-extern crate binary_tree;
-extern crate bytes;
-#[macro_use] extern crate log;
-extern crate debugit;
-extern crate bimap;
-extern crate rustls;
+extern crate tokio_core;
+#[macro_use]
+extern crate tokio_io;
 extern crate tokio_rustls;
-extern crate lz_shared_udp;
+extern crate untrusted;
+extern crate webpki;
+#[cfg(test)]
+extern crate webpki_roots;
 
 #[cfg(all(feature = "unstable", test))]
 extern crate test;
@@ -44,8 +52,15 @@ mod crate_info {
     include!(concat!(env!("OUT_DIR"), "/version.rs"));
 }
 
+macro_rules! async_io {
+    ($e: expr) => (match $e {
+        ::futures::Async::Ready(result) => result,
+        ::futures::Async::NotReady => return Err(::std::io::ErrorKind::WouldBlock.into()),
+    })
+}
+
 mod errors;
-pub use self::errors::{Error, Result, ErrorKind};
+pub use self::errors::{Error, ErrorKind, Result};
 
 mod protocol;
 pub use self::protocol::ServerId;
@@ -72,6 +87,9 @@ use self::shared_connection::SharedConnection;
 
 mod data_stream;
 pub use self::data_stream::DataStream;
+
+mod stream_state;
+use self::stream_state::StreamState;
 
 mod stream_map;
 use self::stream_map::StreamMap;
