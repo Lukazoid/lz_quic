@@ -3,9 +3,9 @@ use packets::PacketHeader;
 use protocol::EncryptionLevel;
 use bytes::Bytes;
 
-/// An outbound packet after any encryption has taken place.
+/// An outgoing packet after any encryption has taken place.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct OutboundPacket {
+pub struct OutgoingPacket {
     pub destination_address: SocketAddr,
     pub packet_header: PacketHeader,
     pub data: Bytes,

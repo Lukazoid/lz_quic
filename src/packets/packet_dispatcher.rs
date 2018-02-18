@@ -1,6 +1,6 @@
 use errors::*;
 use protocol::ConnectionId;
-use packets::{InboundPacketStore, Packet, PacketCodec};
+use packets::{IncomingPacketStore, Packet, PacketCodec};
 use tokio_core::net::{UdpFramed, UdpSocket};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::net::SocketAddr;
@@ -18,7 +18,7 @@ impl Debug for DebuggableFramed {
 
 #[derive(Debug)]
 pub struct PacketDispatcher {
-    inbound_packet_stores: HashMap<ConnectionId, InboundPacketStore>,
+    incoming_packet_stores: HashMap<ConnectionId, IncomingPacketStore>,
     framed: DebuggableFramed,
 }
 
@@ -27,7 +27,7 @@ impl PacketDispatcher {
         let framed = udp_socket.framed(PacketCodec::default());
 
         Self {
-            inbound_packet_stores: HashMap::new(),
+            incoming_packet_stores: HashMap::new(),
             framed: DebuggableFramed(framed),
         }
     }

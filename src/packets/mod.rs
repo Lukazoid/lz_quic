@@ -18,15 +18,15 @@ pub use self::version_negotiation_packet::VersionNegotiationPacket;
 mod packet_header;
 pub use self::packet_header::PacketHeader;
 
-mod inbound_packet;
-pub use self::inbound_packet::InboundPacket;
+mod incoming_packet;
+pub use self::incoming_packet::IncomingPacket;
 
 mod packet;
 pub use self::packet::PacketContent;
 pub use self::packet::Packet;
 
-mod outbound_packet;
-pub use self::outbound_packet::OutboundPacket;
+mod outgoing_packet;
+pub use self::outgoing_packet::OutgoingPacket;
 
 mod packet_codec;
 pub use self::packet_codec::PacketCodec;
@@ -34,8 +34,8 @@ pub use self::packet_codec::PacketCodec;
 mod packet_packer;
 pub use self::packet_packer::PacketPacker;
 
-mod inbound_packet_store;
-pub use self::inbound_packet_store::InboundPacketStore;
+mod incoming_packet_store;
+pub use self::incoming_packet_store::IncomingPacketStore;
 
 mod packet_history;
 pub use self::packet_history::PacketHistory;

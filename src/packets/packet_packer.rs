@@ -1,11 +1,11 @@
 use errors::*;
-use packets::{Packet, OutboundPacket};
+use packets::{Packet, OutgoingPacket};
 
 #[derive(Debug)]
 pub struct PacketPacker;
 
 impl PacketPacker {
-    pub fn pack_packet(&mut self) -> Result<OutboundPacket> {
+    pub fn pack_packet(&mut self) -> Result<OutgoingPacket> {
 
 
         unimplemented!()
