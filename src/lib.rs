@@ -2,7 +2,6 @@
 #![cfg_attr(feature = "unstable", feature(test))]
 #![allow(dead_code)]
 
-extern crate bimap;
 extern crate binary_tree;
 #[macro_use]
 extern crate bitflags;
@@ -72,7 +71,7 @@ mod frames;
 mod packets;
 
 mod connection_map;
-use self::connection_map::ConnectionMap;
+use self::connection_map::{AddressConnectionIds, ConnectionMap};
 
 mod connection_termination_mode;
 pub use self::connection_termination_mode::ConnectionTerminationMode;
