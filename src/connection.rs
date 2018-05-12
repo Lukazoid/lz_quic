@@ -34,11 +34,11 @@ impl<P: Perspective + 'static> Connection<P> {
     pub fn handshake(
         &self,
         crypto_stream: DataStream<P>,
-    ) -> Box<Future<Item = (), Error = Error> + Send>
+    ) -> impl Future<Item = (), Error = Error> + Send
     where
         P::TlsSession: 'static,
     {
-        Box::new(self.perspective.handshake(crypto_stream).map(|_| ()))
+        self.perspective.handshake(crypto_stream).map(|_| ())
     }
 }
 

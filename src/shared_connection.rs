@@ -21,7 +21,7 @@ where
             StreamMapEntry::Live(stream_state) => {
                 let crypto_stream = DataStream::new(stream_id, self.clone(), stream_state);
 
-                (*self).handshake(crypto_stream)
+                Box::new((*self).handshake(crypto_stream))
             }
         }
     }
