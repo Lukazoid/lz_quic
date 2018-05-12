@@ -30,11 +30,10 @@ impl ClientPerspective {
 
 impl Perspective for ClientPerspective {
     type TlsSession = ClientSession;
-    fn handshake(
-        &self,
-        crypto_stream: DataStream<Self>,
-    ) -> Box<Future<Item = TlsStream<DataStream<Self>, Self::TlsSession>, Error = Error> + Send>
-    {
+    type HandshakeFuture =
+        Box<Future<Item = TlsStream<DataStream<Self>, Self::TlsSession>, Error = Error> + Send>;
+
+    fn handshake(&self, crypto_stream: DataStream<Self>) -> Self::HandshakeFuture {
         let connection_id = crypto_stream.connection().connection_id();
         trace!(
             "connection {:?}: performing TLS handshake from client to server {:?}",
