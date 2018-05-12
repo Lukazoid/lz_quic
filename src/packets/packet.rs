@@ -21,8 +21,8 @@ pub enum PacketContent {
 
 impl PacketContent {
     pub fn frames(&self) -> Option<&[Frame]> {
-        match *self {
-            PacketContent::Regular { frames: ref frames } => Some(frames.as_slice()),
+        match self {
+            PacketContent::Regular { frames } => Some(frames.as_slice()),
             _ => None,
         }
     }

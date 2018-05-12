@@ -208,7 +208,7 @@ error_chain! {
 
 impl<'a> From<&'a ErrorKind> for IoErrorKind {
     fn from(error: &'a ErrorKind) -> Self {
-        match *error {
+        match error {
             ErrorKind::DataStreamClosed => IoErrorKind::NotConnected,
             _ => IoErrorKind::Other,
         }

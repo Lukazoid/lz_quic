@@ -293,7 +293,7 @@ impl Writable for PartialPacketNumber {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing partial packet number {:?}", self);
 
-        match *self {
+        match self {
             PartialPacketNumber::OneByte(value) => value.write(writer),
             PartialPacketNumber::TwoBytes(value) => value.write(writer),
             PartialPacketNumber::FourBytes(value) => value.write(writer),

@@ -14,10 +14,10 @@ pub enum PacketHeader {
 
 impl PacketHeader {
     pub fn connection_id(&self) -> Option<ConnectionId> {
-        match *self {
-            PacketHeader::Long(ref long_header) => Some(long_header.connection_id),
-            PacketHeader::Short(ref short_header) => short_header.connection_id,
-            PacketHeader::VersionNegotiation(ref version_negotiation) => {
+        match self {
+            PacketHeader::Long(long_header) => Some(long_header.connection_id),
+            PacketHeader::Short(short_header) => short_header.connection_id,
+            PacketHeader::VersionNegotiation(version_negotiation) => {
                 Some(version_negotiation.connection_id)
             }
         }
@@ -120,8 +120,8 @@ impl Writable for PacketHeader {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing packet header {:?}", self);
 
-        match *self {
-            PacketHeader::VersionNegotiation(ref version_negotiation) => {
+        match self {
+            PacketHeader::VersionNegotiation(version_negotiation) => {
                 let flags = LONG_HEADER;
 
                 flags
@@ -133,7 +133,7 @@ impl Writable for PacketHeader {
                 Version::NEGOTIATION.write(writer)?;
                 version_negotiation.supported_versions.write(writer)?;
             }
-            PacketHeader::Long(ref long_header) => {
+            PacketHeader::Long(long_header) => {
                 let mut flags = LONG_HEADER;
                 flags |= match long_header.packet_type {
                     LongHeaderPacketType::Initial => LONG_PACKET_TYPE_INITIAL,
@@ -151,7 +151,7 @@ impl Writable for PacketHeader {
                 long_header.version.write(writer)?;
                 long_header.packet_number.write(writer)?;
             }
-            PacketHeader::Short(ref short_header) => {
+            PacketHeader::Short(short_header) => {
                 let mut flags = PacketHeaderBitFlags::empty();
                 if short_header.connection_id.is_none() {
                     flags |= OMIT_CONNECTION_ID;
