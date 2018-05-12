@@ -9,10 +9,12 @@ pub struct RemoteClient {
 
 impl RemoteClient {
     pub fn open_stream(&self) -> DataStream<ServerPerspective> {
-        unimplemented!()
+        let (stream_id, stream_state) = self.connection.new_stream();
+
+        DataStream::new(stream_id, self.connection.clone(), stream_state)
     }
 
     pub fn incoming_streams(&self) -> NewDataStreams<ServerPerspective> {
-        unimplemented!()
+        NewDataStreams::new(self.connection.clone())
     }
 }

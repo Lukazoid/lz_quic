@@ -61,8 +61,14 @@ impl ConnectionMap {
         self.map.contains_left(&connection_id)
     }
 
-    pub fn get_connection_id(&self, source_address: SocketAddr, destination_address: SocketAddr) -> Option<ConnectionId> {
-        self.map.get_by_right(&(source_address, destination_address)).map(|x|*x)
+    pub fn get_connection_id(
+        &self,
+        source_address: SocketAddr,
+        destination_address: SocketAddr,
+    ) -> Option<ConnectionId> {
+        self.map
+            .get_by_right(&(source_address, destination_address))
+            .map(|x| *x)
     }
 }
 
@@ -73,29 +79,36 @@ mod tests {
     use rand;
 
     #[test]
-    fn get_connection_id_returns_none_when_no_connection_added(){
+    fn get_connection_id_returns_none_when_no_connection_added() {
         let connection_map = ConnectionMap::new();
 
-        assert_matches!(connection_map.get_connection_id("10.0.0.1:65413".parse().unwrap(), "10.0.0.2:443".parse().unwrap()), None);
+        assert_matches!(
+            connection_map.get_connection_id(
+                "10.0.0.1:65413".parse().unwrap(),
+                "10.0.0.2:443".parse().unwrap()
+            ),
+            None
+        );
     }
 
-    
     #[test]
-    fn get_connection_id_returns_correct_id(){
+    fn get_connection_id_returns_correct_id() {
         let mut connection_map = ConnectionMap::new();
 
         let connection_id = ConnectionId::generate(&mut rand::thread_rng());
 
-        let source_address ="10.0.0.1:65412".parse().unwrap();
+        let source_address = "10.0.0.1:65412".parse().unwrap();
         let destination_address = "10.0.0.2:443".parse().unwrap();
         assert!(connection_map.insert_new_connection(
             connection_id,
             source_address,
             destination_address
-            
         ));
 
-        assert_eq!(connection_map.get_connection_id(source_address, destination_address), Some(connection_id));
+        assert_eq!(
+            connection_map.get_connection_id(source_address, destination_address),
+            Some(connection_id)
+        );
     }
 
     #[test]

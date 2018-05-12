@@ -27,9 +27,8 @@ fn bind_udp_socket(handle: &Handle) -> Result<UdpSocket> {
 }
 
 fn generate_connection_id() -> Result<ConnectionId> {
-    let mut rng = OsRng::new().chain_err(|| {
-        ErrorKind::FailedToCreateCryptographicRandomNumberGenerator
-    })?;
+    let mut rng =
+        OsRng::new().chain_err(|| ErrorKind::FailedToCreateCryptographicRandomNumberGenerator)?;
 
     Ok(ConnectionId::generate(&mut rng))
 }
@@ -56,17 +55,13 @@ impl Client {
         handle: &Handle,
     ) -> NewClient {
         let future = bind_udp_socket(handle)
-            .and_then(|udp_socket| {
-                new_connection(server_id, udp_socket, client_configuration)
-            })
+            .and_then(|udp_socket| new_connection(server_id, udp_socket, client_configuration))
             .into_future()
             .and_then(|connection| {
                 let connection = Arc::new(connection);
                 let connection_copy = connection.clone();
-                connection.handshake().map(|_| {
-                    Client {
-                        connection: connection_copy,
-                    }
+                connection.handshake().map(|_| Client {
+                    connection: connection_copy,
                 })
             });
 

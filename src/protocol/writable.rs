@@ -70,13 +70,11 @@ impl<A: Array<Item = E>, E: Writable> Writable for SmallVec<A> {
     }
 }
 
-
 impl<E: Writable> Writable for Vec<E> {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         self.as_slice().write(writer)
     }
 }
-
 
 impl Writable for u8 {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {

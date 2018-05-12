@@ -1,5 +1,5 @@
 use errors::*;
-use NewRemoteClients;
+use {NewRemoteClients, ServerConfiguration};
 use tokio_core::net::{UdpFramed, UdpSocket};
 use tokio_core::reactor::Handle;
 use packets::PacketDispatcher;
@@ -11,10 +11,15 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct Server {
     packet_dispatcher: Arc<PacketDispatcher>,
+    server_configuration: ServerConfiguration,
 }
 
 impl Server {
-    pub fn bind(addr: SocketAddr, handle: &Handle) -> Result<Self> {
+    pub fn bind(
+        addr: SocketAddr,
+        server_configuration: ServerConfiguration,
+        handle: &Handle,
+    ) -> Result<Self> {
         trace!("binding udp socket to {:?}", addr);
 
         let udp_socket =
@@ -24,6 +29,7 @@ impl Server {
 
         Ok(Self {
             packet_dispatcher: Arc::new(PacketDispatcher::new(udp_socket)),
+            server_configuration,
         })
     }
 

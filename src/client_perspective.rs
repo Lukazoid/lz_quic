@@ -39,7 +39,7 @@ impl Perspective for ClientPerspective {
     {
         let connection_id = crypto_stream.connection().connection_id();
         trace!(
-            "performing TLS handshake from client {:?} to server {:?}",
+            "connection {:?}: performing TLS handshake from client to server {:?}",
             connection_id,
             self.server_id
         );
@@ -48,24 +48,21 @@ impl Perspective for ClientPerspective {
         let tls_config = self.client_configuration.tls_config.clone();
 
         let when_connected = DNSNameRef::try_from_ascii_str(host)
-            .map_err(|_| {
-                Error::from_kind(ErrorKind::HostIsNotAValidDomainName(host.to_owned()))
-            })
+            .map_err(|_| Error::from_kind(ErrorKind::HostIsNotAValidDomainName(host.to_owned())))
             .map(|dns_name| {
                 let server_id_for_error = self.server_id.clone();
-                let server_id_for_logging = self.server_id.clone();
+                let server_id_for_success = self.server_id.clone();
                 tls_config
                     .connect_async(dns_name, crypto_stream)
                     .chain_err(move || {
-                        ErrorKind::FailedToPerformTlsHandshake(
+                        ErrorKind::FailedToPerformTlsHandshakeWithServer(
                             server_id_for_error.host().to_owned(),
                         )
                     })
                     .map(move |x| {
                         info!(
-                            "performed TLS handshake from client {:?} to server {:?}",
-                            connection_id,
-                            server_id_for_logging
+                            "connection {:?}: performed TLS handshake from client to server {:?}",
+                            connection_id, server_id_for_success
                         );
                         x
                     })

@@ -17,7 +17,7 @@ impl Version {
     pub const DRAFT_IETF_08: Version = Version(0xff000008);
 
     pub fn is_version_negotiation(self) -> bool {
-        self.0 == 0    
+        self.0 == 0
     }
 
     pub fn is_force_negotiation(self) -> bool {
@@ -41,7 +41,7 @@ impl Version {
             None
         }
     }
-    
+
     pub fn find_highest_supported(other: &HashSet<Version>) -> Option<Version> {
         trace!("finding highest supported version from {:?}", other);
         // Find the first supported version going from highest -> lowest
@@ -93,14 +93,14 @@ mod tests {
 
     #[test]
     pub fn is_version_negotiation_returns_true_for_negotiation() {
-        assert!(Version::NEGOTIATION.is_version_negotiation());    
+        assert!(Version::NEGOTIATION.is_version_negotiation());
     }
-    
+
     #[test]
     pub fn is_version_negotiation_returns_false_for_other_version() {
         let version = Version(15);
 
-        assert_eq!(version.is_version_negotiation(), false);    
+        assert_eq!(version.is_version_negotiation(), false);
     }
 
     #[test]

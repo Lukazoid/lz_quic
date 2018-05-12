@@ -1,9 +1,10 @@
-extern crate lz_quic;
 extern crate futures;
+extern crate lz_quic;
 extern crate tokio_core;
 
 use std::thread;
-use lz_quic::{Client, ClientConfiguration, Error as QuicError, Server, ServerId};
+use lz_quic::{Client, ClientConfiguration, Error as QuicError, Server, ServerConfiguration,
+              ServerId};
 use tokio_core::reactor::Core;
 use futures::future;
 use futures::Future;
@@ -20,8 +21,11 @@ pub fn client_connecting_to_server() {
     let server_future = future::lazy(move || {
         let mut server_event_loop = Core::new().expect("error creating server event loop");
 
-        let server = Server::bind(any_address, &server_event_loop.handle())
-            .expect("error binding server to IP/Port");
+        let server = Server::bind(
+            any_address,
+            ServerConfiguration::default(),
+            &server_event_loop.handle(),
+        ).expect("error binding server to IP/Port");
 
         server_bound
             .send(server.local_addr().expect("failed to get server address"))

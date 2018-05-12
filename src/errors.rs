@@ -1,7 +1,7 @@
 use protocol::{ConnectionId, StreamId, Version};
 use frames::StreamOffset;
 use std::net::SocketAddr;
-use futures::{Async, Poll, Future, Stream};
+use futures::{Async, Future, Poll, Stream};
 use std::error::Error as StdError;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
@@ -83,6 +83,9 @@ error_chain! {
         UnknownStreamId(stream_id: StreamId) {
             description("unknown stream id")
             display("unknown stream id '{}'", stream_id)
+        }
+        CryptoStreamAlreadyClosed {
+            description("the crypto stream has already been closed")
         }
         FailedToWriteStreamId(stream_id: StreamId){
             description("failed to write stream id")
@@ -185,9 +188,13 @@ error_chain! {
             description("host is not a valid domain name")
             display("host '{}' is not a valid domain name", host)
         }
-        FailedToPerformTlsHandshake(host: String) {
-            description("failed to perform TLS handshake")
-            display("failed to perform TLS handshake to host '{}'", host)
+        FailedToPerformTlsHandshakeWithServer(host: String) {
+            description("failed to perform TLS handshake with server")
+            display("failed to perform TLS handshake with server '{}'", host)
+        }
+        FailedToPerformTlsHandshakeWithClient(client_address: SocketAddr) {
+            description("failed to perform TLS handshake with client")
+            display("failed to perform TLS handshake with client '{}'", client_address)
         }
         DataStreamClosed {
             description("the data stream has been closed")
@@ -215,13 +222,13 @@ impl From<ErrorKind> for IoErrorKind {
 }
 
 impl From<Error> for IoError {
-    fn from(error: Error) -> Self {        
+    fn from(error: Error) -> Self {
         IoError::new(error.kind().into(), error.to_string())
     }
 }
 
 pub struct ErrorsIterator<'a> {
-    current_error: Option<&'a Error>
+    current_error: Option<&'a Error>,
 }
 
 impl<'a> Iterator for ErrorsIterator<'a> {
@@ -233,7 +240,7 @@ impl<'a> Iterator for ErrorsIterator<'a> {
                 self.current_error = next_error;
             }
 
-            Some(current_error) 
+            Some(current_error)
         } else {
             None
         }
@@ -247,20 +254,20 @@ impl Error {
     /// `None` if there was no cause.
     /// `Some(None)` if there was a cause which could not be downcast to `T`.
     /// `Some(Some(T))` if the cause was successfully downcast to `T`.
-    pub(crate) fn downcast_cause<T: StdError + 'static>(&self) -> Option<Option<&T>>
-    {
-        self.1.next_error.as_ref()
-            .map(|e| e.downcast_ref::<T>())
+    pub(crate) fn downcast_cause<T: StdError + 'static>(&self) -> Option<Option<&T>> {
+        self.1.next_error.as_ref().map(|e| e.downcast_ref::<T>())
     }
 
     /// Determines whether this or one of the `Error` causes satisfies `predicate`.
-    pub(crate) fn has_error<P:FnMut(&Error) -> bool>(&self, predicate: P) -> bool {
+    pub(crate) fn has_error<P: FnMut(&Error) -> bool>(&self, predicate: P) -> bool {
         self.errors().any(predicate)
     }
 
     /// Returns an `Iterator` which iterates over `self` and all `Error` causes.
     pub(crate) fn errors(&self) -> ErrorsIterator {
-        ErrorsIterator { current_error: Some(self) }
+        ErrorsIterator {
+            current_error: Some(self),
+        }
     }
 }
 
@@ -270,10 +277,11 @@ pub struct ChainErrStream<S, C> {
 }
 
 impl<E, S, C, EK> Stream for ChainErrStream<S, C>
-    where E: 'static + StdError + Send,
-          S: Stream<Error = E>,
-          EK: Into<ErrorKind>,
-          C: FnMut() -> EK
+where
+    E: 'static + StdError + Send,
+    S: Stream<Error = E>,
+    EK: Into<ErrorKind>,
+    C: FnMut() -> EK,
 {
     type Item = S::Item;
     type Error = Error;
@@ -285,18 +293,20 @@ impl<E, S, C, EK> Stream for ChainErrStream<S, C>
 
 pub trait StreamExt: Stream {
     fn chain_err<C, EK>(self, callback: C) -> ChainErrStream<Self, C>
-        where C: FnMut() -> EK,
-              EK: Into<ErrorKind>,
-              Self: Sized,
-              Self::Error: StdError;
+    where
+        C: FnMut() -> EK,
+        EK: Into<ErrorKind>,
+        Self: Sized,
+        Self::Error: StdError;
 }
 
 impl<S: Stream> StreamExt for S {
     fn chain_err<C, EK>(self, callback: C) -> ChainErrStream<Self, C>
-        where C: FnMut() -> EK,
-              EK: Into<ErrorKind>,
-              Self: Sized,
-              Self::Error: StdError
+    where
+        C: FnMut() -> EK,
+        EK: Into<ErrorKind>,
+        Self: Sized,
+        Self::Error: StdError,
     {
         ChainErrStream {
             stream: self,
@@ -311,10 +321,11 @@ pub struct ChainErrFuture<F, C> {
 }
 
 impl<E, F, C, EK> Future for ChainErrFuture<F, C>
-    where E: 'static + StdError + Send,
-          F: Future<Error = E>,
-          EK: Into<ErrorKind>,
-          C: FnOnce() -> EK
+where
+    E: 'static + StdError + Send,
+    F: Future<Error = E>,
+    EK: Into<ErrorKind>,
+    C: FnOnce() -> EK,
 {
     type Item = F::Item;
     type Error = Error;
@@ -325,24 +336,30 @@ impl<E, F, C, EK> Future for ChainErrFuture<F, C>
             other => other,
         };
 
-        e.chain_err(self.callback.take().expect("cannot poll ChainErrFuture twice"))
+        e.chain_err(
+            self.callback
+                .take()
+                .expect("cannot poll ChainErrFuture twice"),
+        )
     }
 }
 
 pub trait FutureExt: Future {
     fn chain_err<C, EK>(self, callback: C) -> ChainErrFuture<Self, C>
-        where C: FnOnce() -> EK,
-              EK: Into<ErrorKind>,
-              Self: Sized,
-              Self::Error: StdError;
+    where
+        C: FnOnce() -> EK,
+        EK: Into<ErrorKind>,
+        Self: Sized,
+        Self::Error: StdError;
 }
 
 impl<F: Future> FutureExt for F {
     fn chain_err<C, EK>(self, callback: C) -> ChainErrFuture<Self, C>
-        where C: FnOnce() -> EK,
-              EK: Into<ErrorKind>,
-              Self: Sized,
-              Self::Error: StdError
+    where
+        C: FnOnce() -> EK,
+        EK: Into<ErrorKind>,
+        Self: Sized,
+        Self::Error: StdError,
     {
         ChainErrFuture {
             future: self,
@@ -365,8 +382,7 @@ mod tests {
         let future = future::err::<(), IoError>(IoError::from(IoErrorKind::InvalidData));
 
         // Act
-        let mut chained_err_future =
-            future.chain_err(|| "An error occurred");
+        let mut chained_err_future = future.chain_err(|| "An error occurred");
 
         // Assert
         let poll = chained_err_future.poll();
@@ -379,8 +395,7 @@ mod tests {
         let stream = stream::iter(vec![Ok(1), Err(IoError::from(IoErrorKind::InvalidData))]);
 
         // Act
-        let mut chained_err_stream =
-            stream.chain_err(|| "An error occurred");
+        let mut chained_err_stream = stream.chain_err(|| "An error occurred");
 
         // Assert
         let poll = chained_err_stream.poll();
@@ -393,18 +408,20 @@ mod tests {
 
     #[test]
     pub fn has_error_returns_true_for_matching_error() {
-        let first_cause : Error = "The first error".into();
-        let chained_result : Result<()> = Err(first_cause).chain_err(||"The next error");
+        let first_cause: Error = "The first error".into();
+        let chained_result: Result<()> = Err(first_cause).chain_err(|| "The next error");
 
         let error = chained_result.unwrap_err();
 
-        assert!(error.has_error(|e| matches!(e.kind(), &ErrorKind::Msg(ref msg) if msg == "The first error")));
+        assert!(error.has_error(
+            |e| matches!(e.kind(), &ErrorKind::Msg(ref msg) if msg == "The first error")
+        ));
     }
 
     #[test]
     pub fn errors_returns_errors() {
-        let first_cause : Error = "The first error".into();
-        let chained_result : Result<()> = Err(first_cause).chain_err(||"The next error");
+        let first_cause: Error = "The first error".into();
+        let chained_result: Result<()> = Err(first_cause).chain_err(|| "The next error");
 
         let error = chained_result.unwrap_err();
 
@@ -414,7 +431,7 @@ mod tests {
     #[test]
     pub fn errors_only_returns_errors() {
         let first_cause = IoError::new(IoErrorKind::InvalidData, "first cause");
-        let chained_result : Result<()> = Err(first_cause).chain_err(||"The next error");
+        let chained_result: Result<()> = Err(first_cause).chain_err(|| "The next error");
 
         let error = chained_result.unwrap_err();
 

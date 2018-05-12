@@ -30,7 +30,6 @@ extern crate lz_stream_io;
 #[macro_use]
 extern crate matches;
 extern crate num;
-extern crate openssl;
 extern crate rand;
 extern crate ring;
 extern crate rustls;
@@ -53,10 +52,12 @@ mod crate_info {
 }
 
 macro_rules! async_io {
-    ($e: expr) => (match $e {
-        ::futures::Async::Ready(result) => result,
-        ::futures::Async::NotReady => return Err(::std::io::ErrorKind::WouldBlock.into()),
-    })
+    ($e: expr) => {
+        match $e {
+            ::futures::Async::Ready(result) => result,
+            ::futures::Async::NotReady => return Err(::std::io::ErrorKind::WouldBlock.into()),
+        }
+    };
 }
 
 mod errors;
@@ -92,10 +93,13 @@ mod stream_state;
 use self::stream_state::StreamState;
 
 mod stream_map;
-use self::stream_map::StreamMap;
+use self::stream_map::{StreamMap, StreamMapEntry};
 
 mod client_configuration;
 pub use self::client_configuration::ClientConfiguration;
+
+mod server_configuration;
+pub use self::server_configuration::ServerConfiguration;
 
 mod new_client;
 pub use self::new_client::NewClient;

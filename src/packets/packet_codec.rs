@@ -1,6 +1,6 @@
 use tokio_core::net::UdpCodec;
 use packets::{IncomingPacket, OutgoingPacket, PacketHeader};
-use std::io::{Cursor, Error as IoError, ErrorKind as IoErrorKind, Result as IoResult};
+use std::io::{Cursor, Result as IoResult};
 use std::net::SocketAddr;
 use protocol::{Readable, Writable};
 use chrono::UTC;

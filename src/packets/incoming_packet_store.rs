@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 
 #[derive(Debug)]
 pub struct IncomingPacketStore {
-    pending_packets: BTreeMap<PacketNumber, IncomingPacket>
+    pending_packets: BTreeMap<PacketNumber, IncomingPacket>,
 }
 
 impl IncomingPacketStore {

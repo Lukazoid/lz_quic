@@ -42,7 +42,7 @@ impl ConnectionId {
         let inner = rng.next_u64();
         let connection_id = ConnectionId(inner);
         debug!("generated new connection id {:?}", connection_id);
-        
+
         connection_id
     }
 }

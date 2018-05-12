@@ -31,10 +31,10 @@ macro_rules! signed_impl {
 
                 fn abs_delta(self, rhs: Self) -> Self::Delta {
                     let (min, max) = if self > rhs { (rhs, self) } else { (self, rhs) };
-        
+
                     let (result, overflowed) = (max as $delta_type).overflowing_sub(min as $delta_type);
                     if overflowed {
-                        <$delta_type>::max_value()    
+                        <$delta_type>::max_value()
                     } else {
                         result
                     }
@@ -114,4 +114,3 @@ mod tests {
         usize_ascending_range_delta: (5usize, 6usize) => 1usize
     );
 }
-

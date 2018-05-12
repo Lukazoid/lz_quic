@@ -14,16 +14,16 @@ pub enum PacketContent {
         rejected_packet_number: PacketNumber,
         client_address: Option<SocketAddr>,
     },
-    Regular { frames: Vec<Frame> },
+    Regular {
+        frames: Vec<Frame>,
+    },
 }
 
 impl PacketContent {
     pub fn frames(&self) -> Option<&[Frame]> {
         match *self {
-            PacketContent::Regular { frames: ref frames } => {
-                Some(frames.as_slice())
-            }
-            _ => None
+            PacketContent::Regular { frames: ref frames } => Some(frames.as_slice()),
+            _ => None,
         }
     }
 }
@@ -33,4 +33,3 @@ pub struct Packet {
     pub packet_number: PacketNumber,
     pub content: PacketContent,
 }
-

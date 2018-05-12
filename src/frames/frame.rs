@@ -1,7 +1,7 @@
 use errors::*;
 use frames::stream_offset::StreamOffset;
-use protocol::{Writable};
-use frames::{StreamFrame, AckFrame};
+use protocol::Writable;
+use frames::{AckFrame, StreamFrame};
 use std::io::Write;
 use byteorder::WriteBytesExt;
 
@@ -123,7 +123,7 @@ impl Writable for Frame {
         }
 
         debug!("written frame {:?}", self);
-        
+
         Ok(())
     }
 }

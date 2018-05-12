@@ -22,8 +22,7 @@ impl<'a> Iterator for PacketRangesIterator<'a> {
     type Item = Range<PacketNumber>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.diet_iter.next()
-            .map(|range|range.clone().into())
+        self.diet_iter.next().map(|range| range.clone().into())
     }
 }
 
@@ -41,14 +40,17 @@ impl PacketHistory {
     }
 
     pub fn ignore_packets_up_to_including(&mut self, packet_number: PacketNumber) {
-        self.forgotten_up_to = Some(self.forgotten_up_to.map_or(packet_number, |f| cmp::max(f, packet_number)));
+        self.forgotten_up_to = Some(
+            self.forgotten_up_to
+                .map_or(packet_number, |f| cmp::max(f, packet_number)),
+        );
 
         let (_, greater) = self.seen_packet_ranges.split(Cow::Owned(packet_number));
 
         self.seen_packet_ranges = greater;
     }
 
-    pub fn is_duplicate(&self, packet_number : PacketNumber) -> bool {
+    pub fn is_duplicate(&self, packet_number: PacketNumber) -> bool {
         if self.forgotten_up_to.map_or(false, |f| packet_number <= f) {
             true
         } else {
@@ -58,20 +60,19 @@ impl PacketHistory {
 
     pub fn received_ranges<'a>(&'a self) -> PacketRangesIterator<'a> {
         PacketRangesIterator {
-            diet_iter: self.seen_packet_ranges.iter()
+            diet_iter: self.seen_packet_ranges.iter(),
         }
     }
 
     pub fn highest_range(&self) -> Option<Range<PacketNumber>> {
-        self.seen_packet_ranges.root()
-        .and_then(|r|{
+        self.seen_packet_ranges.root().and_then(|r| {
             let mut max_interval = None;
             r.walk(|n| {
                 max_interval = Some(n.value().clone());
                 WalkAction::Right
             });
 
-            max_interval.map(|interval|interval.into())
+            max_interval.map(|interval| interval.into())
         })
     }
 }

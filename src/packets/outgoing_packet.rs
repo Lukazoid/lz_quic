@@ -11,4 +11,3 @@ pub struct OutgoingPacket {
     pub data: Bytes,
     pub encryption_level: EncryptionLevel,
 }
-

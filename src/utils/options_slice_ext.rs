@@ -3,18 +3,19 @@ use errors::*;
 pub trait OptionsSliceExt {
     type InnerItem;
 
-    fn replace_nones<I: IntoIterator<Item = Self::InnerItem>>(&mut self,
-                                                              replacements: I)
-                                                              -> Result<()>;
+    fn replace_nones<I: IntoIterator<Item = Self::InnerItem>>(
+        &mut self,
+        replacements: I,
+    ) -> Result<()>;
 }
 
 impl<'a, T> OptionsSliceExt for &'a mut [Option<T>] {
     type InnerItem = T;
-    fn replace_nones<I: IntoIterator<Item = Self::InnerItem>>(&mut self,
-                                                              replacements: I)
-                                                              -> Result<()> {
-        let mut iter_mut = self.iter_mut()
-            .filter(|option| option.is_none());
+    fn replace_nones<I: IntoIterator<Item = Self::InnerItem>>(
+        &mut self,
+        replacements: I,
+    ) -> Result<()> {
+        let mut iter_mut = self.iter_mut().filter(|option| option.is_none());
 
         let mut replacements_iterator = replacements.into_iter();
 

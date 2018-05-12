@@ -8,4 +8,3 @@ pub struct StreamFrame {
     pub stream_id: StreamId,
     pub data: Vec<u8>,
 }
-

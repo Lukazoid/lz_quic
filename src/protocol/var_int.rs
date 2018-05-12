@@ -70,7 +70,10 @@ impl<T: FromPrimitive + Unsigned> Readable for VarInt<T> {
             _ => unreachable!(),
         };
 
-        trace!("reading variable length integer of length {:?}", total_length);
+        trace!(
+            "reading variable length integer of length {:?}",
+            total_length
+        );
 
         let remaining_bytes_count = total_length - 1;
 
@@ -159,16 +162,7 @@ mod tests {
     #[test]
     fn read_var_int_of_8_bytes_reads_correctly() {
         let mut reader = Cursor::new(vec![
-            0xc2,
-            0x19,
-            0x7c,
-            0x5e,
-            0xff,
-            0x14,
-            0xe8,
-            0x8c,
-            0xff,
-            0xff,
+            0xc2, 0x19, 0x7c, 0x5e, 0xff, 0x14, 0xe8, 0x8c, 0xff, 0xff
         ]);
 
         let var_int: VarInt<u64> = VarInt::read(&mut reader).unwrap();

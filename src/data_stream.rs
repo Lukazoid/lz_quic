@@ -84,3 +84,9 @@ impl<P: Perspective> AsyncWrite for DataStream<P> {
         Ok(().into())
     }
 }
+
+impl<P: Perspective> Drop for DataStream<P> {
+    fn drop(&mut self) {
+        let _ = self.connection().forget_stream(self.stream_id());
+    }
+}
