@@ -1,5 +1,5 @@
-use {Connection, DataStream, NewDataStreams, ServerPerspective};
 use std::sync::Arc;
+use {Connection, DataStream, NewDataStreams, ServerPerspective};
 
 /// A client which has connected to this `Server`.
 #[derive(Debug)]

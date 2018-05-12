@@ -1,8 +1,8 @@
 use errors::*;
-use std::io::{Read, Write};
 use protocol::{Readable, Writable};
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::collections::HashSet;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::io::{Read, Write};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Version(u32);

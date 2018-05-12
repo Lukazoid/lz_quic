@@ -1,9 +1,9 @@
+use byteorder::WriteBytesExt;
 use errors::*;
 use frames::stream_offset::StreamOffset;
-use protocol::Writable;
 use frames::{AckFrame, StreamFrame};
+use protocol::Writable;
 use std::io::Write;
-use byteorder::WriteBytesExt;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Frame {

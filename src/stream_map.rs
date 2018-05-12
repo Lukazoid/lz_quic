@@ -1,10 +1,10 @@
-use errors::*;
 use StreamState;
-use std::collections::HashMap;
+use errors::*;
 use protocol::StreamId;
+use std::collections::HashMap;
+use std::mem;
 use std::sync::Arc;
 use std::sync::Mutex;
-use std::mem;
 
 #[derive(Debug, Clone)]
 pub enum StreamMapEntry {

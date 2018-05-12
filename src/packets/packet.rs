@@ -1,8 +1,8 @@
 use errors::*;
+use frames::Frame;
 use packets::PacketNumber;
 use protocol::Version;
 use std::net::SocketAddr;
-use frames::Frame;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum PacketContent {

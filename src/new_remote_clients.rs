@@ -1,5 +1,5 @@
-use errors::*;
 use RemoteClient;
+use errors::*;
 use futures::Poll;
 use futures::stream::Stream;
 

@@ -1,7 +1,7 @@
+use bytes::Bytes;
+use chrono::{DateTime, UTC};
 use packets::PacketHeader;
 use std::net::SocketAddr;
-use chrono::{DateTime, UTC};
-use bytes::Bytes;
 
 /// An incoming packet before any decryption has taken place.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

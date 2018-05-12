@@ -1,11 +1,11 @@
+use conv::TryFrom;
 use errors::*;
+use lz_diet::AdjacentBound;
 use primitives::AbsDelta;
 use protocol::{Readable, Writable};
-use std::io::{Read, Write};
-use conv::TryFrom;
-use smallvec::SmallVec;
 use rand::Rng;
-use lz_diet::AdjacentBound;
+use smallvec::SmallVec;
+use std::io::{Read, Write};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PacketNumber(u64);

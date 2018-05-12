@@ -1,8 +1,8 @@
 use errors::*;
-use {Connection, DataStream, Perspective};
-use futures::stream::Stream;
 use futures::Poll;
+use futures::stream::Stream;
 use std::sync::Arc;
+use {Connection, DataStream, Perspective};
 
 #[derive(Debug)]
 pub struct NewDataStreams<P: Perspective> {

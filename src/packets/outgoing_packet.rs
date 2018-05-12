@@ -1,7 +1,7 @@
-use std::net::SocketAddr;
+use bytes::Bytes;
 use packets::PacketHeader;
 use protocol::EncryptionLevel;
-use bytes::Bytes;
+use std::net::SocketAddr;
 
 /// An outgoing packet after any encryption has taken place.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

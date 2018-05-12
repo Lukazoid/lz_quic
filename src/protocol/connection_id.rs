@@ -1,8 +1,8 @@
 use errors::*;
-use std::io::{Read, Write};
-use rand::Rng;
 use protocol::{Readable, Writable};
+use rand::Rng;
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::io::{Read, Write};
 
 /// A unique identifier for a connection.
 /// This will always be required when communicating with the server to identify the client however it is not required when the server communicates with the client as the client can identify the server purely based upon the port opened.

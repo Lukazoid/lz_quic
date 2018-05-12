@@ -1,11 +1,11 @@
-use errors::*;
-use rand::Rng;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{Read, Write};
 use conv::TryFrom;
+use errors::*;
 use num::Integer;
 use protocol::{Perspective, Readable, StreamType, VarInt, Writable};
+use rand::Rng;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct StreamId(u64);

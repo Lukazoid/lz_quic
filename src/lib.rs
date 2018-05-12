@@ -51,7 +51,7 @@ mod crate_info {
 }
 
 macro_rules! async_io {
-    ($e: expr) => {
+    ($e:expr) => {
         match $e {
             ::futures::Async::Ready(result) => result,
             ::futures::Async::NotReady => return Err(::std::io::ErrorKind::WouldBlock.into()),
@@ -65,10 +65,10 @@ pub use self::errors::{Error, ErrorKind, Result};
 mod protocol;
 pub use self::protocol::ServerId;
 
-mod primitives;
-mod utils;
 mod frames;
 mod packets;
+mod primitives;
+mod utils;
 
 mod connection_map;
 use self::connection_map::{AddressConnectionIds, ConnectionMap};

@@ -1,8 +1,8 @@
-use errors::*;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use conv::TryFrom;
-use std::io::{Read, Write};
+use errors::*;
 use protocol::{Readable, VarInt, Writable};
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct StreamOffset(u64);

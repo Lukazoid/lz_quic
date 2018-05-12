@@ -1,8 +1,8 @@
 use errors::*;
-use {Connection, DataStream, Perspective, StreamMapEntry};
-use std::sync::Arc;
 use futures::Future;
 use futures::future;
+use std::sync::Arc;
+use {Connection, DataStream, Perspective, StreamMapEntry};
 
 pub trait SharedConnection<P> {
     fn handshake(self) -> Box<Future<Item = (), Error = Error> + Send>;

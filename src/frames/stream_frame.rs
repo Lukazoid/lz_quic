@@ -1,5 +1,5 @@
-use protocol::StreamId;
 use frames::StreamOffset;
+use protocol::StreamId;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct StreamFrame {

@@ -1,7 +1,7 @@
 use ConnectionTerminationMode;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
 use debugit::DebugIt;
 use rustls::{NoClientAuth, ServerConfig as TlsConfig};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::sync::Arc;
 
 lazy_static! {

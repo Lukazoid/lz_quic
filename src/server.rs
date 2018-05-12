@@ -1,12 +1,12 @@
 use errors::*;
-use {NewRemoteClients, ServerConfiguration};
-use tokio_core::net::{UdpFramed, UdpSocket};
-use tokio_core::reactor::Handle;
-use packets::PacketDispatcher;
-use std::net::SocketAddr;
 use futures::Stream;
 use futures::future::Empty;
+use packets::PacketDispatcher;
+use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio_core::net::{UdpFramed, UdpSocket};
+use tokio_core::reactor::Handle;
+use {NewRemoteClients, ServerConfiguration};
 
 #[derive(Debug)]
 pub struct Server {

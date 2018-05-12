@@ -1,8 +1,8 @@
 use errors::*;
-use {DataStream, StreamMap};
+use futures::Future;
 use rustls::Session;
 use tokio_rustls::TlsStream;
-use futures::Future;
+use {DataStream, StreamMap};
 
 pub trait Perspective {
     type TlsSession: Session;

@@ -1,12 +1,12 @@
-use errors::*;
-use protocol::{Readable, Writable};
-use num::{FromPrimitive, Unsigned};
-use std::io::{Read, Write};
 use byteorder::{NetworkEndian, ReadBytesExt};
-use std::mem;
 use conv::TryFrom;
-use std::ops::Deref;
 use debugit::DebugIt;
+use errors::*;
+use num::{FromPrimitive, Unsigned};
+use protocol::{Readable, Writable};
+use std::io::{Read, Write};
+use std::mem;
+use std::ops::Deref;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarInt<T>(T);
@@ -32,7 +32,7 @@ macro_rules! from_primitive {
                 VarInt(value)
             }
         }
-    }
+    };
 }
 
 from_primitive!(u8);
@@ -126,11 +126,11 @@ impl<T: Copy + Into<u64>> Writable for VarInt<T> {
 
 #[cfg(test)]
 mod tests {
-    use errors::*;
     use super::VarInt;
+    use conv::TryFrom;
+    use errors::*;
     use protocol::{Readable, Writable};
     use std::io::Cursor;
-    use conv::TryFrom;
 
     #[test]
     fn read_var_int_of_1_byte_reads_correctly() {

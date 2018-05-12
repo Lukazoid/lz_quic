@@ -1,7 +1,7 @@
 use errors::*;
-use protocol::{ConnectionId, Version};
 use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
               PartialPacketNumberLength, ShortHeader, VersionNegotiationPacket};
+use protocol::{ConnectionId, Version};
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
 
@@ -187,12 +187,12 @@ impl Writable for PacketHeader {
 
 #[cfg(test)]
 mod tests {
+    use super::PacketHeader;
+    use conv::TryFrom;
     use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
                   ShortHeader, VersionNegotiationPacket};
     use protocol::{ConnectionId, Readable, Version, Writable};
     use rand;
-    use super::PacketHeader;
-    use conv::TryFrom;
 
     #[test]
     pub fn read_write_version_negotiation_packet_header() {

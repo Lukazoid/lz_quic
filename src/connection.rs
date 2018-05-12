@@ -1,13 +1,13 @@
+use bytes::Bytes;
 use errors::*;
 use futures::{Future, Poll, Stream};
-use {DataStream, NewDataStreams, Perspective, StreamMap, StreamMapEntry, StreamState};
+use packets::{PacketCodec, PacketDispatcher};
 use protocol::{ConnectionId, StreamId};
+use std::sync::{Arc, Mutex};
 use tokio_core::net::UdpFramed;
 use tokio_io::codec::Framed;
-use packets::{PacketCodec, PacketDispatcher};
-use std::sync::{Arc, Mutex};
 use tokio_rustls::TlsStream;
-use bytes::Bytes;
+use {DataStream, NewDataStreams, Perspective, StreamMap, StreamMapEntry, StreamState};
 
 /// The connection exists so a single client-server connection may span multiple physical connections.
 #[derive(Debug)]

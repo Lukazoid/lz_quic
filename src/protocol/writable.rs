@@ -1,8 +1,8 @@
-use errors::*;
-use std::io::{Cursor, Write};
 use byteorder::{NetworkEndian, WriteBytesExt};
-use smallvec::{Array, SmallVec};
 use debugit::DebugIt;
+use errors::*;
+use smallvec::{Array, SmallVec};
+use std::io::{Cursor, Write};
 
 pub trait Writable {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()>;

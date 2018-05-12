@@ -1,10 +1,10 @@
-use tokio_core::net::UdpCodec;
+use bytes::Bytes;
+use chrono::UTC;
 use packets::{IncomingPacket, OutgoingPacket, PacketHeader};
+use protocol::{Readable, Writable};
 use std::io::{Cursor, Result as IoResult};
 use std::net::SocketAddr;
-use protocol::{Readable, Writable};
-use chrono::UTC;
-use bytes::Bytes;
+use tokio_core::net::UdpCodec;
 
 #[derive(Debug, Clone, Default)]
 pub struct PacketCodec;

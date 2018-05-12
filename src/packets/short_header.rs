@@ -1,5 +1,5 @@
-use protocol::ConnectionId;
 use super::PartialPacketNumber;
+use protocol::ConnectionId;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ShortHeader {

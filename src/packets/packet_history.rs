@@ -1,12 +1,12 @@
-use errors::*;
-use packets::PacketNumber;
-use std::collections::HashSet;
-use std::ops::Range;
-use lz_diet::{Diet, Iter as DietIter};
-use std::mem;
-use std::borrow::Cow;
 use binary_tree::{BinaryTree, Node, WalkAction};
+use errors::*;
+use lz_diet::{Diet, Iter as DietIter};
+use packets::PacketNumber;
+use std::borrow::Cow;
 use std::cmp;
+use std::collections::HashSet;
+use std::mem;
+use std::ops::Range;
 
 #[derive(Debug, Clone, Default)]
 pub struct PacketHistory {

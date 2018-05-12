@@ -1,9 +1,9 @@
-use {Connection, Perspective, StreamState};
-use tokio_io::{AsyncRead, AsyncWrite};
 use futures::Poll;
-use std::io::{Error as IoError, Read, Result as IoResult, Write};
 use protocol::StreamId;
+use std::io::{Error as IoError, Read, Result as IoResult, Write};
 use std::sync::{Arc, Mutex};
+use tokio_io::{AsyncRead, AsyncWrite};
+use {Connection, Perspective, StreamState};
 
 /// A stream of data between the server and client.
 #[derive(Debug)]

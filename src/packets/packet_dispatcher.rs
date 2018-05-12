@@ -1,12 +1,12 @@
 use errors::*;
-use protocol::ConnectionId;
+use futures::sink::Sink;
+use futures::stream::Stream;
 use packets::{IncomingPacketStore, Packet, PacketCodec};
-use tokio_core::net::{UdpFramed, UdpSocket};
+use protocol::ConnectionId;
+use std::collections::HashMap;
 use std::fmt::{Debug, Formatter, Result as FmtResult};
 use std::net::SocketAddr;
-use std::collections::HashMap;
-use futures::stream::Stream;
-use futures::sink::Sink;
+use tokio_core::net::{UdpFramed, UdpSocket};
 
 struct DebuggableFramed(UdpFramed<PacketCodec>);
 

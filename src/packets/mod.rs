@@ -22,8 +22,8 @@ mod incoming_packet;
 pub use self::incoming_packet::IncomingPacket;
 
 mod packet;
-pub use self::packet::PacketContent;
 pub use self::packet::Packet;
+pub use self::packet::PacketContent;
 
 mod outgoing_packet;
 pub use self::outgoing_packet::OutgoingPacket;

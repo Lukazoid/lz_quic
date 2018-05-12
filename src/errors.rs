@@ -1,9 +1,9 @@
-use protocol::{ConnectionId, StreamId, Version};
 use frames::StreamOffset;
-use std::net::SocketAddr;
 use futures::{Async, Future, Poll, Stream};
+use protocol::{ConnectionId, StreamId, Version};
 use std::error::Error as StdError;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+use std::net::SocketAddr;
 
 error_chain! {
     foreign_links {

@@ -1,13 +1,13 @@
-use errors::*;
 use bytes::Bytes;
-use std::collections::VecDeque;
-use protocol::StreamId;
-use futures::{Poll, Stream};
+use errors::*;
 use futures::stream::Then;
 use futures::sync::mpsc::{self, Receiver, Sender};
-use std::result::Result as StdResult;
-use std::io::{Error as IoError, Read, Result as IoResult};
+use futures::{Poll, Stream};
 use lz_stream_io::StreamRead;
+use protocol::StreamId;
+use std::collections::VecDeque;
+use std::io::{Error as IoError, Read, Result as IoResult};
+use std::result::Result as StdResult;
 
 #[derive(Debug)]
 pub struct StreamState {

@@ -1,10 +1,10 @@
 use ConnectionTerminationMode;
-use rustls::ClientConfig as TlsConfig;
-use std::sync::Arc;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
 use debugit::DebugIt;
+use rustls::ClientConfig as TlsConfig;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
+use std::sync::Arc;
 
-lazy_static!{
+lazy_static! {
     static ref DEFAULT_TLS_CONFIG: Arc<TlsConfig> = Arc::new(TlsConfig::new());
 }
 

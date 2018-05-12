@@ -1,6 +1,6 @@
 use protocol::ConnectionId;
-use std::net::SocketAddr;
 use std::collections::{HashMap, HashSet};
+use std::net::SocketAddr;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 struct AddressTuple {

@@ -1,10 +1,10 @@
 use errors::*;
-use {DataStream, Perspective, ServerConfiguration, StreamMap};
-use rustls::ServerSession;
-use tokio_rustls::{ServerConfigExt, TlsStream};
 use futures::Future;
+use rustls::ServerSession;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tokio_rustls::{ServerConfigExt, TlsStream};
+use {DataStream, Perspective, ServerConfiguration, StreamMap};
 
 #[derive(Debug)]
 pub struct ServerPerspective {

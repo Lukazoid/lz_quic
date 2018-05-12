@@ -1,9 +1,9 @@
+use byteorder::{NetworkEndian, ReadBytesExt};
+use debugit::DebugIt;
 use errors::*;
 use std::io::{Cursor, Read};
-use byteorder::{NetworkEndian, ReadBytesExt};
-use std::marker::PhantomData;
 use std::iter::FromIterator;
-use debugit::DebugIt;
+use std::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct ReadableIterator<'a, R> {

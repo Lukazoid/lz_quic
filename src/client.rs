@@ -1,13 +1,13 @@
 use errors::*;
+use futures::{Future, IntoFuture};
+use protocol::{ConnectionId, ServerId};
+use rand::OsRng;
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::sync::Arc;
+use tokio_core::net::UdpSocket;
+use tokio_core::reactor::Handle;
 use {ClientConfiguration, ClientPerspective, Connection, DataStream, NewClient, NewDataStreams,
      SharedConnection};
-use rand::OsRng;
-use futures::{Future, IntoFuture};
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use tokio_core::reactor::Handle;
-use tokio_core::net::UdpSocket;
-use protocol::{ConnectionId, ServerId};
-use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Client {

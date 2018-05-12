@@ -2,14 +2,14 @@ extern crate futures;
 extern crate lz_quic;
 extern crate tokio_core;
 
-use std::thread;
+use futures::Future;
+use futures::future;
+use futures::sync::oneshot;
 use lz_quic::{Client, ClientConfiguration, Error as QuicError, Server, ServerConfiguration,
               ServerId};
-use tokio_core::reactor::Core;
-use futures::future;
-use futures::Future;
-use futures::sync::oneshot;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::thread;
+use tokio_core::reactor::Core;
 
 #[test]
 #[ignore]

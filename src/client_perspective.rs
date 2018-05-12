@@ -1,14 +1,12 @@
 use errors::*;
-use {ClientConfiguration, DataStream, Perspective, StreamMap};
-use protocol::ServerId;
-use tokio_core::net::UdpSocket;
-use webpki::DNSNameRef;
-use rustls::{ClientConfig as TlsConfig, ClientSession};
-use tokio_rustls::{ClientConfigExt, TlsStream};
 use futures::{Future, IntoFuture};
+use protocol::ServerId;
+use rustls::ClientSession;
 use std::sync::Arc;
-use std::fmt::{Debug, Formatter, Result as FmtResult};
-use debugit::DebugIt;
+use tokio_core::net::UdpSocket;
+use tokio_rustls::{ClientConfigExt, TlsStream};
+use webpki::DNSNameRef;
+use {ClientConfiguration, DataStream, Perspective, StreamMap};
 
 #[derive(Debug)]
 pub struct ClientPerspective {
