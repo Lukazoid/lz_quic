@@ -4,8 +4,8 @@ use std::net::SocketAddr;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 struct AddressTuple {
-    pub source_address: SocketAddr,
-    pub destination_address: SocketAddr,
+    pub local_address: SocketAddr,
+    pub remote_address: SocketAddr,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -32,12 +32,12 @@ impl ConnectionMap {
     pub fn insert(
         &mut self,
         connection_id: ConnectionId,
-        source_address: SocketAddr,
-        destination_address: SocketAddr,
+        local_address: SocketAddr,
+        remote_address: SocketAddr,
     ) -> bool {
         let address_tuple = AddressTuple {
-            source_address,
-            destination_address,
+            local_address,
+            remote_address,
         };
 
         if self.connection_addresses
@@ -65,10 +65,10 @@ impl ConnectionMap {
         }
     }
 
-    pub fn remove_address(&mut self, source_address: SocketAddr, destination_address: SocketAddr) {
+    pub fn remove_address(&mut self, local_address: SocketAddr, remote_address: SocketAddr) {
         let address_tuple = AddressTuple {
-            source_address,
-            destination_address,
+            local_address,
+            remote_address,
         };
 
         if let Some(connection_ids) = self.address_connections.remove(&address_tuple) {
@@ -88,12 +88,12 @@ impl ConnectionMap {
 
     pub fn get_connection_id(
         &self,
-        source_address: SocketAddr,
-        destination_address: SocketAddr,
+        local_address: SocketAddr,
+        remote_address: SocketAddr,
     ) -> Option<AddressConnectionIds> {
         let address_tuple = AddressTuple {
-            source_address,
-            destination_address,
+            local_address,
+            remote_address,
         };
 
         if let Some(address_connections) = self.address_connections.get(&address_tuple) {
@@ -136,12 +136,12 @@ mod tests {
 
         let connection_id = ConnectionId::generate(&mut rand::thread_rng());
 
-        let source_address = "10.0.0.1:65412".parse().unwrap();
-        let destination_address = "10.0.0.2:443".parse().unwrap();
-        assert!(connection_map.insert(connection_id, source_address, destination_address));
+        let local_address = "10.0.0.1:65412".parse().unwrap();
+        let remote_address = "10.0.0.2:443".parse().unwrap();
+        assert!(connection_map.insert(connection_id, local_address, remote_address));
 
         assert_eq!(
-            connection_map.get_connection_id(source_address, destination_address),
+            connection_map.get_connection_id(local_address, remote_address),
             Some(AddressConnectionIds::Single(connection_id))
         );
     }
@@ -174,15 +174,15 @@ mod tests {
         let first_connection_id = ConnectionId::generate(&mut rand::thread_rng());
         let second_connection_id = ConnectionId::generate(&mut rand::thread_rng());
 
-        let source_address = "10.0.0.1:65412".parse().unwrap();
-        let destination_address = "10.0.0.2:443".parse().unwrap();
+        let local_address = "10.0.0.1:65412".parse().unwrap();
+        let remote_address = "10.0.0.2:443".parse().unwrap();
 
-        assert!(connection_map.insert(first_connection_id, source_address, destination_address));
+        assert!(connection_map.insert(first_connection_id, local_address, remote_address));
 
-        assert!(connection_map.insert(second_connection_id, source_address, destination_address));
+        assert!(connection_map.insert(second_connection_id, local_address, remote_address));
 
         assert_eq!(
-            connection_map.get_connection_id(source_address, destination_address),
+            connection_map.get_connection_id(local_address, remote_address),
             Some(AddressConnectionIds::Multiple)
         );
     }
