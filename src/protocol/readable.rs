@@ -1,7 +1,8 @@
 use byteorder::{NetworkEndian, ReadBytesExt};
 use debugit::DebugIt;
 use errors::*;
-use std::io::{Cursor, Read};
+use smallvec::{Array, SmallVec};
+use std::io::{self, Cursor, Read};
 use std::iter::FromIterator;
 use std::marker::PhantomData;
 
@@ -106,6 +107,22 @@ impl Readable for Vec<u8> {
         debug!("read byte vector {:?}", vec);
 
         Ok(vec)
+    }
+}
+
+impl<A: Array<Item = u8>> Readable for SmallVec<A> {
+    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        trace!("reading byte small vector");
+
+        let mut small_vec = SmallVec::new();
+        io::copy(reader, &mut small_vec).chain_err(|| ErrorKind::FailedToReadBytes)?;
+
+        debug!("read byte small vector {:?}", small_vec);
+
+        Ok(small_vec)
     }
 }
 

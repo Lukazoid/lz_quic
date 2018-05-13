@@ -50,6 +50,16 @@ pub trait Writable {
     }
 }
 
+impl<E: Writable> Writable for Option<E> {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        if let Some(value) = self {
+            value.write(writer)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl<E: Writable> Writable for [E] {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing values {:?}", DebugIt(self));

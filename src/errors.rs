@@ -58,7 +58,7 @@ error_chain! {
         }
         FailedToWriteConnectionId(connection_id: ConnectionId) {
             description("failed to write QUIC connection id")
-            display("failed to write QUIC connection id '{}'", connection_id)
+            display("failed to write QUIC connection id '{:?}'", connection_id)
         }
         FailedToWriteQuicVersion(version: Version) {
             description("failed to write QUIC version")

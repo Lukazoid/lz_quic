@@ -1,8 +1,8 @@
+use conv::TryFrom;
 use errors::*;
 use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
               PartialPacketNumberLength, ShortHeader, VersionNegotiationPacket};
-use protocol::{ConnectionId, Version};
-use protocol::{Readable, Writable};
+use protocol::{ConnectionId, Readable, VarInt, Version, Writable};
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -13,12 +13,22 @@ pub enum PacketHeader {
 }
 
 impl PacketHeader {
-    pub fn connection_id(&self) -> Option<ConnectionId> {
+    pub fn destination_connection_id(&self) -> Option<ConnectionId> {
         match self {
-            PacketHeader::Long(long_header) => Some(long_header.connection_id),
-            PacketHeader::Short(short_header) => short_header.connection_id,
+            PacketHeader::Long(long_header) => long_header.destination_connection_id,
+            PacketHeader::Short(short_header) => short_header.destination_connection_id,
             PacketHeader::VersionNegotiation(version_negotiation) => {
-                Some(version_negotiation.connection_id)
+                version_negotiation.destination_connection_id
+            }
+        }
+    }
+
+    pub fn source_connection_id(&self) -> Option<ConnectionId> {
+        match self {
+            PacketHeader::Long(long_header) => long_header.source_connection_id,
+            PacketHeader::Short(short_header) => None,
+            PacketHeader::VersionNegotiation(version_negotiation) => {
+                version_negotiation.source_connection_id
             }
         }
     }
@@ -41,6 +51,19 @@ bitflags!(
     }
 );
 
+fn read_connection_id<R: Read>(reader: &mut R, length_flags: u8) -> Result<Option<ConnectionId>> {
+    if length_flags == 0 {
+        Ok(None)
+    } else {
+        // Non-zero encoded lengths are increased by 3 to get the full length of the connection ID
+        let length = length_flags + 3;
+
+        let connection_id = ConnectionId::read(&mut reader.take(length as u64))?;
+
+        Ok(Some(connection_id))
+    }
+}
+
 impl Readable for PacketHeader {
     fn read<R: Read>(reader: &mut R) -> Result<Self> {
         trace!("reading packet header");
@@ -51,14 +74,23 @@ impl Readable for PacketHeader {
         debug!("read packet header flags {:?}", flags);
 
         let packet_header = if flags.intersects(LONG_HEADER) {
-            let connection_id = ConnectionId::read(reader)?;
             let version = Version::read(reader)?;
+
+            let dcil_scil = u8::read(reader)?;
+            let destination_connection_id_flags = (dcil_scil >> 4) & 0xf;
+            let source_connection_id_flags = dcil_scil & 0xf;
+
+            let destination_connection_id =
+                read_connection_id(reader, destination_connection_id_flags)?;
+            let source_connection_id = read_connection_id(reader, source_connection_id_flags)?;
+
             if version.is_version_negotiation() {
                 let supported_versions = Version::collect(reader)?;
 
                 PacketHeader::VersionNegotiation(VersionNegotiationPacket {
-                    connection_id: connection_id,
-                    supported_versions: supported_versions,
+                    destination_connection_id,
+                    source_connection_id,
+                    supported_versions,
                 })
             } else {
                 let packet_type_flags =
@@ -72,13 +104,17 @@ impl Readable for PacketHeader {
                         packet_type_flags.bits()
                     )),
                 };
+                let payload_length: VarInt<u64> = VarInt::read(reader)?;
+
                 let packet_number = PacketNumber::read(reader)?;
 
                 PacketHeader::Long(LongHeader {
-                    packet_type: packet_type,
-                    connection_id: connection_id,
-                    version: version,
-                    packet_number: packet_number,
+                    packet_type,
+                    version,
+                    destination_connection_id,
+                    source_connection_id,
+                    payload_length: payload_length.into(),
+                    packet_number,
                 })
             }
         } else {
@@ -86,7 +122,7 @@ impl Readable for PacketHeader {
             let key_phase = flags.intersects(KEY_PHASE);
             let packet_type_flags = PacketHeaderBitFlags::from_bits_truncate(flags.bits() & 0x1F);
 
-            let connection_id = if omit_connection_id {
+            let destination_connection_id = if omit_connection_id {
                 None
             } else {
                 Some(ConnectionId::read(reader)?)
@@ -104,9 +140,9 @@ impl Readable for PacketHeader {
             let partial_packet_number =
                 PartialPacketNumber::read(reader, partial_packet_number_length)?;
             PacketHeader::Short(ShortHeader {
-                key_phase: key_phase,
-                connection_id: connection_id,
-                partial_packet_number: partial_packet_number,
+                key_phase,
+                destination_connection_id,
+                partial_packet_number,
             })
         };
 
@@ -129,8 +165,21 @@ impl Writable for PacketHeader {
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePacketHeaderFlags)?;
 
-                version_negotiation.connection_id.write(writer)?;
                 Version::NEGOTIATION.write(writer)?;
+
+                // TODO LH compact the connection id lengths
+                let mut dcil_scil = 0u8;
+                if version_negotiation.destination_connection_id.is_some() {
+                    dcil_scil |= (0xf << 4);
+                }
+                if version_negotiation.source_connection_id.is_some() {
+                    dcil_scil |= 0xf;
+                }
+                dcil_scil.write(writer)?;
+
+                version_negotiation.destination_connection_id.write(writer)?;
+                version_negotiation.source_connection_id.write(writer)?;
+
                 version_negotiation.supported_versions.write(writer)?;
             }
             PacketHeader::Long(long_header) => {
@@ -147,13 +196,29 @@ impl Writable for PacketHeader {
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePacketHeaderFlags)?;
 
-                long_header.connection_id.write(writer)?;
                 long_header.version.write(writer)?;
+
+                // TODO LH compact the connection id lengths
+                let mut dcil_scil = 0u8;
+                if long_header.destination_connection_id.is_some() {
+                    dcil_scil |= (0xf << 4);
+                }
+                if long_header.source_connection_id.is_some() {
+                    dcil_scil |= 0xf;
+                }
+                dcil_scil.write(writer)?;
+
+                long_header.destination_connection_id.write(writer)?;
+                long_header.source_connection_id.write(writer)?;
+
+                let payload_length = VarInt::try_from(long_header.payload_length)?;
+                payload_length.write(writer)?;
+
                 long_header.packet_number.write(writer)?;
             }
             PacketHeader::Short(short_header) => {
                 let mut flags = PacketHeaderBitFlags::empty();
-                if short_header.connection_id.is_none() {
+                if short_header.destination_connection_id.is_none() {
                     flags |= OMIT_CONNECTION_ID;
                 }
                 if short_header.key_phase {
@@ -171,9 +236,7 @@ impl Writable for PacketHeader {
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePacketHeaderFlags)?;
 
-                if let Some(connection_id) = short_header.connection_id {
-                    connection_id.write(writer)?;
-                }
+                short_header.destination_connection_id.write(writer)?;
 
                 short_header.partial_packet_number.write(writer)?;
             }
@@ -197,7 +260,8 @@ mod tests {
     #[test]
     pub fn read_write_version_negotiation_packet_header() {
         let version_negotiation_packet = VersionNegotiationPacket {
-            connection_id: ConnectionId::generate(&mut rand::thread_rng()),
+            destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
+            source_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
             supported_versions: vec![Version::DRAFT_IETF_08],
         };
         let packet_header = PacketHeader::VersionNegotiation(version_negotiation_packet);
@@ -215,9 +279,11 @@ mod tests {
     pub fn read_write_long_packet_header() {
         let long_header = LongHeader {
             packet_type: LongHeaderPacketType::Handshake,
-            connection_id: ConnectionId::generate(&mut rand::thread_rng()),
+            destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
+            source_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
             version: Version::DRAFT_IETF_08,
             packet_number: PacketNumber::try_from(5u64).unwrap(),
+            payload_length: 654234,
         };
         let packet_header = PacketHeader::Long(long_header);
 
@@ -233,7 +299,7 @@ mod tests {
     #[test]
     pub fn read_write_short_packet_header() {
         let short_header = ShortHeader {
-            connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
+            destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
             partial_packet_number: PartialPacketNumber::TwoBytes(3421),
             key_phase: true,
         };

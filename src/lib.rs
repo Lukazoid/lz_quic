@@ -27,6 +27,8 @@ extern crate lz_fnv;
 extern crate lz_shared_udp;
 extern crate lz_stream_io;
 #[macro_use]
+extern crate maplit;
+#[macro_use]
 extern crate matches;
 extern crate num;
 extern crate rand;

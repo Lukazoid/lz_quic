@@ -35,9 +35,28 @@ macro_rules! from_primitive {
     };
 }
 
-from_primitive!(u8);
-from_primitive!(u16);
-from_primitive!(u32);
+macro_rules! to_primitive {
+    ($type:ty) => {
+        impl From<VarInt<$type>> for $type {
+            fn from(value: VarInt<$type>) -> $type {
+                value.into_inner()
+            }
+        }
+    };
+}
+
+macro_rules! to_from_primitive {
+    ($type:ty) => {
+        from_primitive!($type);
+        to_primitive!($type);
+    };
+}
+
+to_from_primitive!(u8);
+to_from_primitive!(u16);
+to_from_primitive!(u32);
+to_primitive!(u64);
+to_primitive!(usize);
 
 impl<T: Copy + Into<u64>> TryFrom<T> for VarInt<T> {
     type Err = Error;

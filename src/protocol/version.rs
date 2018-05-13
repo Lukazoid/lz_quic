@@ -127,8 +127,7 @@ mod tests {
 
     #[test]
     pub fn find_highest_supported_returns_none_for_unsupported() {
-        let mut available = HashSet::new();
-        available.insert(Version(0x00001234));
+        let available = hashset![Version(0x00001234)];
 
         let highest_supported = Version::find_highest_supported(&available);
 
@@ -137,8 +136,7 @@ mod tests {
 
     #[test]
     pub fn find_highest_supported_returns_version_for_supported() {
-        let mut available = HashSet::new();
-        available.insert(Version::DRAFT_IETF_08);
+        let available = hashset![Version::DRAFT_IETF_08];
 
         let highest_supported = Version::find_highest_supported(&available);
 
