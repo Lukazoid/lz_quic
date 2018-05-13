@@ -1,7 +1,5 @@
 mod packet_number;
-pub use self::packet_number::PacketNumber;
-pub use self::packet_number::PartialPacketNumber;
-pub use self::packet_number::PartialPacketNumberLength;
+pub use self::packet_number::{PacketNumber, PartialPacketNumber};
 
 mod short_header;
 pub use self::short_header::ShortHeader;
@@ -22,8 +20,7 @@ mod incoming_packet;
 pub use self::incoming_packet::IncomingPacket;
 
 mod packet;
-pub use self::packet::Packet;
-pub use self::packet::PacketContent;
+pub use self::packet::{Packet, PacketContent};
 
 mod outgoing_packet;
 pub use self::outgoing_packet::OutgoingPacket;

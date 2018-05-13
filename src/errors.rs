@@ -174,15 +174,16 @@ error_chain! {
             description("invalid long header packet type")
             display("invalid long header packet type '{}'", packet_type)
         }
-        InvalidShortHeaderPacketType(packet_type: u8) {
-            description("invalid short header packet type")
-            display("invalid short header packet type '{}'", packet_type)
-        }
         ReachedMaximumPacketNumber {
             description("reached maximum packet number")
         }
-        ValueExceedsTheMaximumPacketNumberValue {
-            description("value exeeds the maximum packet number value")
+        ValueExceedsTheMaximumPacketNumberValue(value: u64) {
+            description("value exceeds the maximum packet number value")
+            display("value '{}' exceeds the maximum packet number value", value)
+        }
+        ValueExceedsTheMaximumPartialPacketNumberValue(value: u32) {
+            description("value exceeds the maximum partial packet number value")
+            display("value '{}' exceeds the maximum partial packet number value", value)
         }
         HostIsNotAValidDomainName(host: String) {
             description("host is not a valid domain name")

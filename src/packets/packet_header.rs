@@ -1,7 +1,7 @@
 use conv::TryFrom;
 use errors::*;
-use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
-              PartialPacketNumberLength, ShortHeader, VersionNegotiationPacket};
+use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber, ShortHeader,
+              VersionNegotiationPacket};
 use protocol::{ConnectionId, Readable, VarInt, Version, Writable};
 use std::io::{Read, Write};
 
@@ -36,12 +36,7 @@ impl PacketHeader {
 
 bitflags!(
     flags PacketHeaderBitFlags : u8 {
-        const KEY_PHASE                             = 0x20,
-        const OMIT_CONNECTION_ID                    = 0x40,
-
-        const SHORT_PACKET_TYPE_ONE_BYTE            = 0x1F,
-        const SHORT_PACKET_TYPE_TWO_BYTES           = 0x1E,
-        const SHORT_PACKET_TYPE_FOUR_BYTES          = 0x1D,
+        const KEY_PHASE                             = 0x40,
 
         const LONG_HEADER                           = 0x80,
         const LONG_PACKET_TYPE_INITIAL              = 0x7F,
@@ -106,7 +101,7 @@ impl Readable for PacketHeader {
                 };
                 let payload_length: VarInt<u64> = VarInt::read(reader)?;
 
-                let packet_number = PacketNumber::read(reader)?;
+                let partial_packet_number = PartialPacketNumber::read(reader)?;
 
                 PacketHeader::Long(LongHeader {
                     packet_type,
@@ -114,31 +109,17 @@ impl Readable for PacketHeader {
                     destination_connection_id,
                     source_connection_id,
                     payload_length: payload_length.into(),
-                    packet_number,
+                    partial_packet_number,
                 })
             }
         } else {
-            let omit_connection_id = flags.intersects(OMIT_CONNECTION_ID);
             let key_phase = flags.intersects(KEY_PHASE);
             let packet_type_flags = PacketHeaderBitFlags::from_bits_truncate(flags.bits() & 0x1F);
 
-            let destination_connection_id = if omit_connection_id {
-                None
-            } else {
-                Some(ConnectionId::read(reader)?)
-            };
+            // TODO LH There may not always be a connection id
+            let destination_connection_id = Some(ConnectionId::read(reader)?);
 
-            let partial_packet_number_length = match packet_type_flags {
-                SHORT_PACKET_TYPE_ONE_BYTE => PartialPacketNumberLength::OneByte,
-                SHORT_PACKET_TYPE_TWO_BYTES => PartialPacketNumberLength::TwoBytes,
-                SHORT_PACKET_TYPE_FOUR_BYTES => PartialPacketNumberLength::FourBytes,
-                _ => bail!(ErrorKind::InvalidShortHeaderPacketType(
-                    packet_type_flags.bits()
-                )),
-            };
-
-            let partial_packet_number =
-                PartialPacketNumber::read(reader, partial_packet_number_length)?;
+            let partial_packet_number = PartialPacketNumber::read(reader)?;
             PacketHeader::Short(ShortHeader {
                 key_phase,
                 destination_connection_id,
@@ -214,22 +195,13 @@ impl Writable for PacketHeader {
                 let payload_length = VarInt::try_from(long_header.payload_length)?;
                 payload_length.write(writer)?;
 
-                long_header.packet_number.write(writer)?;
+                long_header.partial_packet_number.write(writer)?;
             }
             PacketHeader::Short(short_header) => {
                 let mut flags = PacketHeaderBitFlags::empty();
-                if short_header.destination_connection_id.is_none() {
-                    flags |= OMIT_CONNECTION_ID;
-                }
                 if short_header.key_phase {
                     flags |= KEY_PHASE;
                 }
-
-                flags |= match short_header.partial_packet_number {
-                    PartialPacketNumber::OneByte(_) => SHORT_PACKET_TYPE_ONE_BYTE,
-                    PartialPacketNumber::TwoBytes(_) => SHORT_PACKET_TYPE_TWO_BYTES,
-                    PartialPacketNumber::FourBytes(_) => SHORT_PACKET_TYPE_FOUR_BYTES,
-                };
 
                 flags
                     .bits()
@@ -282,7 +254,7 @@ mod tests {
             destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
             source_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
             version: Version::DRAFT_IETF_08,
-            packet_number: PacketNumber::try_from(5u64).unwrap(),
+            partial_packet_number: 5u8.into(),
             payload_length: 654234,
         };
         let packet_header = PacketHeader::Long(long_header);
@@ -300,7 +272,7 @@ mod tests {
     pub fn read_write_short_packet_header() {
         let short_header = ShortHeader {
             destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
-            partial_packet_number: PartialPacketNumber::TwoBytes(3421),
+            partial_packet_number: 3421u16.into(),
             key_phase: true,
         };
         let packet_header = PacketHeader::Short(short_header);

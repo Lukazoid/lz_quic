@@ -1,4 +1,4 @@
-use conv::TryFrom;
+use conv::{TryFrom, TryInto};
 use errors::*;
 use lz_diet::AdjacentBound;
 use primitives::AbsDelta;
@@ -15,9 +15,27 @@ impl TryFrom<u64> for PacketNumber {
 
     fn try_from(value: u64) -> Result<PacketNumber> {
         if value > PacketNumber::MAX.0 {
-            bail!(ErrorKind::ValueExceedsTheMaximumPacketNumberValue);
+            bail!(ErrorKind::ValueExceedsTheMaximumPacketNumberValue(value));
         }
         Ok(PacketNumber(value))
+    }
+}
+
+impl From<u32> for PacketNumber {
+    fn from(value: u32) -> PacketNumber {
+        PacketNumber(value as u64)
+    }
+}
+
+impl From<u16> for PacketNumber {
+    fn from(value: u16) -> PacketNumber {
+        PacketNumber(value as u64)
+    }
+}
+
+impl From<u8> for PacketNumber {
+    fn from(value: u8) -> PacketNumber {
+        PacketNumber(value as u64)
     }
 }
 
@@ -60,11 +78,7 @@ pub enum PartialPacketNumberLength {
 
 /// This represents a partial packet number consisting of only the lower bytes.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum PartialPacketNumber {
-    OneByte(u8),
-    TwoBytes(u16),
-    FourBytes(u32),
-}
+pub struct PartialPacketNumber(u32);
 
 impl PacketNumber {
     pub const MAX: PacketNumber = PacketNumber(4611686018427387903);
@@ -140,33 +154,6 @@ impl PacketNumber {
     }
 }
 
-impl Readable for PacketNumber {
-    fn read<R: Read>(reader: &mut R) -> Result<Self> {
-        trace!("reading packet number");
-
-        let inner = u64::read(reader)?;
-        if inner > PacketNumber::MAX.0 {
-            bail!(ErrorKind::ValueExceedsTheMaximumPacketNumberValue);
-        }
-
-        let packet_number = PacketNumber(inner);
-
-        debug!("read packet number {:?}", packet_number);
-        Ok(packet_number)
-    }
-}
-
-impl Writable for PacketNumber {
-    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
-        trace!("writing packet number {:?}", self);
-
-        self.0.write(writer)?;
-
-        debug!("written packet number {:?}", self);
-        Ok(())
-    }
-}
-
 impl From<PacketNumber> for u64 {
     fn from(value: PacketNumber) -> Self {
         value.0
@@ -174,25 +161,30 @@ impl From<PacketNumber> for u64 {
 }
 
 impl PartialPacketNumberLength {
-    /// Gets the length of the packet number in bytes.
-    pub fn len(self) -> u8 {
+    pub fn available_bits_len(self) -> u8 {
         match self {
-            PartialPacketNumberLength::OneByte => 1,
-            PartialPacketNumberLength::TwoBytes => 2,
-            PartialPacketNumberLength::FourBytes => 4,
+            PartialPacketNumberLength::OneByte => 7,
+            PartialPacketNumberLength::TwoBytes => 14,
+            PartialPacketNumberLength::FourBytes => 30,
         }
     }
 
-    pub fn bit_len(self) -> u8 {
-        self.len() * 8
+    pub fn encoded_bits_len(self) -> u8 {
+        match self {
+            PartialPacketNumberLength::OneByte => 8,
+            PartialPacketNumberLength::TwoBytes => 16,
+            PartialPacketNumberLength::FourBytes => 32,
+        }
     }
 
     fn threshold(self) -> u64 {
-        2 << (self.bit_len() - 2)
+        (2 << (self.available_bits_len() - 1)) - 1
     }
 }
 
 impl PartialPacketNumber {
+    pub const MAX: PartialPacketNumber = PartialPacketNumber(0x3FFFFFFF);
+
     pub fn from_packet_number(
         packet_number: PacketNumber,
         lowest_unacknowledged: PacketNumber,
@@ -204,12 +196,14 @@ impl PartialPacketNumber {
             .checked_sub(lowest_unacknowledged.0)
             .ok_or_else(|| Error::from_kind(ErrorKind::FailedToBuildPartialPacketNumber))?;
 
-        let partial_packet_number = if diff < PartialPacketNumberLength::OneByte.threshold() {
-            PartialPacketNumber::OneByte(packet_number.0 as u8)
-        } else if diff < PartialPacketNumberLength::TwoBytes.threshold() {
-            PartialPacketNumber::TwoBytes(packet_number.0 as u16)
-        } else if diff < PartialPacketNumberLength::FourBytes.threshold() {
-            PartialPacketNumber::FourBytes(packet_number.0 as u32)
+        let partial_packet_number = if diff <= PartialPacketNumberLength::OneByte.threshold() {
+            (packet_number.0 as u8).into()
+        } else if diff <= PartialPacketNumberLength::TwoBytes.threshold() {
+            (packet_number.0 as u16).into()
+        } else if diff <= PartialPacketNumberLength::FourBytes.threshold() {
+            (packet_number.0 as u32)
+                .try_into()
+                .chain_err(|| ErrorKind::FailedToBuildPartialPacketNumber)?
         } else {
             bail!(ErrorKind::FailedToBuildPartialPacketNumber)
         };
@@ -229,7 +223,7 @@ impl PartialPacketNumber {
 
         let packet_number = if let Some(largest_acknowledged) = largest_acknowledged {
             if let Some(next) = largest_acknowledged.next() {
-                let epochs = largest_acknowledged.epochs(self.len().bit_len());
+                let epochs = largest_acknowledged.epochs(self.len().encoded_bits_len());
 
                 let possible_packet_numbers = epochs
                     .into_iter()
@@ -255,31 +249,76 @@ impl PartialPacketNumber {
     }
 
     pub fn len(self) -> PartialPacketNumberLength {
-        match self {
-            PartialPacketNumber::OneByte(_) => PartialPacketNumberLength::OneByte,
-            PartialPacketNumber::TwoBytes(_) => PartialPacketNumberLength::TwoBytes,
-            PartialPacketNumber::FourBytes(_) => PartialPacketNumberLength::FourBytes,
+        let leading_zeros = self.0.leading_zeros();
+        if leading_zeros >= 25 {
+            PartialPacketNumberLength::OneByte
+        } else if leading_zeros >= 18 {
+            PartialPacketNumberLength::TwoBytes
+        } else if leading_zeros >= 2 {
+            PartialPacketNumberLength::FourBytes
+        } else {
+            unreachable!(
+                "should be impossible to create a PartialPacketNumber of the value '{}'",
+                self.0
+            );
         }
     }
+}
 
-    pub fn read<R: Read>(reader: &mut R, length: PartialPacketNumberLength) -> Result<Self> {
-        trace!("reading partial packet number of length {:?}", length);
+impl TryFrom<u32> for PartialPacketNumber {
+    type Err = Error;
+
+    fn try_from(value: u32) -> Result<PartialPacketNumber> {
+        if value > PartialPacketNumber::MAX.0 {
+            bail!(ErrorKind::ValueExceedsTheMaximumPartialPacketNumberValue(
+                value
+            ));
+        }
+        Ok(PartialPacketNumber(value))
+    }
+}
+
+impl From<u16> for PartialPacketNumber {
+    fn from(value: u16) -> PartialPacketNumber {
+        PartialPacketNumber((value & 0x3FFF) as u32)
+    }
+}
+
+impl From<u8> for PartialPacketNumber {
+    fn from(value: u8) -> PartialPacketNumber {
+        PartialPacketNumber(value as u32)
+    }
+}
+
+impl Readable for PartialPacketNumber {
+    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+        trace!("reading partial packet number");
+
+        let first_byte = u8::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
+
+        let (first_byte, length) = match (first_byte >> 6) & 0b11 {
+            0b11 => (first_byte & 0x3f, PartialPacketNumberLength::FourBytes),
+            0b10 => (first_byte & 0x3f, PartialPacketNumberLength::TwoBytes),
+            0b00 | 0b01 => (first_byte & 0x7f, PartialPacketNumberLength::OneByte),
+            _ => unreachable!("there should only be 2 bits"),
+        };
 
         let partial_packet_number = match length {
-            PartialPacketNumberLength::OneByte => {
-                let value =
-                    u8::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
-                PartialPacketNumber::OneByte(value)
-            }
+            PartialPacketNumberLength::OneByte => first_byte.into(),
             PartialPacketNumberLength::TwoBytes => {
-                let value =
-                    u16::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
-                PartialPacketNumber::TwoBytes(value)
+                let second_byte =
+                    u8::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
+                let value = ((first_byte as u16) << 8) | second_byte as u16;
+                value.into()
             }
             PartialPacketNumberLength::FourBytes => {
-                let value =
-                    u32::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
-                PartialPacketNumber::FourBytes(value)
+                let second_byte =
+                    u8::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
+                let last_2_bytes =
+                    u16::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;
+                let value = ((first_byte as u32) << 24) | ((second_byte as u32) << 16)
+                    | last_2_bytes as u32;
+                value.try_into()?
             }
         };
 
@@ -293,10 +332,10 @@ impl Writable for PartialPacketNumber {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing partial packet number {:?}", self);
 
-        match self {
-            PartialPacketNumber::OneByte(value) => value.write(writer),
-            PartialPacketNumber::TwoBytes(value) => value.write(writer),
-            PartialPacketNumber::FourBytes(value) => value.write(writer),
+        match self.len() {
+            PartialPacketNumberLength::OneByte => (0x7f & (self.0 as u8)).write(writer),
+            PartialPacketNumberLength::TwoBytes => (0x8000 | (self.0 as u16)).write(writer),
+            PartialPacketNumberLength::FourBytes => (0xC0000000 | self.0).write(writer),
         }.chain_err(|| ErrorKind::FailedToWritePartialPacketNumber)?;
 
         debug!("written partial packet number {:?}", self);
@@ -307,11 +346,7 @@ impl Writable for PartialPacketNumber {
 
 impl From<PartialPacketNumber> for u32 {
     fn from(value: PartialPacketNumber) -> u32 {
-        match value {
-            PartialPacketNumber::OneByte(value) => value as u32,
-            PartialPacketNumber::TwoBytes(value) => value as u32,
-            PartialPacketNumber::FourBytes(value) => value as u32,
-        }
+        value.0
     }
 }
 
@@ -319,6 +354,21 @@ impl From<PartialPacketNumber> for u32 {
 mod tests {
     use super::*;
     use smallvec::{Array, SmallVec};
+
+    #[test]
+    fn partial_packet_number_length_one_byte_threshold() {
+        assert_eq!(PartialPacketNumberLength::OneByte.threshold(), 0x7f);
+    }
+
+    #[test]
+    fn partial_packet_number_length_two_bytes_threshold() {
+        assert_eq!(PartialPacketNumberLength::TwoBytes.threshold(), 0x3fff);
+    }
+
+    #[test]
+    fn partial_packet_number_length_four_bytes_threshold() {
+        assert_eq!(PartialPacketNumberLength::FourBytes.threshold(), 0x3fffffff);
+    }
 
     #[test]
     fn partial_packet_number_from_small_packet_number_gets_inferred_correctly() {
@@ -363,27 +413,27 @@ mod tests {
         let partial_packet_number =
             PartialPacketNumber::from_packet_number(packet_number, lowest_unacknowledged).unwrap();
 
-        assert_matches!(partial_packet_number, PartialPacketNumber::TwoBytes(0x4264));
+        assert_eq!(
+            partial_packet_number,
+            PartialPacketNumber::try_from(0x6B4264).unwrap()
+        );
     }
 
     #[test]
     fn partial_packet_number_from_packet_number_calculates_correctly_2() {
-        let lowest_unacknowledged = PacketNumber(0x6afa2f);
+        let lowest_unacknowledged = PacketNumber(0x6BC102);
         let packet_number = PacketNumber(0x6bc107);
 
         let partial_packet_number =
             PartialPacketNumber::from_packet_number(packet_number, lowest_unacknowledged).unwrap();
 
-        assert_matches!(
-            partial_packet_number,
-            PartialPacketNumber::FourBytes(0x6bc107)
-        );
+        assert_eq!(partial_packet_number, PartialPacketNumber::from(0x7u8));
     }
 
     #[test]
     fn infer_of_first_packet_returns_correct_packet_number() {
         // Act
-        let packet_number = PartialPacketNumber::OneByte(1)
+        let packet_number = PartialPacketNumber::from(1u8)
             .infer_packet_number(None)
             .unwrap();
 
@@ -397,12 +447,12 @@ mod tests {
         let largest_acknowledged = Some(PacketNumber(5436534));
 
         // Act
-        let packet_number = PartialPacketNumber::OneByte(234)
+        let packet_number = PartialPacketNumber::from(234u8)
             .infer_packet_number(largest_acknowledged)
             .unwrap();
 
         // Assert
-        assert_eq!(packet_number, PacketNumber(5436650));
+        assert_eq!(packet_number, PacketNumber(5439722));
     }
 
     #[test]
@@ -411,7 +461,7 @@ mod tests {
         let largest_acknowledged = Some(PacketNumber(0xaa82f30e));
 
         // Act
-        let packet_number = PartialPacketNumber::TwoBytes(0x1f94)
+        let packet_number = PartialPacketNumber::from(0x1f94u16)
             .infer_packet_number(largest_acknowledged)
             .unwrap();
 

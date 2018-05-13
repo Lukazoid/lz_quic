@@ -1,4 +1,4 @@
-use super::PartialPacketNumber;
+use packets::PartialPacketNumber;
 use protocol::ConnectionId;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
