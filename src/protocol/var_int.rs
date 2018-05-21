@@ -75,7 +75,8 @@ impl<T: Copy + Into<u64>> TryFrom<T> for VarInt<T> {
 }
 
 impl<T: FromPrimitive + Unsigned> Readable for VarInt<T> {
-    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self> {
         let first_byte = reader.read_u8().chain_err(|| ErrorKind::FailedToReadBytes)?;
 
         let length_flag = first_byte & 0b11000000;

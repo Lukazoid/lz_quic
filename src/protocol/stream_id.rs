@@ -109,7 +109,8 @@ impl Writable for StreamId {
 }
 
 impl Readable for StreamId {
-    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self> {
         trace!("reading stream id");
 
         let var_int: VarInt<u64> = Readable::read(reader)?;

@@ -291,7 +291,8 @@ impl From<u8> for PartialPacketNumber {
 }
 
 impl Readable for PartialPacketNumber {
-    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self> {
         trace!("reading partial packet number");
 
         let first_byte = u8::read(reader).chain_err(|| ErrorKind::FailedToReadPartialPacketNumber)?;

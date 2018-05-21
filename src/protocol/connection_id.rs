@@ -10,7 +10,8 @@ use std::io::{Read, Write};
 pub struct ConnectionId([u8; 18]);
 
 impl Readable for ConnectionId {
-    fn read<R: Read>(reader: &mut R) -> Result<ConnectionId> {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<ConnectionId> {
         trace!("reading connection id");
 
         // read a maximum of 18 bytes

@@ -59,8 +59,14 @@ fn read_connection_id<R: Read>(reader: &mut R, length_flags: u8) -> Result<Optio
     }
 }
 
+#[derive(Debug)]
+pub struct PacketHeaderReadContext {
+    pub has_connection_id: bool,
+}
+
 impl Readable for PacketHeader {
-    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+    type Context = PacketHeaderReadContext;
+    fn read_with_context<R: Read>(reader: &mut R, context: &Self::Context) -> Result<Self> {
         trace!("reading packet header");
 
         trace!("reading packet header flags");
@@ -114,10 +120,12 @@ impl Readable for PacketHeader {
             }
         } else {
             let key_phase = flags.intersects(KEY_PHASE);
-            let packet_type_flags = PacketHeaderBitFlags::from_bits_truncate(flags.bits() & 0x1F);
 
-            // TODO LH There may not always be a connection id
-            let destination_connection_id = Some(ConnectionId::read(reader)?);
+            let destination_connection_id = if context.has_connection_id {
+                Some(ConnectionId::read(reader)?)
+            } else {
+                None
+            };
 
             let partial_packet_number = PartialPacketNumber::read(reader)?;
             PacketHeader::Short(ShortHeader {
@@ -151,7 +159,7 @@ impl Writable for PacketHeader {
                 // TODO LH compact the connection id lengths
                 let mut dcil_scil = 0u8;
                 if version_negotiation.destination_connection_id.is_some() {
-                    dcil_scil |= (0xf << 4);
+                    dcil_scil |= 0xf << 4;
                 }
                 if version_negotiation.source_connection_id.is_some() {
                     dcil_scil |= 0xf;
@@ -182,7 +190,7 @@ impl Writable for PacketHeader {
                 // TODO LH compact the connection id lengths
                 let mut dcil_scil = 0u8;
                 if long_header.destination_connection_id.is_some() {
-                    dcil_scil |= (0xf << 4);
+                    dcil_scil |= 0xf << 4;
                 }
                 if long_header.source_connection_id.is_some() {
                     dcil_scil |= 0xf;
@@ -203,8 +211,7 @@ impl Writable for PacketHeader {
                     flags |= KEY_PHASE;
                 }
 
-                flags
-                    .bits()
+                (flags.bits() | 0x30)
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePacketHeaderFlags)?;
 
@@ -224,10 +231,11 @@ impl Writable for PacketHeader {
 mod tests {
     use super::PacketHeader;
     use conv::TryFrom;
-    use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber,
-                  ShortHeader, VersionNegotiationPacket};
+    use packets::{LongHeader, LongHeaderPacketType, PacketHeaderReadContext, ShortHeader,
+                  VersionNegotiationPacket};
     use protocol::{ConnectionId, Readable, Version, Writable};
     use rand;
+    use std::io::Cursor;
 
     #[test]
     pub fn read_write_version_negotiation_packet_header() {
@@ -242,7 +250,12 @@ mod tests {
 
         packet_header.write_to_vec(&mut bytes);
 
-        let read_packet_header = PacketHeader::from_bytes(&bytes[..]).unwrap();
+        let read_packet_header = PacketHeader::from_bytes_with_context(
+            &bytes[..],
+            &PacketHeaderReadContext {
+                has_connection_id: true,
+            },
+        ).unwrap();
 
         assert_eq!(packet_header, read_packet_header);
     }
@@ -263,7 +276,12 @@ mod tests {
 
         packet_header.write_to_vec(&mut bytes);
 
-        let read_packet_header = PacketHeader::from_bytes(&bytes[..]).unwrap();
+        let read_packet_header = PacketHeader::from_bytes_with_context(
+            &bytes[..],
+            &PacketHeaderReadContext {
+                has_connection_id: true,
+            },
+        ).unwrap();
 
         assert_eq!(packet_header, read_packet_header);
     }
@@ -281,7 +299,12 @@ mod tests {
 
         packet_header.write_to_vec(&mut bytes);
 
-        let read_packet_header = PacketHeader::from_bytes(&bytes[..]).unwrap();
+        let read_packet_header = PacketHeader::from_bytes_with_context(
+            &bytes[..],
+            &PacketHeaderReadContext {
+                has_connection_id: true,
+            },
+        ).unwrap();
 
         assert_eq!(packet_header, read_packet_header);
     }

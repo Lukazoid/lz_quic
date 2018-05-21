@@ -14,7 +14,7 @@ mod version_negotiation_packet;
 pub use self::version_negotiation_packet::VersionNegotiationPacket;
 
 mod packet_header;
-pub use self::packet_header::PacketHeader;
+pub use self::packet_header::{PacketHeader, PacketHeaderReadContext};
 
 mod incoming_packet;
 pub use self::incoming_packet::IncomingPacket;

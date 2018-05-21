@@ -28,7 +28,8 @@ impl Writable for StreamOffset {
 }
 
 impl Readable for StreamOffset {
-    fn read<R: Read>(reader: &mut R) -> Result<Self> {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self> {
         trace!("reading stream offset");
 
         let var_int: VarInt<u64> = Readable::read(reader)?;

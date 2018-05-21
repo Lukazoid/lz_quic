@@ -78,7 +78,8 @@ impl Writable for Version {
 }
 
 impl Readable for Version {
-    fn read<R: Read>(reader: &mut R) -> Result<Version> {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Version> {
         trace!("reading version");
         let version = u32::read(reader).map(Version)?;
         debug!("read version {:?}", version);

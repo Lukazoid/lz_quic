@@ -204,6 +204,10 @@ error_chain! {
             description("failed to read stream data")
             display("failed to read stream data for stream '{}'", stream_id)
         }
+        FailedToReadIncomingPacket(connection_id: ConnectionId) {
+            description("failed to read incoming packet")
+            display("failed to read incoming packet for connection '{:?}'", connection_id)
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 use bytes::Bytes;
 use chrono::UTC;
-use packets::{IncomingPacket, OutgoingPacket, PacketHeader};
+use packets::{IncomingPacket, OutgoingPacket, PacketHeader, PacketHeaderReadContext};
 use protocol::{Readable, Writable};
 use std::io::{Cursor, Result as IoResult};
 use std::net::SocketAddr;
@@ -17,7 +17,14 @@ impl UdpCodec for PacketCodec {
         trace!("decoding incoming packet");
 
         let mut buf_cursor = Cursor::new(buf);
-        let packet_header = PacketHeader::read(&mut buf_cursor)?;
+
+        // TODO LH Actually determine if the short header should have a packet number
+        let packet_header = PacketHeader::read_with_context(
+            &mut buf_cursor,
+            &PacketHeaderReadContext {
+                has_connection_id: true,
+            },
+        )?;
 
         // The data is everything after the header in the datagram
         let data = Bytes::from(&buf[buf_cursor.position() as usize..]);

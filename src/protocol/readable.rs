@@ -13,7 +13,10 @@ pub struct ReadableIterator<'a, R> {
     _phantom: PhantomData<R>,
 }
 
-impl<'a, R: Readable> Iterator for ReadableIterator<'a, R> {
+impl<'a, R: Readable> Iterator for ReadableIterator<'a, R>
+where
+    R::Context: Default,
+{
     type Item = Result<R>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -25,12 +28,53 @@ impl<'a, R: Readable> Iterator for ReadableIterator<'a, R> {
     }
 }
 
+#[derive(Debug)]
+pub struct ReadableWithContextIterator<'a, R: Readable>
+where
+    R::Context: 'a,
+{
+    length: u64,
+    cursor: Cursor<&'a [u8]>,
+    context: &'a R::Context,
+    _phantom: PhantomData<R>,
+}
+
+impl<'a, R: Readable> Iterator for ReadableWithContextIterator<'a, R> {
+    type Item = Result<R>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cursor.position() < self.length {
+            Some(R::read_with_context(&mut self.cursor, self.context))
+        } else {
+            None
+        }
+    }
+}
+
 pub trait Readable {
+    type Context;
+
     fn read<R: Read>(reader: &mut R) -> Result<Self>
+    where
+        Self: Sized,
+        Self::Context: Default,
+    {
+        Self::read_with_context(reader, &Default::default())
+    }
+
+    fn read_with_context<R: Read>(reader: &mut R, context: &Self::Context) -> Result<Self>
     where
         Self: Sized;
 
-    fn from_bytes(bytes: &[u8]) -> Result<Self>
+    fn from_bytes(bytes: &[u8], context: &Self::Context) -> Result<Self>
+    where
+        Self: Sized,
+        Self::Context: Default,
+    {
+        Self::from_bytes_with_context(bytes, &Default::default())
+    }
+
+    fn from_bytes_with_context(bytes: &[u8], context: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -38,14 +82,24 @@ pub trait Readable {
 
         let mut cursor = Cursor::new(bytes);
 
-        let read_value = Readable::read(&mut cursor)?;
+        let read_value = Readable::read_with_context(&mut cursor, context)?;
 
         debug!("read {:?} from bytes {:?}", DebugIt(&read_value), bytes);
 
         Ok(read_value)
     }
-
     fn collect<C: FromIterator<Self>, R: Read>(reader: &mut R) -> Result<C>
+    where
+        Self: Sized,
+        Self::Context: Default,
+    {
+        Self::collect_with_context(reader, &Default::default())
+    }
+
+    fn collect_with_context<C: FromIterator<Self>, R: Read>(
+        reader: &mut R,
+        context: &Self::Context,
+    ) -> Result<C>
     where
         Self: Sized,
     {
@@ -53,16 +107,16 @@ pub trait Readable {
 
         let bytes: Vec<u8> = Readable::read(reader)?;
 
-        let collection = Readable::collect_from_bytes(&bytes[..])?;
+        let collection = Readable::collect_from_bytes_with_context(&bytes[..], context)?;
 
         debug!("collected {:?} from reader", DebugIt(&collection));
 
         Ok(collection)
     }
-
     fn iterator_from_bytes<'a>(bytes: &'a [u8]) -> ReadableIterator<'a, Self>
     where
         Self: Sized,
+        Self::Context: 'a,
     {
         trace!("reading from bytes {:?}", bytes);
 
@@ -73,13 +127,43 @@ pub trait Readable {
         }
     }
 
-    fn collect_from_bytes<C: FromIterator<Self>>(bytes: &[u8]) -> Result<C>
+    fn iterator_from_bytes_with_context<'a>(
+        bytes: &'a [u8],
+        context: &'a Self::Context,
+    ) -> ReadableWithContextIterator<'a, Self>
+    where
+        Self: Sized,
+        Self::Context: 'a,
+    {
+        trace!("reading from bytes {:?}", bytes);
+
+        ReadableWithContextIterator {
+            length: bytes.len() as u64,
+            cursor: Cursor::new(bytes),
+            context: context,
+            _phantom: PhantomData::default(),
+        }
+    }
+
+    fn collect_from_bytes<C: FromIterator<Self>>(bytes: &[u8], context: &Self::Context) -> Result<C>
+    where
+        Self: Sized,
+        Self::Context: Default,
+    {
+        Self::collect_from_bytes_with_context(bytes, &Default::default())
+    }
+
+    fn collect_from_bytes_with_context<C: FromIterator<Self>>(
+        bytes: &[u8],
+        context: &Self::Context,
+    ) -> Result<C>
     where
         Self: Sized,
     {
         trace!("collecting from bytes {:?}", bytes);
 
-        let collection = Self::iterator_from_bytes(bytes).collect::<Result<C>>()?;
+        let collection =
+            Self::iterator_from_bytes_with_context(bytes, context).collect::<Result<C>>()?;
 
         debug!(
             "collected {:?} from bytes {:?}",
@@ -92,7 +176,9 @@ pub trait Readable {
 }
 
 impl Readable for Vec<u8> {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -111,7 +197,8 @@ impl Readable for Vec<u8> {
 }
 
 impl<A: Array<Item = u8>> Readable for SmallVec<A> {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -127,7 +214,8 @@ impl<A: Array<Item = u8>> Readable for SmallVec<A> {
 }
 
 impl Readable for u8 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -141,7 +229,8 @@ impl Readable for u8 {
 }
 
 impl Readable for u16 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -158,7 +247,8 @@ impl Readable for u16 {
 }
 
 impl Readable for u32 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -175,7 +265,8 @@ impl Readable for u32 {
 }
 
 impl Readable for u64 {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
@@ -192,7 +283,8 @@ impl Readable for u64 {
 }
 
 impl Readable for String {
-    fn read<R: Read>(reader: &mut R) -> Result<Self>
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
     where
         Self: Sized,
     {
