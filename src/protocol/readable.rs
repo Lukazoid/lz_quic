@@ -66,7 +66,7 @@ pub trait Readable {
     where
         Self: Sized;
 
-    fn from_bytes(bytes: &[u8], context: &Self::Context) -> Result<Self>
+    fn from_bytes(bytes: &[u8]) -> Result<Self>
     where
         Self: Sized,
         Self::Context: Default,
