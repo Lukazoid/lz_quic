@@ -46,7 +46,8 @@ impl<P: Perspective + 'static> Connection<P> {
                 let (_, session) = tls_stream.get_ref();
                 let cipher_suite = session
                     .get_negotiated_ciphersuite()
-                    .expect("the ciphersuite should have been agreed");
+                    .ok_or_else(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
+
                 let hash_len = cipher_suite.get_hash().output_len;
 
                 let mut send_secret: SmallVec<[u8; 64]> = smallvec![0; hash_len];
