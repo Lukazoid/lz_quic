@@ -34,6 +34,7 @@ extern crate num;
 extern crate rand;
 extern crate ring;
 extern crate rustls;
+#[macro_use]
 extern crate smallvec;
 extern crate time;
 extern crate tokio_core;

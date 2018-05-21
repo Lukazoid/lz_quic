@@ -56,6 +56,14 @@ impl Perspective for ServerPerspective {
         Box::new(when_connected)
     }
 
+    fn tls_exporter_send_label() -> &'static str {
+        "EXPORTER-QUIC server 1rtt"
+    }
+
+    fn tls_exporter_receive_label() -> &'static str {
+        "EXPORTER-QUIC client 1rtt"
+    }
+
     fn create_stream_map() -> StreamMap {
         StreamMap::new_server_stream_map()
     }

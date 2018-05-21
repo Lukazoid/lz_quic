@@ -3,6 +3,8 @@ use errors::*;
 use futures::{Future, Poll, Stream};
 use packets::{PacketCodec, PacketDispatcher};
 use protocol::{ConnectionId, StreamId};
+use rustls::Session;
+use smallvec::SmallVec;
 use std::sync::{Arc, Mutex};
 use tokio_core::net::UdpFramed;
 use tokio_io::codec::Framed;
@@ -38,7 +40,34 @@ impl<P: Perspective + 'static> Connection<P> {
     where
         P::TlsSession: 'static,
     {
-        self.perspective.handshake(crypto_stream).map(|_| ())
+        self.perspective
+            .handshake(crypto_stream)
+            .and_then(|tls_stream| {
+                let (_, session) = tls_stream.get_ref();
+                let cipher_suite = session
+                    .get_negotiated_ciphersuite()
+                    .expect("the ciphersuite should have been agreed");
+                let hash_len = cipher_suite.get_hash().output_len;
+
+                let mut send_secret: SmallVec<[u8; 64]> = smallvec![0; hash_len];
+                session
+                    .export_keying_material(
+                        &mut send_secret,
+                        P::tls_exporter_send_label().as_bytes(),
+                        None,
+                    )
+                    .chain_err(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
+
+                let mut receive_secret: SmallVec<[u8; 64]> = smallvec![0; hash_len];
+                session
+                    .export_keying_material(
+                        &mut receive_secret,
+                        P::tls_exporter_receive_label().as_bytes(),
+                        None,
+                    )
+                    .chain_err(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
+                Ok(())
+            })
     }
 }
 

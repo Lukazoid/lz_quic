@@ -208,6 +208,9 @@ error_chain! {
             description("failed to read incoming packet")
             display("failed to read incoming packet for connection '{:?}'", connection_id)
         }
+        FailedToExportTlsKeyingMaterial {
+            description("failed to export TLS keying material")
+        }
     }
 }
 
