@@ -49,3 +49,35 @@ impl ConnectionId {
         connection_id
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::ConnectionId;
+    use protocol::{Readable, Writable};
+    use rand;
+
+    #[test]
+    fn read_write_connection_id() {
+        let connection_id = ConnectionId::generate(&mut rand::thread_rng());
+
+        let mut bytes = vec![];
+
+        connection_id.write_to_vec(&mut bytes);
+
+        let read_connection_id = ConnectionId::from_bytes(&bytes).unwrap();
+
+        assert_eq!(read_connection_id, connection_id);
+    }
+
+    #[test]
+    fn read_of_short_connection_id() {
+        let bytes = [21, 54, 213, 17];
+
+        let connection_id = ConnectionId::from_bytes(&bytes).unwrap();
+
+        assert_eq!(
+            connection_id,
+            ConnectionId([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 54, 213, 17])
+        );
+    }
+}
