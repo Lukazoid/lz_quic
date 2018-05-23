@@ -127,7 +127,7 @@ impl Perspective for ClientPerspective {
 
     fn client_connection_id(
         local_connection_id: ConnectionId,
-        remote_connection_id: ConnectionId,
+        _remote_connection_id: ConnectionId,
     ) -> ConnectionId {
         local_connection_id
     }
