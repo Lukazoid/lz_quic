@@ -227,7 +227,6 @@ fn qhkdf_expand(
 mod tests {
     use super::*;
     use frames::Frame;
-    use packets::PacketNumber;
     use protocol::ConnectionId;
     use rand;
     use ring::digest;
@@ -253,7 +252,7 @@ mod tests {
             &SigningKey::new(algorithm, b"some secret"),
             "key",
             algorithm.output_len,
-        );
+        ).unwrap();
     }
 
     #[test]
