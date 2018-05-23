@@ -30,6 +30,10 @@ error_chain! {
             description("failed to write 64-bit unsigned integer")
             display("failed to write 64-bit unsigned integer '{}'", value)
         }
+        FailedToWriteU128(value: u128) {
+            description("failed to write 128-bit unsigned integer")
+            display("failed to write 128-bit unsigned integer '{}'", value)
+        }
         FailedToReadU8 {
             description("failed to read 8-bit unsigned integer")
         }
@@ -41,6 +45,9 @@ error_chain! {
         }
         FailedToReadU64 {
             description("failed to read 64-bit unsigned integer")
+        }
+        FailedToReadU128 {
+            description("failed to read 128-bit unsigned integer")
         }
         FailedToWriteString(value: String) {
             description("failed to write string")
@@ -72,13 +79,12 @@ error_chain! {
             description("failed to read padding")
             display("failed to read '{}' padding bytes", num_bytes)
         }
-        VarIntValueIsTooLargeToFitInIntegerOfSize(bytes: u64, integer_size: usize) {
-            description("variable width integer value is too large to fit in integer")
-            display("variable width integer value '{}' is too large to fit in integer of size '{}'", bytes, integer_size)
-        }
         IntegerValueIsTooLargeToBeStoredAsAVarInt(value: u64) {
             description("integer value is too large to be stored as a variable width integer")
             display("integer value '{}' is too large to be stored as a variable width integer", value)
+        }
+        ValueIsTooLargeToBeStoredAsAVarInt {
+            description("value is too large to be stored as a variable width integer")
         }
         UnknownStreamId(stream_id: StreamId) {
             description("unknown stream id")
@@ -98,29 +104,101 @@ error_chain! {
             description("failed to write stream offset")
             display("failed to write stream offset '{}'", stream_offset)
         }
+        FailedToReadStreamFrame {
+            description("failed to read stream frame")
+        }
         FailedToWriteStreamFrame {
             description("failed to write stream frame")
+        }
+        FailedToReadAckFrame {
+            description("failed to read ACK frame")
         }
         FailedToWriteAckFrame {
             description("failed to write ACK frame")
         }
-        FailedToWritePaddingFrame {
-            description("failed to write padding frame")
+        FailedToReadResetStreamFrame {
+            description("failed to read reset stream frame")
         }
         FailedToWriteResetStreamFrame {
             description("failed to write reset stream frame")
         }
+        FailedToReadPathChallengeFrame {
+            description("failed to read path challenge frame")
+        }
+        FailedToWritePathChallengeFrame {
+            description("failed to write path challenge frame")
+        }
+        FailedToReadPathResponseFrame {
+            description("failed to read path response frame")
+        }
+        FailedToWritePathResponseFrame {
+            description("failed to write path response frame")
+        }
+        FailedToWritePaddingFrame {
+            description("failed to write padding frame")
+        }
+        FailedToReadConnectionCloseFrame {
+            description("failed to read connection close frame")
+        }
         FailedToWriteConnectionCloseFrame {
             description("failed to write connection close frame")
         }
-        FailedToWriteGoAwayFrame {
-            description("failed to write go away frame")
+        FailedToReadApplicationCloseFrame {
+            description("failed to read application close frame")
+        }
+        FailedToWriteApplicationCloseFrame {
+            description("failed to write application close frame")
+        }
+        FailedToReadMaxDataFrame {
+            description("failed to read max data frame")
+        }
+        FailedToWriteMaxDataFrame {
+            description("failed to write max data frame")
+        }
+        FailedToReadMaxStreamDataFrame {
+            description("failed to read max stream data frame")
+        }
+        FailedToWriteMaxStreamDataFrame {
+            description("failed to write max stream data frame")
+        }
+        FailedToWriteMaxStreamIdFrame {
+            description("failed to write max stream id frame")
+        }
+        FailedToReadMaxStreamIdFrame {
+            description("failed to read max stream id frame")
         }
         FailedToWriteWindowUpdateFrame {
             description("failed to write window update frame")
         }
+        FailedToReadBlockedFrame {
+            description("failed to read blocked frame")
+        }
         FailedToWriteBlockedFrame {
             description("failed to write blocked frame")
+        }
+        FailedToReadStreamBlockedFrame {
+            description("failed to read stream blocked frame")
+        }
+        FailedToWriteStreamBlockedFrame {
+            description("failed to write stream blocked frame")
+        }
+        FailedToReadStreamIdBlockedFrame {
+            description("failed to read stream id blocked frame")
+        }
+        FailedToWriteStreamIdBlockedFrame {
+            description("failed to write stream id blocked frame")
+        }
+        FailedToReadNewConnectionIdFrame {
+            description("failed to read new connection id frame")
+        }
+        FailedToWriteNewConnectionIdFrame {
+            description("failed to write new connection id frame")
+        }
+        FailedToReadStopSendingFrame {
+            description("failed to read stop sending frame")
+        }
+        FailedToWriteStopSendingFrame {
+            description("failed to write stop sending frame")
         }
         FailedToWriteStopWaitingFrame {
             description("failed to write stop waiting frame")
@@ -210,6 +288,25 @@ error_chain! {
         }
         FailedToExportTlsKeyingMaterial {
             description("failed to export TLS keying material")
+        }
+        FailedToBuildCryptoState {
+            description("failed to build crypto state")
+        }
+        FailedToSealData {
+            description("failed to seal data")
+        }
+        FailedToOpenSealedData {
+            description("failed to open sealed data")
+        }
+        FailedToReadFrame {
+            description("failed to read frame")
+        }
+        FailedToReadErrorCode {
+            description("failed to read error code")
+        }
+        FailedToWriteErrorCode (error_code: u16){
+            description("failed to write error code")
+            display("failed to write error code {}", error_code)
         }
     }
 }

@@ -1,6 +1,8 @@
 use bytes::Bytes;
+use crypto;
+use crypto::CryptoState;
 use errors::*;
-use futures::{Future, Poll, Stream};
+use futures::{Async, Future, Poll, Stream};
 use packets::{PacketCodec, PacketDispatcher};
 use protocol::{ConnectionId, StreamId};
 use rustls::Session;
@@ -11,26 +13,70 @@ use tokio_io::codec::Framed;
 use tokio_rustls::TlsStream;
 use {DataStream, NewDataStreams, Perspective, StreamMap, StreamMapEntry, StreamState};
 
+#[derive(Debug)]
+struct AeadPair {
+    write: CryptoState,
+    read: CryptoState,
+}
+
+#[derive(Debug)]
+enum State {
+    Initializing,
+    Established { aead_protected: AeadPair },
+}
+
 /// The connection exists so a single client-server connection may span multiple physical connections.
 #[derive(Debug)]
 pub struct Connection<P: Perspective> {
-    connection_id: ConnectionId,
+    local_connection_id: ConnectionId,
+    remote_connection_id: ConnectionId,
     perspective: P,
     stream_map: Mutex<StreamMap>,
+    aead_clear: AeadPair,
+    state: Arc<Mutex<State>>,
 }
 
 impl<P: Perspective + 'static> Connection<P> {
-    pub fn new(connection_id: ConnectionId, perspective: P) -> Self {
-        debug!(
-            "created new connection with connection id {:?}",
-            connection_id
-        );
+    pub fn new(
+        local_connection_id: ConnectionId,
+        remote_connection_id: ConnectionId,
+        perspective: P,
+    ) -> Result<Self> {
+        let client_connection_id =
+            P::client_connection_id(local_connection_id, remote_connection_id);
 
-        Self {
-            connection_id: connection_id,
-            perspective: perspective,
+        let write_clear =
+            CryptoState::for_handshake(client_connection_id, P::handshake_send_label())?;
+
+        let read_clear =
+            CryptoState::for_handshake(client_connection_id, P::handshake_receive_label())?;
+
+        let aead_clear = AeadPair {
+            write: write_clear,
+            read: read_clear,
+        };
+
+        let connection = Self {
+            local_connection_id,
+            remote_connection_id,
+            perspective,
             stream_map: Mutex::new(P::create_stream_map()),
-        }
+            aead_clear,
+            state: Arc::new(Mutex::new(State::Initializing)),
+        };
+
+        debug!("created new connection {}", connection.description());
+
+        Ok(connection)
+    }
+
+    pub fn description(&self) -> String {
+        format!(
+            "[{:?}] connection {:?}->{:?}",
+            P::role(),
+            self.local_connection_id,
+            self.remote_connection_id
+        )
     }
 
     pub fn handshake(
@@ -40,33 +86,25 @@ impl<P: Perspective + 'static> Connection<P> {
     where
         P::TlsSession: 'static,
     {
+        let state = self.state.clone();
+
         self.perspective
             .handshake(crypto_stream)
-            .and_then(|tls_stream| {
+            .and_then(move |tls_stream| {
                 let (_, session) = tls_stream.get_ref();
-                let cipher_suite = session
-                    .get_negotiated_ciphersuite()
-                    .ok_or_else(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
 
-                let hash_len = cipher_suite.get_hash().output_len;
+                let crypto_write = CryptoState::from_tls(session, P::tls_exporter_send_label())?;
+                let crypto_read = CryptoState::from_tls(session, P::tls_exporter_receive_label())?;
 
-                let mut send_secret: SmallVec<[u8; 64]> = smallvec![0; hash_len];
-                session
-                    .export_keying_material(
-                        &mut send_secret,
-                        P::tls_exporter_send_label().as_bytes(),
-                        None,
-                    )
-                    .chain_err(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
+                let mut state = state.lock().expect("failed to lock state");
 
-                let mut receive_secret: SmallVec<[u8; 64]> = smallvec![0; hash_len];
-                session
-                    .export_keying_material(
-                        &mut receive_secret,
-                        P::tls_exporter_receive_label().as_bytes(),
-                        None,
-                    )
-                    .chain_err(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
+                *state = State::Established {
+                    aead_protected: AeadPair {
+                        write: crypto_write,
+                        read: crypto_read,
+                    },
+                };
+
                 Ok(())
             })
     }
@@ -89,12 +127,24 @@ impl<P: Perspective> Connection<P> {
         stream_map.next_outgoing_stream()
     }
 
-    pub fn connection_id(&self) -> ConnectionId {
-        self.connection_id
+    pub fn local_connection_id(&self) -> ConnectionId {
+        self.local_connection_id
     }
 
-    pub fn process_incoming_packets(&self) -> Result<()> {
-        unimplemented!();
+    pub fn remote_connection_id(&self) -> ConnectionId {
+        self.remote_connection_id
+    }
+
+    pub fn process_incoming_packets(&self) -> Poll<(), Error> {
+        // TODO LH Eventually handle remote connection termination
+
+        while let Async::Ready(incoming_packet) = self.perspective
+            .poll_incoming_packet(self.local_connection_id())?
+        {
+            unimplemented!()
+        }
+
+        Ok(Async::NotReady)
     }
 
     /// This also guarantees that the remote end acknowledged all of the stream
@@ -118,12 +168,15 @@ impl<P: Perspective> Connection<P> {
             }
         }
 
+        // TODO LH Wait for acknowledgement
+
         Ok(().into())
     }
 
     fn queue_pending_writes(&self, stream_state: &mut StreamState) {
         while let Some(pending_write) = stream_state.pop_pending_write() {
-            // TODO LH actually push the bytes somewhere and send the frames
+            // self.perspective
+            //     .queue_write(stream_state.stream_id(), pending_write);
         }
     }
 

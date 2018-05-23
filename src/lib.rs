@@ -12,7 +12,6 @@ extern crate conv;
 extern crate debugit;
 #[macro_use]
 extern crate error_chain;
-extern crate extprim;
 extern crate flate2;
 #[macro_use]
 extern crate futures;
@@ -68,6 +67,7 @@ pub use self::errors::{Error, ErrorKind, Result};
 mod protocol;
 pub use self::protocol::ServerId;
 
+mod crypto;
 mod frames;
 mod packets;
 mod primitives;

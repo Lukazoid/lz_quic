@@ -1,8 +1,8 @@
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
-use conv::TryFrom;
+use conv::ValueFrom;
 use errors::*;
 use num::Integer;
-use protocol::{Perspective, Readable, StreamType, VarInt, Writable};
+use protocol::{Readable, Role, StreamType, VarInt, Writable};
 use rand::Rng;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::io::{Read, Write};
@@ -18,15 +18,11 @@ bitflags!(
 );
 
 impl StreamId {
-    pub fn generate<R: Rng>(
-        rng: &mut R,
-        perspective: Perspective,
-        stream_type: StreamType,
-    ) -> StreamId {
+    pub fn generate<R: Rng>(rng: &mut R, role: Role, stream_type: StreamType) -> StreamId {
         trace!("generating new stream id");
 
         let mut flags = StreamIdFlags::empty();
-        if matches!(perspective, Perspective::Client) {
+        if matches!(role, Role::Client) {
             flags.insert(CLIENT);
         }
 
@@ -57,20 +53,20 @@ impl StreamId {
         self.0 == 0
     }
 
-    pub fn initiator(self) -> Perspective {
+    pub fn initiator(self) -> Role {
         if self.0.is_even() {
-            Perspective::Client
+            Role::Client
         } else {
-            Perspective::Server
+            Role::Server
         }
     }
 
     pub fn is_server_initiated(self) -> bool {
-        matches!(self.initiator(), Perspective::Server)
+        matches!(self.initiator(), Role::Server)
     }
 
     pub fn is_client_initiated(self) -> bool {
-        matches!(self.initiator(), Perspective::Client)
+        matches!(self.initiator(), Role::Client)
     }
 
     pub fn stream_type(self) -> StreamType {
@@ -98,7 +94,7 @@ impl Writable for StreamId {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         trace!("writing stream id {:?}", self);
 
-        let var_int = VarInt::<u64>::try_from(self.0)?;
+        let var_int = VarInt::value_from(self.0)?;
 
         var_int.write(writer)?;
 
@@ -113,7 +109,7 @@ impl Readable for StreamId {
     fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self> {
         trace!("reading stream id");
 
-        let var_int: VarInt<u64> = Readable::read(reader)?;
+        let var_int = VarInt::read(reader)?;
 
         let stream_id = StreamId(var_int.into_inner());
 

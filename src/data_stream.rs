@@ -45,7 +45,7 @@ impl<P: Perspective> DataStream<P> {
 
 impl<P: Perspective> Read for DataStream<P> {
     fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
-        self.connection.process_incoming_packets()?;
+        async_io!(self.connection.process_incoming_packets()?);
 
         let mut stream_state = self.stream_state
             .lock()

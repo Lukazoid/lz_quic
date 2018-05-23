@@ -1,4 +1,4 @@
-use conv::TryFrom;
+use conv::ValueFrom;
 use errors::*;
 use packets::{LongHeader, LongHeaderPacketType, PacketNumber, PartialPacketNumber, ShortHeader,
               VersionNegotiationPacket};
@@ -105,7 +105,7 @@ impl Readable for PacketHeader {
                         packet_type_flags.bits()
                     )),
                 };
-                let payload_length: VarInt<u64> = VarInt::read(reader)?;
+                let payload_length = VarInt::read(reader)?;
 
                 let partial_packet_number = PartialPacketNumber::read(reader)?;
 
@@ -200,7 +200,7 @@ impl Writable for PacketHeader {
                 long_header.destination_connection_id.write(writer)?;
                 long_header.source_connection_id.write(writer)?;
 
-                let payload_length = VarInt::try_from(long_header.payload_length)?;
+                let payload_length = VarInt::value_from(long_header.payload_length)?;
                 payload_length.write(writer)?;
 
                 long_header.partial_packet_number.write(writer)?;

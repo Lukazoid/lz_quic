@@ -48,6 +48,10 @@ impl ConnectionId {
 
         connection_id
     }
+
+    pub fn bytes(&self) -> &[u8] {
+        &self.0
+    }
 }
 
 #[cfg(test)]

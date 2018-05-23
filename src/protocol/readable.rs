@@ -113,6 +113,7 @@ pub trait Readable {
 
         Ok(collection)
     }
+
     fn iterator_from_bytes<'a>(bytes: &'a [u8]) -> ReadableIterator<'a, Self>
     where
         Self: Sized,
@@ -145,7 +146,7 @@ pub trait Readable {
         }
     }
 
-    fn collect_from_bytes<C: FromIterator<Self>>(bytes: &[u8], context: &Self::Context) -> Result<C>
+    fn collect_from_bytes<C: FromIterator<Self>>(bytes: &[u8]) -> Result<C>
     where
         Self: Sized,
         Self::Context: Default,
@@ -277,6 +278,24 @@ impl Readable for u64 {
             .chain_err(|| ErrorKind::FailedToReadU64)?;
 
         debug!("read unsigned 64-bit integer {}", value);
+
+        Ok(value)
+    }
+}
+
+impl Readable for u128 {
+    type Context = ();
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        trace!("reading unsigned 128-bit integer");
+
+        let value = reader
+            .read_u128::<NetworkEndian>()
+            .chain_err(|| ErrorKind::FailedToReadU128)?;
+
+        debug!("read unsigned 128-bit integer {}", value);
 
         Ok(value)
     }

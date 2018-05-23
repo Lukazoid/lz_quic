@@ -1,17 +1,23 @@
+use debugit::DebugIt;
 use errors::*;
-use futures::{Future, IntoFuture};
-use protocol::ServerId;
+use futures::{Async, Future, IntoFuture, Poll, Stream};
+use lz_shared_udp::{SharedUdpFramed, SharedUdpSocket};
+use packets::{IncomingPacket, PacketCodec};
+use protocol::{ConnectionId, Role, ServerId};
 use rustls::ClientSession;
-use std::sync::Arc;
+use std::net::SocketAddr;
+use std::sync::{Arc, RwLock};
 use tokio_core::net::UdpSocket;
 use tokio_rustls::{ClientConfigExt, TlsStream};
 use webpki::DNSNameRef;
-use {ClientConfiguration, DataStream, Perspective, StreamMap};
+use {AddressConnectionIds, ClientConfiguration, ConnectionMap, DataStream, Perspective, StreamMap};
 
 #[derive(Debug)]
 pub struct ClientPerspective {
+    packets: DebugIt<SharedUdpFramed<Arc<UdpSocket>, PacketCodec>>,
     server_id: Arc<ServerId>,
     client_configuration: Arc<ClientConfiguration>,
+    connection_map: RwLock<ConnectionMap>,
 }
 
 impl ClientPerspective {
@@ -20,10 +26,59 @@ impl ClientPerspective {
         client_configuration: ClientConfiguration,
         server_id: ServerId,
     ) -> Self {
-        // TODO LH Do something with the UdpSocket
         Self {
+            packets: DebugIt(Arc::new(udp_socket).framed(PacketCodec::default())),
             server_id: Arc::new(server_id),
             client_configuration: Arc::new(client_configuration),
+            connection_map: RwLock::new(ConnectionMap::with_capacity(1)),
+        }
+    }
+
+    fn local_address(&self) -> SocketAddr {
+        // TODO LH Add methods to SharedUdpFramed to get the Arc<UdpSocket>
+        unimplemented!()
+    }
+
+    fn get_connection_id_for_incoming_packet(
+        &self,
+        incoming_packet: &IncomingPacket,
+    ) -> Option<AddressConnectionIds> {
+        if let Some(packet_connection_id) =
+            incoming_packet.packet_header.destination_connection_id()
+        {
+            Some(AddressConnectionIds::Single(packet_connection_id))
+        } else {
+            let connection_map = self.connection_map
+                .read()
+                .expect("failed to lock connection_map");
+
+            let local_address = self.local_address();
+
+            connection_map.get_connection_id(local_address, incoming_packet.source_address)
+        }
+    }
+
+    fn should_accept_incoming_packet(
+        &self,
+        connection_id: ConnectionId,
+        incoming_packet: &IncomingPacket,
+    ) -> bool {
+        match self.get_connection_id_for_incoming_packet(incoming_packet) {
+            Some(AddressConnectionIds::Single(matched_connection_id)) => {
+                if matched_connection_id == connection_id {
+                    true
+                } else {
+                    false
+                }
+            }
+            Some(AddressConnectionIds::Multiple(matched_connection_ids)) => {
+                if matched_connection_ids.contains(&connection_id) {
+                    true
+                } else {
+                    false
+                }
+            }
+            None => false,
         }
     }
 }
@@ -34,10 +89,10 @@ impl Perspective for ClientPerspective {
         Box<Future<Item = TlsStream<DataStream<Self>, Self::TlsSession>, Error = Error> + Send>;
 
     fn handshake(&self, crypto_stream: DataStream<Self>) -> Self::HandshakeFuture {
-        let connection_id = crypto_stream.connection().connection_id();
+        let connection_description = crypto_stream.connection().description();
         trace!(
-            "connection {:?}: performing TLS handshake from client to server {:?}",
-            connection_id,
+            "connection {}: performing TLS handshake from client to server {:?}",
+            connection_description,
             self.server_id
         );
 
@@ -58,8 +113,8 @@ impl Perspective for ClientPerspective {
                     })
                     .map(move |x| {
                         info!(
-                            "connection {:?}: performed TLS handshake from client to server {:?}",
-                            connection_id, server_id_for_success
+                            "connection {}: performed TLS handshake from client to server {:?}",
+                            connection_description, server_id_for_success
                         );
                         x
                     })
@@ -68,6 +123,29 @@ impl Perspective for ClientPerspective {
             .flatten();
 
         Box::new(when_connected)
+    }
+
+    fn client_connection_id(
+        local_connection_id: ConnectionId,
+        remote_connection_id: ConnectionId,
+    ) -> ConnectionId {
+        local_connection_id
+    }
+
+    fn handshake_send_label() -> &'static str {
+        "client hs"
+    }
+
+    fn handshake_receive_label() -> &'static str {
+        "server hs"
+    }
+
+    fn update_secret_send_label() -> &'static str {
+        "client 1rtt"
+    }
+
+    fn update_secret_receive_label() -> &'static str {
+        "server 1rtt"
     }
 
     fn tls_exporter_send_label() -> &'static str {
@@ -80,5 +158,30 @@ impl Perspective for ClientPerspective {
 
     fn create_stream_map() -> StreamMap {
         StreamMap::new_client_stream_map()
+    }
+
+    fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error> {
+        let mut packets_stream = self.packets
+            .0
+            .clone()
+            .chain_err(move || ErrorKind::FailedToReadIncomingPacket(connection_id));
+
+        loop {
+            match packets_stream.poll()? {
+                Async::NotReady => return Ok(Async::NotReady),
+                Async::Ready(Some(incoming_packet)) => {
+                    if self.should_accept_incoming_packet(connection_id, &incoming_packet) {
+                        return Ok(Async::Ready(incoming_packet));
+                    } else {
+                        warn!("discarded packet");
+                    }
+                }
+                Async::Ready(None) => unreachable!("the packets stream should never end"),
+            }
+        }
+    }
+
+    fn role() -> Role {
+        Role::Client
     }
 }

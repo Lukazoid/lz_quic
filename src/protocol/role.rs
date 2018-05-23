@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-pub enum Perspective {
+pub enum Role {
     Client,
     Server,
 }

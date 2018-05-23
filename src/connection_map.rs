@@ -8,10 +8,10 @@ struct AddressTuple {
     pub remote_address: SocketAddr,
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum AddressConnectionIds {
     Single(ConnectionId),
-    Multiple,
+    Multiple(HashSet<ConnectionId>),
 }
 
 /// The type responsible for mapping to/from remote addresses and connection identifiers.
@@ -27,6 +27,13 @@ pub struct ConnectionMap {
 impl ConnectionMap {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn with_capacity(count: usize) -> Self {
+        Self {
+            connection_addresses: HashMap::with_capacity(count),
+            address_connections: HashMap::with_capacity(count),
+        }
     }
 
     pub fn insert(
@@ -103,7 +110,7 @@ impl ConnectionMap {
                     .iter()
                     .next()
                     .unwrap())),
-                _ => Some(AddressConnectionIds::Multiple),
+                _ => Some(AddressConnectionIds::Multiple(address_connections.clone())),
             }
         } else {
             None
@@ -183,7 +190,10 @@ mod tests {
 
         assert_eq!(
             connection_map.get_connection_id(local_address, remote_address),
-            Some(AddressConnectionIds::Multiple)
+            Some(AddressConnectionIds::Multiple(hashset![
+                first_connection_id,
+                second_connection_id
+            ]))
         );
     }
 

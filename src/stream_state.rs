@@ -47,6 +47,10 @@ impl StreamState {
         }
     }
 
+    pub fn stream_id(&self) -> StreamId {
+        self.stream_id
+    }
+
     pub fn push_pending_write<B: Into<Bytes>>(&mut self, buf: B) {
         self.pending_writes.push_back(buf.into())
     }

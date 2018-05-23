@@ -4,6 +4,9 @@ pub use self::readable::Readable;
 mod writable;
 pub use self::writable::Writable;
 
+mod error_code;
+pub use self::error_code::ErrorCode;
+
 mod var_int;
 pub use self::var_int::VarInt;
 
@@ -16,8 +19,8 @@ pub use self::connection_id::ConnectionId;
 mod server_id;
 pub use self::server_id::ServerId;
 
-mod perspective;
-pub use self::perspective::Perspective;
+mod role;
+pub use self::role::Role;
 
 mod stream_type;
 pub use self::stream_type::StreamType;

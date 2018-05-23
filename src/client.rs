@@ -38,11 +38,16 @@ fn new_connection(
     udp_socket: UdpSocket,
     client_configuration: ClientConfiguration,
 ) -> Result<Connection<ClientPerspective>> {
-    let connection_id = generate_connection_id()?;
+    let local_connection_id = generate_connection_id()?;
+    let remote_connection_id = generate_connection_id()?;
 
     let client_perspective = ClientPerspective::new(udp_socket, client_configuration, server_id);
 
-    let connection = Connection::new(connection_id, client_perspective);
+    let connection = Connection::new(
+        local_connection_id,
+        remote_connection_id,
+        client_perspective,
+    )?;
 
     Ok(connection)
 }
