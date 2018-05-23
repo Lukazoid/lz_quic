@@ -152,7 +152,7 @@ impl Writable for AckFrame {
 #[cfg(test)]
 mod tests {
     use super::AckFrame;
-    use protocol::{Readable, Writable};
+    use protocol;
 
     #[test]
     fn write_read_ack_frame() {
@@ -161,9 +161,6 @@ mod tests {
             ack_ranges_descending: vec![(50..55), (46..49), (10..15)],
         };
 
-        let written_bytes = ack_frame.bytes().unwrap();
-        let read_ack_frame = AckFrame::from_bytes(&written_bytes[..]).unwrap();
-
-        assert_eq!(read_ack_frame, ack_frame);
+        protocol::test_write_read(&ack_frame).unwrap();
     }
 }

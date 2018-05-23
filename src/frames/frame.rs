@@ -249,7 +249,7 @@ impl Writable for Frame {
 mod tests {
     use super::Frame;
     use frames::StreamFrame;
-    use protocol::{Readable, StreamId, Writable};
+    use protocol::{self, StreamId};
 
     #[test]
     fn write_read_stream_frame() {
@@ -260,9 +260,6 @@ mod tests {
             data: vec![0x78, 0x91],
         });
 
-        let written_stream_frame = stream_frame.bytes().unwrap();
-        let read_stream_frame = Frame::from_bytes(&written_stream_frame[..]).unwrap();
-
-        assert_eq!(stream_frame, read_stream_frame);
+        protocol::test_write_read(&stream_frame).unwrap();
     }
 }

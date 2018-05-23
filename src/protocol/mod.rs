@@ -4,6 +4,32 @@ pub use self::readable::Readable;
 mod writable;
 pub use self::writable::Writable;
 
+#[cfg(test)]
+pub fn test_write_read_with_context<T>(
+    value: &T,
+    context: &<T as Readable>::Context,
+) -> ::errors::Result<()>
+where
+    T: Readable + Writable + PartialEq + ::std::fmt::Debug,
+{
+    let bytes = value.bytes()?;
+
+    let read: T = Readable::from_bytes_with_context(&bytes[..], context)?;
+
+    assert_eq!(&read, value);
+
+    Ok(())
+}
+
+#[cfg(test)]
+pub fn test_write_read<T>(value: &T) -> ::errors::Result<()>
+where
+    T: Readable + Writable + PartialEq + ::std::fmt::Debug,
+    <T as Readable>::Context: Default,
+{
+    test_write_read_with_context(value, &Default::default())
+}
+
 mod error_code;
 pub use self::error_code::ErrorCode;
 
