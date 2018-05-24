@@ -57,20 +57,14 @@ impl ConnectionId {
 #[cfg(test)]
 mod tests {
     use super::ConnectionId;
-    use protocol::{Readable, Writable};
+    use protocol::{self, Readable};
     use rand;
 
     #[test]
     fn read_write_connection_id() {
         let connection_id = ConnectionId::generate(&mut rand::thread_rng());
 
-        let mut bytes = vec![];
-
-        connection_id.write_to_vec(&mut bytes);
-
-        let read_connection_id = ConnectionId::from_bytes(&bytes).unwrap();
-
-        assert_eq!(read_connection_id, connection_id);
+        protocol::test_write_read(&connection_id).unwrap();
     }
 
     #[test]

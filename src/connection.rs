@@ -6,7 +6,6 @@ use futures::{Async, Future, Poll, Stream};
 use packets::{PacketCodec, PacketDispatcher};
 use protocol::{ConnectionId, StreamId};
 use rustls::Session;
-use smallvec::SmallVec;
 use std::sync::{Arc, Mutex};
 use tokio_core::net::UdpFramed;
 use tokio_io::codec::Framed;

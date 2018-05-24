@@ -230,12 +230,10 @@ impl Writable for PacketHeader {
 #[cfg(test)]
 mod tests {
     use super::PacketHeader;
-    use conv::TryFrom;
     use packets::{LongHeader, LongHeaderPacketType, PacketHeaderReadContext, ShortHeader,
                   VersionNegotiationPacket};
-    use protocol::{ConnectionId, Readable, Version, Writable};
+    use protocol::{self, ConnectionId, Version};
     use rand;
-    use std::io::Cursor;
 
     #[test]
     pub fn read_write_version_negotiation_packet_header() {
@@ -246,18 +244,12 @@ mod tests {
         };
         let packet_header = PacketHeader::VersionNegotiation(version_negotiation_packet);
 
-        let mut bytes = Vec::new();
-
-        packet_header.write_to_vec(&mut bytes);
-
-        let read_packet_header = PacketHeader::from_bytes_with_context(
-            &bytes[..],
+        protocol::test_write_read_with_context(
+            &packet_header,
             &PacketHeaderReadContext {
                 has_connection_id: true,
             },
         ).unwrap();
-
-        assert_eq!(packet_header, read_packet_header);
     }
 
     #[test]
@@ -272,18 +264,12 @@ mod tests {
         };
         let packet_header = PacketHeader::Long(long_header);
 
-        let mut bytes = Vec::new();
-
-        packet_header.write_to_vec(&mut bytes);
-
-        let read_packet_header = PacketHeader::from_bytes_with_context(
-            &bytes[..],
+        protocol::test_write_read_with_context(
+            &packet_header,
             &PacketHeaderReadContext {
                 has_connection_id: true,
             },
         ).unwrap();
-
-        assert_eq!(packet_header, read_packet_header);
     }
 
     #[test]
@@ -295,17 +281,11 @@ mod tests {
         };
         let packet_header = PacketHeader::Short(short_header);
 
-        let mut bytes = Vec::new();
-
-        packet_header.write_to_vec(&mut bytes);
-
-        let read_packet_header = PacketHeader::from_bytes_with_context(
-            &bytes[..],
+        protocol::test_write_read_with_context(
+            &packet_header,
             &PacketHeaderReadContext {
                 has_connection_id: true,
             },
         ).unwrap();
-
-        assert_eq!(packet_header, read_packet_header);
     }
 }

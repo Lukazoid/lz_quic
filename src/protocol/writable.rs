@@ -1,8 +1,9 @@
 use byteorder::{NetworkEndian, WriteBytesExt};
+use bytes::{BufMut, BytesMut};
 use debugit::DebugIt;
 use errors::*;
 use smallvec::{Array, SmallVec};
-use std::io::{Cursor, Write};
+use std::io::{Cursor, Result as IoResult, Write};
 
 pub trait Writable {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()>;
@@ -20,43 +21,40 @@ pub trait Writable {
         Ok(())
     }
 
-    fn write_to_small_vec<A: Array<Item = u8>>(&self, small_vec: &mut SmallVec<A>) -> Result<()> {
-        trace!("writing {:?} to small vector", DebugIt(self));
+    fn bytes(&self) -> Result<BytesMut> {
+        let bytes = BytesMut::new();
 
-        self.write(small_vec)?;
+        let mut writer = GrowingBytesMutWriter::new(bytes);
 
-        debug!(
-            "written {:?} to small vector {:?}",
-            DebugIt(self),
-            small_vec
-        );
+        self.write(&mut writer)?;
 
+        Ok(writer.into_inner())
+    }
+}
+
+struct GrowingBytesMutWriter {
+    bytes_mut: BytesMut,
+}
+
+impl GrowingBytesMutWriter {
+    pub fn new(bytes_mut: BytesMut) -> Self {
+        Self { bytes_mut }
+    }
+
+    pub fn into_inner(self) -> BytesMut {
+        self.bytes_mut
+    }
+}
+
+impl Write for GrowingBytesMutWriter {
+    fn write(&mut self, buf: &[u8]) -> IoResult<usize> {
+        self.bytes_mut.extend_from_slice(buf);
+
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> IoResult<()> {
         Ok(())
-    }
-
-    fn write_to_vec(&self, vec: &mut Vec<u8>) -> Result<()> {
-        trace!("writing {:?} to vector", DebugIt(self));
-
-        self.write(vec)?;
-
-        debug!("written {:?} to vector {:?}", DebugIt(self), vec);
-
-        Ok(())
-    }
-
-    // TODO LH Change this so it returns bytes::Bytes
-    fn bytes(&self) -> Result<Vec<u8>> {
-        let mut vec = Vec::new();
-        self.write_to_vec(&mut vec)?;
-
-        Ok(vec)
-    }
-
-    fn bytes_small<A: Array<Item = u8>>(&self) -> Result<SmallVec<A>> {
-        let mut small_vec = SmallVec::new();
-        self.write_to_small_vec(&mut small_vec)?;
-
-        Ok(small_vec)
     }
 }
 

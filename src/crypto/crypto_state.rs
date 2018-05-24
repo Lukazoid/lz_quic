@@ -1,4 +1,4 @@
-use bytes::{Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use debugit::DebugIt;
 use errors::*;
 use frames::Frame;
@@ -9,15 +9,14 @@ use ring::digest;
 use ring::hkdf;
 use ring::hmac::SigningKey;
 use rustls::Session;
-use smallvec::SmallVec;
-use std::mem;
+use std::io::Write;
 
 #[derive(Debug)]
 pub struct CryptoState {
     secret: DebugIt<SigningKey>,
     sealing_key: DebugIt<SealingKey>,
     opening_key: DebugIt<OpeningKey>,
-    iv: SmallVec<[u8; digest::MAX_OUTPUT_LEN]>,
+    iv: Bytes,
 }
 
 static HANDSHAKE_SALT: [u8; 20] = [
@@ -54,8 +53,7 @@ impl CryptoState {
             .ok_or_else(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
 
         let hash_algorithm = supported_cipher_suite.get_hash();
-        let mut secret: SmallVec<[u8; digest::MAX_OUTPUT_LEN]> =
-            smallvec![0; hash_algorithm.output_len];
+        let mut secret = BytesMut::with_capacity(hash_algorithm.output_len);
         session
             .export_keying_material(&mut secret, label.as_bytes(), None)
             .chain_err(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
@@ -99,21 +97,17 @@ impl CryptoState {
         Self::new(new_secret, self.opening_key.0.algorithm())
     }
 
-    fn make_nonce(
-        &self,
-        packet_number: PacketNumber,
-    ) -> Result<SmallVec<[u8; digest::MAX_OUTPUT_LEN]>> {
+    fn make_nonce(&self, packet_number: PacketNumber) -> Result<Bytes> {
         // The nonce, N, is formed by combining the packet protection IV
         // (either client_pp_iv<i> or server_pp_iv<i>) with the packet number.
         // The 64 bits of the reconstructed QUIC packet number in network byte
         // order is left-padded with zeros to the size of the IV. The exclusive
         // OR of the padded packet number and the IV forms the AEAD nonce.
 
-        let mut nonce = self.iv.clone();
+        let mut nonce = BytesMut::from(&self.iv[..]);
 
         let packet_number_int: u64 = packet_number.into();
-        let packet_number_bytes: SmallVec<[u8; mem::size_of::<u64>()]> =
-            packet_number_int.bytes_small()?;
+        let packet_number_bytes = packet_number_int.bytes()?;
         assert!(nonce.len() >= packet_number_bytes.len());
 
         // skip the left-padding bytes
@@ -127,7 +121,7 @@ impl CryptoState {
             *nonce ^= pn;
         }
 
-        Ok(nonce)
+        Ok(nonce.freeze())
     }
 
     fn sealing_key(&self) -> &SealingKey {
@@ -151,8 +145,9 @@ impl CryptoState {
 
         let tag_len = sealing_key.algorithm().tag_len();
 
-        let in_out_len = in_out.len();
-        in_out.resize(in_out_len + tag_len, 0);
+        // TODO LH Use resize once https://github.com/carllerche/bytes/issues/202 is released
+        // out.resize(in_out.len() + tag_len, 0);
+        in_out.extend_from_slice(&vec![0; tag_len][..]);
 
         let out_len = aead::seal_in_place(
             sealing_key,
@@ -188,39 +183,63 @@ impl CryptoState {
     }
 }
 
-fn encode_hkdf_info(label: &str, out_len: usize) -> Result<SmallVec<[u8; digest::MAX_OUTPUT_LEN]>> {
+#[derive(Debug)]
+struct HkdfInfo<'a> {
+    label: &'a str,
+    out_len: u16,
+}
+
+impl<'a> Writable for HkdfInfo<'a> {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing hkdf info {:?}", &self);
+
+        self.out_len.write(writer)?;
+
+        let label_prefix = "QUIC ";
+        let label_len = label_prefix.len() + self.label.len();
+
+        assert!(label_len <= u8::max_value() as usize);
+
+        (label_len as u8).write(writer)?;
+
+        label_prefix.write(writer)?;
+        self.label.write(writer)?;
+
+        debug!("written hkdf info {:?}", self);
+
+        Ok(())
+    }
+}
+
+fn encode_hkdf_info(label: &str, out_len: usize) -> Result<Bytes> {
     // struct {
     //     uint16 length = Length;
     //     opaque label<6..255> = "QUIC " + Label;
     // } QhkdfExpandInfo;
 
-    let mut info: SmallVec<[u8; 64]> = smallvec![];
-    (out_len as u16).write_to_small_vec(&mut info)?;
+    assert!(out_len <= (u16::max_value() as usize));
 
-    let label_prefix = b"QUIC ";
-    let label_len = label_prefix.len() + label.len();
+    let hkdf_info = HkdfInfo {
+        label,
+        out_len: out_len as u16,
+    };
 
-    assert!(label_len <= u8::max_value() as usize);
+    let bytes = hkdf_info.bytes()?;
 
-    (label_len as u8).write_to_small_vec(&mut info)?;
-
-    label_prefix.write_to_small_vec(&mut info)?;
-    label.as_bytes().write_to_small_vec(&mut info)?;
-
-    Ok(info)
+    Ok(bytes.freeze())
 }
 
-fn qhkdf_expand(
-    signing_key: &SigningKey,
-    label: &str,
-    out_len: usize,
-) -> Result<SmallVec<[u8; 64]>> {
+fn qhkdf_expand(signing_key: &SigningKey, label: &str, out_len: usize) -> Result<Bytes> {
     let info = encode_hkdf_info(label, out_len)?;
 
-    let mut out = smallvec![0; out_len];
+    let mut out = BytesMut::with_capacity(out_len);
+    // TODO LH Use resize once https://github.com/carllerche/bytes/issues/202 is released
+    // out.resize(out_len, 0);
+    out.extend_from_slice(&vec![0; out_len][..]);
+
     hkdf::expand(&signing_key, &info[..], &mut out[..]);
 
-    Ok(out)
+    Ok(out.freeze())
 }
 
 #[cfg(test)]
