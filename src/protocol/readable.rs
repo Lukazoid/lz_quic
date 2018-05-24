@@ -1,4 +1,5 @@
 use byteorder::{NetworkEndian, ReadBytesExt};
+use bytes::{Bytes, BytesMut};
 use debugit::DebugIt;
 use errors::*;
 use smallvec::{Array, SmallVec};
@@ -173,6 +174,32 @@ pub trait Readable {
         );
 
         Ok(collection)
+    }
+}
+
+impl Readable for Bytes {
+    type Context = ();
+
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let vec: Vec<u8> = Readable::read(reader)?;
+
+        Ok(vec.into())
+    }
+}
+
+impl Readable for BytesMut {
+    type Context = ();
+
+    fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        let vec: Vec<u8> = Readable::read(reader)?;
+
+        Ok(vec.into())
     }
 }
 

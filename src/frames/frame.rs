@@ -248,6 +248,7 @@ impl Writable for Frame {
 #[cfg(test)]
 mod tests {
     use super::Frame;
+    use bytes::Bytes;
     use frames::StreamFrame;
     use protocol::{self, StreamId};
 
@@ -257,7 +258,7 @@ mod tests {
             finished: true,
             offset: 5.into(),
             stream_id: StreamId::first_client_stream_id(),
-            data: vec![0x78, 0x91],
+            data: Bytes::from(&[0x78, 0x91][..]),
         });
 
         protocol::test_write_read(&stream_frame).unwrap();

@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use conv::ValueInto;
 use errors::*;
 use frames::StreamOffset;
@@ -9,7 +10,7 @@ pub struct StreamFrame {
     pub finished: bool,
     pub offset: StreamOffset,
     pub stream_id: StreamId,
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 impl StreamFrame {

@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use errors::*;
 use protocol::{Readable, Writable};
 use rand::Rng;
@@ -15,7 +16,7 @@ impl Readable for ConnectionId {
         trace!("reading connection id");
 
         // read a maximum of 18 bytes
-        let bytes: SmallVec<[u8; 20]> = Readable::read(&mut reader.take(18))?;
+        let bytes: Bytes = Readable::read(&mut reader.take(18))?;
 
         let mut inner = [0; 18];
         let start_offset = inner.len() - bytes.len();
