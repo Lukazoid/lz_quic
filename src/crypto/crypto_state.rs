@@ -29,6 +29,12 @@ impl CryptoState {
         destination_connection_id: ConnectionId,
         label: &str,
     ) -> Result<CryptoState> {
+        trace!(
+            "creating new crypto state for handshake to connection {:?} with label {}",
+            destination_connection_id,
+            label
+        );
+
         // The hash function for HKDF when deriving handshake secrets and keys
         // is SHA-256
         let hash_algorithm = &digest::SHA256;
@@ -44,10 +50,22 @@ impl CryptoState {
             qhkdf_expand(&handshake_secret, label, hash_algorithm.output_len)?;
         let signing_key = SigningKey::new(hash_algorithm, &our_handshake_secret[..]);
 
-        Self::new(signing_key, aead_algorithm)
+        let crypto_state = Self::new(signing_key, aead_algorithm)?;
+
+        debug!(
+            "created new crypto state for handshake to connection {:?} with label {}",
+            destination_connection_id, label
+        );
+
+        Ok(crypto_state)
     }
 
     pub fn from_tls<S: Session>(session: &S, label: &str) -> Result<CryptoState> {
+        trace!(
+            "creating new crypto state using TLS session with label {}",
+            label
+        );
+
         let supported_cipher_suite = session
             .get_negotiated_ciphersuite()
             .ok_or_else(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
@@ -59,7 +77,14 @@ impl CryptoState {
             .chain_err(|| ErrorKind::FailedToExportTlsKeyingMaterial)?;
 
         let secret = SigningKey::new(hash_algorithm, &secret[..]);
-        Self::new(secret, supported_cipher_suite.get_aead_alg())
+        let crypto_state = Self::new(secret, supported_cipher_suite.get_aead_alg())?;
+
+        debug!(
+            "created new crypto state using TLS session with label {}",
+            label
+        );
+
+        Ok(crypto_state)
     }
 
     fn new(secret: SigningKey, aead_algorithm: &'static aead::Algorithm) -> Result<CryptoState> {
@@ -88,16 +113,22 @@ impl CryptoState {
     }
 
     pub fn with_key_update(&self, label: &str) -> Result<CryptoState> {
+        trace!("creating new crypto state with label {}", label);
+
         let secret = &self.secret.0;
 
         let hash_algorithm = secret.digest_algorithm();
         let new_secret = qhkdf_expand(secret, label, hash_algorithm.output_len)?;
 
         let new_secret = SigningKey::new(hash_algorithm, &new_secret[..]);
-        Self::new(new_secret, self.opening_key.0.algorithm())
+        let crypto_state = Self::new(new_secret, self.opening_key.0.algorithm())?;
+
+        debug!("created new crypto state with label {}", label);
+
+        Ok(crypto_state)
     }
 
-    fn make_nonce(&self, packet_number: PacketNumber) -> Result<Bytes> {
+    fn make_nonce(&self, packet_number: PacketNumber) -> Result<BytesMut> {
         // The nonce, N, is formed by combining the packet protection IV
         // (either client_pp_iv<i> or server_pp_iv<i>) with the packet number.
         // The 64 bits of the reconstructed QUIC packet number in network byte
@@ -121,7 +152,7 @@ impl CryptoState {
             *nonce ^= pn;
         }
 
-        Ok(nonce.freeze())
+        Ok(nonce)
     }
 
     fn sealing_key(&self) -> &SealingKey {
@@ -138,6 +169,8 @@ impl CryptoState {
         packet_header_bytes: &[u8],
         frames: &[Frame],
     ) -> Result<Bytes> {
+        trace!("sealing frames for packet {:?}", packet_number);
+
         let nonce = self.make_nonce(packet_number)?;
         let sealing_key = self.sealing_key();
 
@@ -156,6 +189,8 @@ impl CryptoState {
             tag_len,
         ).chain_err(|| ErrorKind::FailedToSealData)?;
 
+        debug!("sealed frames for packet {:?}", packet_number);
+
         Ok((&in_out[..out_len]).into())
     }
 
@@ -165,6 +200,8 @@ impl CryptoState {
         packet_header_bytes: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<Frame>> {
+        trace!("opening frames for packet {:?}", packet_number);
+
         let nonce = self.make_nonce(packet_number)?;
         let opening_key = self.opening_key();
 
@@ -178,7 +215,11 @@ impl CryptoState {
             &mut ciphertext[..],
         ).chain_err(|| ErrorKind::FailedToOpenSealedData)?;
 
-        Ok(Readable::collect_from_bytes(plaintext)?)
+        let frames = Readable::collect_from_bytes(plaintext)?;
+
+        debug!("opened frames for packet {:?}", packet_number);
+
+        Ok(frames)
     }
 }
 
@@ -223,7 +264,11 @@ fn encode_hkdf_info(label: &str, out_len: usize) -> Result<Bytes> {
         out_len: out_len as u16,
     };
 
+    trace!("encoding hkdf info {:?}", hkdf_info);
+
     let bytes = hkdf_info.bytes()?;
+
+    debug!("encoded hkdf info {:?}", hkdf_info);
 
     Ok(bytes.freeze())
 }
