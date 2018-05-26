@@ -145,9 +145,8 @@ impl CryptoState {
 
         let tag_len = sealing_key.algorithm().tag_len();
 
-        // TODO LH Use resize once https://github.com/carllerche/bytes/issues/202 is released
-        // out.resize(in_out.len() + tag_len, 0);
-        in_out.extend_from_slice(&vec![0; tag_len][..]);
+        let new_in_out_len = in_out.len() + tag_len;
+        in_out.resize(new_in_out_len, 0);
 
         let out_len = aead::seal_in_place(
             sealing_key,
@@ -233,9 +232,7 @@ fn qhkdf_expand(signing_key: &SigningKey, label: &str, out_len: usize) -> Result
     let info = encode_hkdf_info(label, out_len)?;
 
     let mut out = BytesMut::with_capacity(out_len);
-    // TODO LH Use resize once https://github.com/carllerche/bytes/issues/202 is released
-    // out.resize(out_len, 0);
-    out.extend_from_slice(&vec![0; out_len][..]);
+    out.resize(out_len, 0);
 
     hkdf::expand(&signing_key, &info[..], &mut out[..]);
 
