@@ -22,16 +22,16 @@ pub struct StreamMap {
 fn new_stream(
     streams: &mut HashMap<StreamId, StreamMapEntry>,
     next_stream_id: &mut StreamId,
-    initial_max_incoming_data_per_stream: u64,
-    initial_max_outgoing_data_per_stream: u64,
+    initial_max_incoming_data: u64,
+    initial_max_outgoing_data: u64,
 ) -> (StreamId, Arc<Mutex<StreamState>>) {
     let id = *next_stream_id;
     *next_stream_id = next_stream_id.next();
 
     let new_stream_state = Arc::new(Mutex::new(StreamState::new(
         id,
-        Some(initial_max_incoming_data_per_stream),
-        Some(initial_max_outgoing_data_per_stream),
+        Some(initial_max_incoming_data),
+        Some(initial_max_outgoing_data),
     )));
     streams.insert(id, StreamMapEntry::Live(new_stream_state.clone()));
 

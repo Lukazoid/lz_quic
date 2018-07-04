@@ -11,8 +11,8 @@ lazy_static! {
 pub struct ServerConfiguration {
     pub connection_termination_mode: ConnectionTerminationMode,
     pub tls_config: Arc<TlsConfig>,
-    pub initial_max_incoming_data_per_stream: u32,
-    pub initial_max_incoming_data: u32,
+    pub max_incoming_data_per_stream: u32,
+    pub max_incoming_data_per_connection: u32,
 }
 
 impl Debug for ServerConfiguration {
@@ -24,10 +24,13 @@ impl Debug for ServerConfiguration {
             )
             .field("tls_config", &DebugIt(&self.tls_config))
             .field(
-                "initial_max_incoming_data_per_stream",
-                &self.initial_max_incoming_data_per_stream,
+                "max_incoming_data_per_stream",
+                &self.max_incoming_data_per_stream,
             )
-            .field("initial_max_incoming_data", &self.initial_max_incoming_data)
+            .field(
+                "max_incoming_data_per_connection",
+                &self.max_incoming_data_per_connection,
+            )
             .finish()
     }
 }
@@ -43,8 +46,8 @@ impl Default for ServerConfiguration {
         ServerConfiguration {
             connection_termination_mode: ConnectionTerminationMode::Explicit,
             tls_config: DEFAULT_TLS_CONFIG.clone(),
-            initial_max_incoming_data_per_stream: 8192,
-            initial_max_incoming_data: 65536,
+            max_incoming_data_per_stream: 8192,
+            max_incoming_data_per_connection: 65536,
         }
     }
 }

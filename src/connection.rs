@@ -58,7 +58,7 @@ impl<P: Perspective + 'static> Connection<P> {
         };
 
         let local_flow_control =
-            FlowControl::with_initial_max(perspective.initial_max_incoming_data().into());
+            FlowControl::with_initial_max(perspective.max_incoming_data().into());
 
         let connection = Self {
             local_connection_id,
@@ -135,9 +135,7 @@ impl<P: Perspective> Connection<P> {
 
         stream_map.next_outgoing_stream(
             stream_type,
-            self.perspective
-                .initial_max_incoming_data_per_stream()
-                .into(),
+            self.perspective.max_incoming_data_per_stream().into(),
             max_outgoing_data_per_stream.into(),
         )
     }

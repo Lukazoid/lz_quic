@@ -39,7 +39,7 @@ pub trait Perspective: Sized {
 
     fn role() -> Role;
 
-    fn initial_max_incoming_data_per_stream(&self) -> u32;
+    fn max_incoming_data_per_stream(&self) -> u32;
 
-    fn initial_max_incoming_data(&self) -> u32;
+    fn max_incoming_data(&self) -> u32;
 }
