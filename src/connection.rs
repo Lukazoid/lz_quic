@@ -132,10 +132,12 @@ impl<P: Perspective> Connection<P> {
 
         // TODO LH Use the transport parameters to determine how much can be sent on each newly created stream
         let max_outgoing_data_per_stream: u32 = unimplemented!();
-        
+
         stream_map.next_outgoing_stream(
             stream_type,
-            self.perspective.initial_max_incoming_data_per_stream().into(),
+            self.perspective
+                .initial_max_incoming_data_per_stream()
+                .into(),
             max_outgoing_data_per_stream.into(),
         )
     }
