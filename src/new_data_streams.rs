@@ -1,6 +1,6 @@
 use errors::*;
-use futures::Poll;
 use futures::stream::Stream;
+use futures::Poll;
 use std::sync::Arc;
 use {Connection, DataStream, Perspective};
 

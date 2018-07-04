@@ -1,6 +1,5 @@
 use byteorder::WriteBytesExt;
 use errors::*;
-use frames::stream_offset::StreamOffset;
 use frames::{AckFrame, ApplicationCloseFrame, BlockedFrame, ConnectionCloseFrame, MaxDataFrame,
              MaxStreamDataFrame, MaxStreamIdFrame, NewConnectionIdFrame, PathChallengeFrame,
              PathResponseFrame, ReadStreamFrameContext, ResetStreamFrame, StopSendingFrame,
@@ -257,7 +256,7 @@ mod tests {
         let stream_frame = Frame::Stream(StreamFrame {
             finished: true,
             offset: 5.into(),
-            stream_id: StreamId::first_client_stream_id(),
+            stream_id: StreamId::first_unidirectional_client_stream_id(),
             data: Bytes::from(&[0x78, 0x91][..]),
         });
 

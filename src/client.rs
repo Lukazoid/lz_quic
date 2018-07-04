@@ -1,6 +1,6 @@
 use errors::*;
 use futures::{Future, IntoFuture};
-use protocol::{ConnectionId, ServerId};
+use protocol::{ConnectionId, ServerId, StreamType};
 use rand::OsRng;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
 use std::sync::Arc;
@@ -73,10 +73,18 @@ impl Client {
         NewClient::new(Box::new(future))
     }
 
-    pub fn open_stream(&self) -> DataStream<ClientPerspective> {
-        let (stream_id, stream_state) = self.connection.new_stream();
+    fn open_stream(&self, stream_type: StreamType) -> DataStream<ClientPerspective> {
+        let (stream_id, stream_state) = self.connection.new_stream(stream_type);
 
         DataStream::new(stream_id, self.connection.clone(), stream_state)
+    }
+
+    pub fn open_bidirectional_stream(&self) -> DataStream<ClientPerspective> {
+        self.open_stream(StreamType::Bidirectional)
+    }
+
+    pub fn open_unidirectional_stream(&self) -> DataStream<ClientPerspective> {
+        self.open_stream(StreamType::Unidirectional)
     }
 
     pub fn incoming_streams(&self) -> NewDataStreams<ClientPerspective> {

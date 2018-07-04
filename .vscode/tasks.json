@@ -51,6 +51,17 @@
             ],
             "group": "build",
             "problemMatcher": "$rustc"
+        },
+        {
+            "label": "cargo format",
+            "type": "shell",
+            "command": "cargo",
+            "args": [
+                "fmt"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ]
         }
     ]
 }

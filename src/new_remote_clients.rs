@@ -1,7 +1,7 @@
-use RemoteClient;
 use errors::*;
-use futures::Poll;
 use futures::stream::Stream;
+use futures::Poll;
+use RemoteClient;
 
 #[derive(Debug)]
 pub struct NewRemoteClients {}

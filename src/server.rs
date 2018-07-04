@@ -1,6 +1,6 @@
 use errors::*;
-use futures::Stream;
 use futures::future::Empty;
+use futures::Stream;
 use packets::PacketDispatcher;
 use std::net::SocketAddr;
 use std::sync::Arc;

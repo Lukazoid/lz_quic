@@ -1,49 +1,29 @@
 use bytes::Bytes;
 use errors::*;
-use futures::stream::Then;
-use futures::sync::mpsc::{self, Receiver, Sender};
-use futures::{Poll, Stream};
-use lz_stream_io::StreamRead;
+use futures::{Async, Poll};
 use protocol::StreamId;
 use std::collections::VecDeque;
-use std::io::{Error as IoError, Read, Result as IoResult};
-use std::result::Result as StdResult;
+use std::mem;
+use utils::DataQueue;
 
 #[derive(Debug)]
 pub struct StreamState {
     stream_id: StreamId,
-    pending_writes: VecDeque<Bytes>,
-    async_read: StreamRead<
-        Then<
-            Receiver<Result<Bytes>>,
-            fn(StdResult<Result<Bytes>, ()>) -> IoResult<Bytes>,
-            IoResult<Bytes>,
-        >,
-    >,
-    incoming: Sender<Result<Bytes>>,
-}
-
-fn unwrap_read_stream_error(result: StdResult<Result<Bytes>, ()>) -> IoResult<Bytes> {
-    let result = match result {
-        Ok(inner) => inner,
-        Err(()) => Err(ErrorKind::DataStreamClosed.into()),
-    };
-
-    let bytes = result?;
-
-    Ok(bytes)
+    incoming_data: DataQueue,
+    pending_outgoing_data: VecDeque<Bytes>,
 }
 
 impl StreamState {
-    pub fn new(stream_id: StreamId) -> Self {
-        // TODO LH Decide on a sensible maximum unprocessed number of incoming frames
-        let (sender, receiver) = mpsc::channel(100);
-
+    pub fn new(
+        stream_id: StreamId,
+        initial_max_incoming_data: Option<u64>,
+        initial_max_outgoing_data: Option<u64>,
+    ) -> Self {
+        // TODO LH Initialize the flow control
         Self {
-            stream_id: stream_id,
-            pending_writes: Default::default(),
-            async_read: StreamRead::new(receiver.then(unwrap_read_stream_error)),
-            incoming: sender,
+            stream_id,
+            incoming_data: DataQueue::new(),
+            pending_outgoing_data: VecDeque::new(),
         }
     }
 
@@ -51,22 +31,29 @@ impl StreamState {
         self.stream_id
     }
 
-    pub fn push_pending_write<B: Into<Bytes>>(&mut self, buf: B) {
-        self.pending_writes.push_back(buf.into())
+    pub fn enqueue_write<B: Into<Bytes>>(&mut self, buf: B) {
+        self.pending_outgoing_data.push_back(buf.into())
     }
 
-    pub fn pop_pending_write(&mut self) -> Option<Bytes> {
-        self.pending_writes.pop_front()
+    pub fn dequeue_write(&mut self) -> Option<Bytes> {
+        self.pending_outgoing_data.pop_front()
     }
 
-    fn poll_read_io(&mut self, buf: &mut [u8]) -> Poll<usize, IoError> {
-        let byte_count = try_nb!(self.async_read.read(buf));
-
-        Ok(byte_count.into())
+    pub fn dequeue_writes(&mut self) -> impl Iterator<Item = Bytes> {
+        mem::replace(&mut self.pending_outgoing_data, VecDeque::new()).into_iter()
     }
 
     pub fn poll_read(&mut self, buf: &mut [u8]) -> Poll<usize, Error> {
-        self.poll_read_io(buf)
-            .chain_err(|| ErrorKind::FailedToReadStreamData(self.stream_id))
+        if buf.is_empty() {
+            return Ok(0.into());
+        }
+
+        let read_bytes = self.incoming_data.read(buf);
+
+        if read_bytes == 0 {
+            return Ok(Async::NotReady);
+        }
+
+        return Ok(read_bytes.into());
     }
 }

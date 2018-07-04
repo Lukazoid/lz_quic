@@ -4,7 +4,7 @@ use crypto::CryptoState;
 use errors::*;
 use futures::{Async, Future, Poll, Stream};
 use packets::{PacketCodec, PacketDispatcher};
-use protocol::{ConnectionId, StreamId};
+use protocol::{ConnectionId, FlowControl, StreamId, StreamType};
 use rustls::Session;
 use std::sync::{Arc, Mutex};
 use tokio_core::net::UdpFramed;
@@ -33,6 +33,8 @@ pub struct Connection<P: Perspective> {
     stream_map: Mutex<StreamMap>,
     aead_clear: AeadPair,
     state: Arc<Mutex<State>>,
+    local_flow_control: Mutex<FlowControl>,
+    remote_flow_control: Mutex<FlowControl>,
 }
 
 impl<P: Perspective + 'static> Connection<P> {
@@ -55,6 +57,9 @@ impl<P: Perspective + 'static> Connection<P> {
             read: read_clear,
         };
 
+        let local_flow_control =
+            FlowControl::with_initial_max(perspective.initial_max_incoming_data().into());
+
         let connection = Self {
             local_connection_id,
             remote_connection_id,
@@ -62,6 +67,8 @@ impl<P: Perspective + 'static> Connection<P> {
             stream_map: Mutex::new(P::create_stream_map()),
             aead_clear,
             state: Arc::new(Mutex::new(State::Initializing)),
+            local_flow_control: Mutex::new(local_flow_control),
+            remote_flow_control: Mutex::default(),
         };
 
         debug!("created new connection {}", connection.description());
@@ -118,12 +125,19 @@ impl<P: Perspective> Connection<P> {
         stream_map.crypto_stream()
     }
 
-    pub fn new_stream(&self) -> (StreamId, Arc<Mutex<StreamState>>) {
+    pub fn new_stream(&self, stream_type: StreamType) -> (StreamId, Arc<Mutex<StreamState>>) {
         let mut stream_map = self.stream_map
             .lock()
             .expect("failed to obtain stream_map lock");
 
-        stream_map.next_outgoing_stream()
+        // TODO LH Use the transport parameters to determine how much can be sent on each newly created stream
+        let max_outgoing_data_per_stream: u32 = unimplemented!();
+        
+        stream_map.next_outgoing_stream(
+            stream_type,
+            self.perspective.initial_max_incoming_data_per_stream().into(),
+            max_outgoing_data_per_stream.into(),
+        )
     }
 
     pub fn local_connection_id(&self) -> ConnectionId {
@@ -134,7 +148,7 @@ impl<P: Perspective> Connection<P> {
         self.remote_connection_id
     }
 
-    pub fn process_incoming_packets(&self) -> Poll<(), Error> {
+    pub fn poll_process_incoming_packets(&self) -> Poll<(), Error> {
         // TODO LH Eventually handle remote connection termination
 
         while let Async::Ready(incoming_packet) = self.perspective
@@ -146,9 +160,7 @@ impl<P: Perspective> Connection<P> {
         Ok(Async::NotReady)
     }
 
-    /// This also guarantees that the remote end acknowledged all of the stream
-    /// data.
-    pub fn flush_stream(&self, stream_id: StreamId) -> Poll<(), Error> {
+    pub fn poll_flush_stream(&self, stream_id: StreamId) -> Poll<(), Error> {
         let stream_map_entry = {
             let stream_map = self.stream_map
                 .lock()
@@ -163,28 +175,36 @@ impl<P: Perspective> Connection<P> {
                     .lock()
                     .expect("failed to obtain stream_state lock");
 
-                self.queue_pending_writes(&mut stream_state);
+                self.enqueue_pending_writes(&mut stream_state);
             }
         }
-
-        // TODO LH Wait for acknowledgement
 
         Ok(().into())
     }
 
-    fn queue_pending_writes(&self, stream_state: &mut StreamState) {
-        while let Some(pending_write) = stream_state.pop_pending_write() {
+    /// This also guarantees that the remote end acknowledged all of the stream
+    /// data.
+    pub fn poll_flush_stream_and_wait_for_ack(&self, stream_id: StreamId) -> Poll<(), Error> {
+        self.poll_flush_stream(stream_id)?;
+
+        // TODO LH Wait for acknowledgement
+        Ok(().into())
+    }
+
+    fn enqueue_pending_writes(&self, stream_state: &mut StreamState) {
+        while let Some(pending_write) = stream_state.dequeue_write() {
+            debug!("popped pending write");
             // self.perspective
             //     .queue_write(stream_state.stream_id(), pending_write);
         }
     }
 
-    pub fn forget_stream(&self, stream_id: StreamId) -> Result<()> {
+    pub fn poll_forget_stream(&self, stream_id: StreamId) -> Poll<(), Error> {
         let stream_map_entry = {
             let mut stream_map = self.stream_map
                 .lock()
                 .expect("failed to obtain stream_map lock");
-            stream_map.forget_stream(stream_id)?
+            stream_map.get_stream(stream_id)?
         };
 
         if let StreamMapEntry::Live(stream_state) = stream_map_entry {
@@ -192,9 +212,16 @@ impl<P: Perspective> Connection<P> {
                 .lock()
                 .expect("failed to obtain stream_state lock");
 
-            self.queue_pending_writes(&mut stream_state);
+            self.enqueue_pending_writes(&mut stream_state);
         }
 
-        Ok(())
+        {
+            let mut stream_map = self.stream_map
+                .lock()
+                .expect("failed to obtain stream_map lock");
+            stream_map.forget_stream(stream_id)?;
+        }
+
+        Ok(().into())
     }
 }

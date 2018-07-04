@@ -1,6 +1,6 @@
 use errors::*;
-use futures::Future;
 use futures::future;
+use futures::Future;
 use std::sync::Arc;
 use {Connection, DataStream, Perspective, StreamMapEntry};
 

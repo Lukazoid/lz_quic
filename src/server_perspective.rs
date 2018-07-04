@@ -100,4 +100,13 @@ impl Perspective for ServerPerspective {
     fn role() -> Role {
         Role::Server
     }
+
+    fn initial_max_incoming_data_per_stream(&self) -> u32 {
+        self.server_configuration
+            .initial_max_incoming_data_per_stream
+    }
+
+    fn initial_max_incoming_data(&self) -> u32 {
+        self.server_configuration.initial_max_incoming_data
+    }
 }

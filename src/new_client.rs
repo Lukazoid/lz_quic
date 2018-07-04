@@ -1,6 +1,6 @@
-use Client;
 use errors::*;
 use futures::{Future, Poll};
+use Client;
 
 pub type BoxedFuture = Box<Future<Item = Client, Error = Error> + Send>;
 

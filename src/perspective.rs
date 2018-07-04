@@ -38,4 +38,8 @@ pub trait Perspective: Sized {
     fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error>;
 
     fn role() -> Role;
+
+    fn initial_max_incoming_data_per_stream(&self) -> u32;
+
+    fn initial_max_incoming_data(&self) -> u32;
 }

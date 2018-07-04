@@ -48,3 +48,6 @@ pub use self::stream_frame::{ReadStreamFrameContext, StreamFrame};
 
 mod frame;
 pub use self::frame::Frame;
+
+mod frame_queue;
+pub use self::frame_queue::FrameQueue;

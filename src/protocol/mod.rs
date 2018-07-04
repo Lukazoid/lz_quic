@@ -56,3 +56,6 @@ pub use self::stream_id::StreamId;
 
 mod encryption_level;
 pub use self::encryption_level::EncryptionLevel;
+
+mod flow_control;
+pub use self::flow_control::FlowControl;

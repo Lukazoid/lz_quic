@@ -496,7 +496,7 @@ mod tests {
             SmallVec::<[PacketNumber; 3]>::from_slice(&[
                 PacketNumber(5436160),
                 PacketNumber(5436416),
-                PacketNumber(5436672)
+                PacketNumber(5436672),
             ])
         );
     }
@@ -515,7 +515,7 @@ mod tests {
             SmallVec::<[PacketNumber; 3]>::from_slice(&[
                 PacketNumber(5308416),
                 PacketNumber(5373952),
-                PacketNumber(5439488)
+                PacketNumber(5439488),
             ])
         );
     }
@@ -534,7 +534,7 @@ mod tests {
             SmallVec::<[PacketNumber; 3]>::from_slice(&[
                 PacketNumber(5436532),
                 PacketNumber(5436534),
-                PacketNumber(5436536)
+                PacketNumber(5436536),
             ])
         );
     }

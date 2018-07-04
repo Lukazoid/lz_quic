@@ -37,16 +37,20 @@ impl StreamId {
         stream_id
     }
 
-    pub fn first_server_stream_id() -> Self {
-        StreamId(2)
+    pub fn first_bidirectional_server_stream_id() -> Self {
+        StreamId(0x1)
     }
 
-    pub fn first_client_stream_id() -> Self {
-        StreamId(1)
+    pub fn first_unidirectional_server_stream_id() -> Self {
+        StreamId(0x3)
+    }
+
+    pub fn first_unidirectional_client_stream_id() -> Self {
+        StreamId(0x2)
     }
 
     pub fn crypto_stream_id() -> Self {
-        StreamId(0)
+        StreamId(0x0)
     }
 
     pub fn is_crypto_stream(self) -> bool {

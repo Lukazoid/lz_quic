@@ -275,9 +275,6 @@ error_chain! {
             description("failed to perform TLS handshake with client")
             display("failed to perform TLS handshake with client '{}'", client_address)
         }
-        DataStreamClosed {
-            description("the data stream has been closed")
-        }
         FailedToReadStreamData(stream_id: StreamId) {
             description("failed to read stream data")
             display("failed to read stream data for stream '{}'", stream_id)
@@ -314,7 +311,6 @@ error_chain! {
 impl<'a> From<&'a ErrorKind> for IoErrorKind {
     fn from(error: &'a ErrorKind) -> Self {
         match error {
-            ErrorKind::DataStreamClosed => IoErrorKind::NotConnected,
             _ => IoErrorKind::Other,
         }
     }
@@ -476,9 +472,9 @@ impl<F: Future> FutureExt for F {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use futures::Async;
     use futures::future::{self, Future};
     use futures::stream::{self, Stream};
+    use futures::Async;
     use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
     #[test]

@@ -65,18 +65,10 @@ impl ClientPerspective {
     ) -> bool {
         match self.get_connection_id_for_incoming_packet(incoming_packet) {
             Some(AddressConnectionIds::Single(matched_connection_id)) => {
-                if matched_connection_id == connection_id {
-                    true
-                } else {
-                    false
-                }
+                matched_connection_id == connection_id
             }
             Some(AddressConnectionIds::Multiple(matched_connection_ids)) => {
-                if matched_connection_ids.contains(&connection_id) {
-                    true
-                } else {
-                    false
-                }
+                matched_connection_ids.contains(&connection_id)
             }
             None => false,
         }
@@ -183,5 +175,14 @@ impl Perspective for ClientPerspective {
 
     fn role() -> Role {
         Role::Client
+    }
+
+    fn initial_max_incoming_data_per_stream(&self) -> u32 {
+        self.client_configuration
+            .initial_max_incoming_data_per_stream
+    }
+
+    fn initial_max_incoming_data(&self) -> u32 {
+        self.client_configuration.initial_max_incoming_data
     }
 }
