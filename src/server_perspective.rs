@@ -2,10 +2,11 @@ use errors::*;
 use futures::{Future, Poll};
 use packets::IncomingPacket;
 use protocol::{ConnectionId, Role};
+use rustls::quic::ServerQuicExt;
 use rustls::ServerSession;
 use std::net::SocketAddr;
 use std::sync::Arc;
-use tokio_rustls::{ServerConfigExt, TlsStream};
+use tokio_rustls::{self, TlsStream};
 use {DataStream, Perspective, ServerConfiguration, StreamMap};
 
 #[derive(Debug)]
@@ -41,9 +42,14 @@ impl Perspective for ServerPerspective {
 
         let client_address_for_error = self.client_address;
         let client_address_for_success = self.client_address;
-        let when_connected = self.server_configuration
-            .tls_config
-            .accept_async(crypto_stream)
+
+        let quic_transport_parameters = unimplemented!("populate the quic transport parameters");
+        let server_session = ServerSession::new_quic(
+            &self.server_configuration.tls_config,
+            quic_transport_parameters,
+        );
+
+        let when_connected = tokio_rustls::accept_async_with_session(crypto_stream, server_session)
             .chain_err(move || {
                 ErrorKind::FailedToPerformTlsHandshakeWithClient(client_address_for_error)
             })

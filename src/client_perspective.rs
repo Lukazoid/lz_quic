@@ -4,11 +4,12 @@ use futures::{Async, Future, IntoFuture, Poll, Stream};
 use lz_shared_udp::{SharedUdpFramed, SharedUdpSocket};
 use packets::{IncomingPacket, PacketCodec};
 use protocol::{ConnectionId, Role, ServerId};
+use rustls::quic::ClientQuicExt;
 use rustls::ClientSession;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 use tokio_core::net::UdpSocket;
-use tokio_rustls::{ClientConfigExt, TlsStream};
+use tokio_rustls::{self, TlsStream};
 use webpki::DNSNameRef;
 use {AddressConnectionIds, ClientConfiguration, ConnectionMap, DataStream, Perspective, StreamMap};
 
@@ -96,8 +97,14 @@ impl Perspective for ClientPerspective {
             .map(|dns_name| {
                 let server_id_for_error = self.server_id.clone();
                 let server_id_for_success = self.server_id.clone();
-                tls_config
-                    .connect_async(dns_name, crypto_stream)
+
+                let quic_transport_parameters =
+                    unimplemented!("populate the quic transport parameters");
+
+                let client_session =
+                    ClientSession::new_quic(&tls_config, dns_name, quic_transport_parameters);
+
+                tokio_rustls::connect_async_with_session(crypto_stream, client_session)
                     .chain_err(move || {
                         ErrorKind::FailedToPerformTlsHandshakeWithServer(
                             server_id_for_error.host().to_owned(),
