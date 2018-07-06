@@ -3,6 +3,8 @@ use bytes::{BufMut, BytesMut};
 use debugit::DebugIt;
 use errors::*;
 use smallvec::{Array, SmallVec};
+use std::collections::HashSet;
+use std::hash::{BuildHasher, Hash};
 use std::io::{Cursor, Result as IoResult, Write};
 
 pub trait Writable {
@@ -91,6 +93,20 @@ impl<A: Array<Item = E>, E: Writable> Writable for SmallVec<A> {
 impl<E: Writable> Writable for Vec<E> {
     fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
         self.as_slice().write(writer)
+    }
+}
+
+impl<E: Writable + Eq + Hash, S: BuildHasher> Writable for HashSet<E, S> {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing values {:?}", DebugIt(self));
+
+        for value in self {
+            value.write(writer)?;
+        }
+
+        debug!("written values {:?}", DebugIt(self));
+
+        Ok(())
     }
 }
 
