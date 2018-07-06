@@ -301,9 +301,17 @@ error_chain! {
         FailedToReadErrorCode {
             description("failed to read error code")
         }
-        FailedToWriteErrorCode (error_code: u16){
+        FailedToWriteErrorCode (error_code: u16) {
             description("failed to write error code")
             display("failed to write error code {}", error_code)
+        }
+        InvalidTransportParameterId (id: u16) {
+            description("invalid transport parameter id")
+            display("invalid transport parameter id {}", id)
+        }
+        DuplicateTransportParameter (id: u16) {
+            description("duplicate transport parameter id")
+            display("duplicate transport parameter id {}", id)
         }
     }
 }

@@ -1,6 +1,8 @@
+use conv::TryFrom;
 use errors::*;
 use protocol::{Readable, Role, Version, Writable};
-use std::collections::HashSet;
+use smallvec::SmallVec;
+use std::collections::{HashMap, HashSet};
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -100,18 +102,100 @@ impl Writable for MessageParameters {
     }
 }
 
-#[repr(u16)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum TransportParameterId {
-    InitialMaxStreamData = 0,
-    InitialMaxData = 1,
-    InitialMaxBidiStreams = 2,
-    IdleTimeout = 3,
-    PreferredAddress = 4,
-    MaxPacketSize = 5,
-    StatelessResetToken = 6,
-    AckDelayExponent = 7,
-    IntiialMaxUniStreams = 8,
-    DisabelMigration = 9,
+    InitialMaxStreamData,
+    InitialMaxData,
+    InitialMaxBidiStreams,
+    IdleTimeout,
+    PreferredAddress,
+    MaxPacketSize,
+    StatelessResetToken,
+    AckDelayExponent,
+    InitialMaxUniStreams,
+    DisabelMigration,
+}
+
+impl From<TransportParameterId> for u16 {
+    fn from(value: TransportParameterId) -> Self {
+        use self::TransportParameterId::*;
+        match value {
+            InitialMaxStreamData => 0,
+            InitialMaxData => 1,
+            InitialMaxBidiStreams => 2,
+            IdleTimeout => 3,
+            PreferredAddress => 4,
+            MaxPacketSize => 5,
+            StatelessResetToken => 6,
+            AckDelayExponent => 7,
+            InitialMaxUniStreams => 8,
+            DisabelMigration => 9,
+        }
+    }
+}
+
+impl TryFrom<u16> for TransportParameterId {
+    type Err = Error;
+
+    fn try_from(value: u16) -> Result<Self> {
+        use self::TransportParameterId::*;
+        let transport_parameter_id = match value {
+            0 => InitialMaxStreamData,
+            1 => InitialMaxData,
+            2 => InitialMaxBidiStreams,
+            3 => IdleTimeout,
+            4 => PreferredAddress,
+            5 => MaxPacketSize,
+            6 => StatelessResetToken,
+            7 => AckDelayExponent,
+            8 => InitialMaxUniStreams,
+            9 => DisabelMigration,
+            _ => bail!(ErrorKind::InvalidTransportParameterId(value)),
+        };
+
+        Ok(transport_parameter_id)
+    }
+}
+
+impl Readable for TransportParameterId {
+    type Context = ();
+
+    fn read_with_context<R: Read>(reader: &mut R, _context: &Self::Context) -> Result<Self> {
+        trace!("reading transport parameter id");
+
+        let id = u16::read(reader)?;
+        let transport_parameter_id = TransportParameterId::try_from(id)?;
+
+        debug!("read transport parameter id {:?}", transport_parameter_id);
+
+        Ok(transport_parameter_id)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+struct TransportParameter {
+    pub id: TransportParameterId,
+    pub value: Vec<u8>,
+}
+
+impl Readable for TransportParameter {
+    type Context = ();
+
+    fn read_with_context<R: Read>(reader: &mut R, _context: &Self::Context) -> Result<Self> {
+        trace!("reading transport parameter");
+
+        let id = TransportParameterId::read(reader)?;
+
+        let length = u16::read(reader)?;
+
+        let value = Readable::read(&mut reader.take(length as u64))?;
+
+        let transport_parameter = Self { id, value };
+
+        debug!("read transport parameter {:?}", transport_parameter);
+
+        Ok(transport_parameter)
+    }
 }
 
 impl Readable for TransportParameters {
@@ -121,6 +205,19 @@ impl Readable for TransportParameters {
         trace!("reading transport parameters");
 
         let message_parameters = MessageParameters::read_with_context(reader, context)?;
+
+        let parameters_len = u16::read(reader)?;
+
+        let parameters: SmallVec<[_; 10]> =
+            TransportParameter::collect(&mut reader.take(parameters_len.into()))?;
+
+        let mut parameters_by_id = HashMap::with_capacity(parameters.len());
+        for TransportParameter { id, value } in parameters {
+            if parameters_by_id.insert(id, value).is_some() {
+                bail!(ErrorKind::DuplicateTransportParameter(id.into()));
+            };
+        }
+
         unimplemented!()
 
         // let transport_parameters = Self { role: context };
