@@ -53,7 +53,7 @@ fn read_connection_id<R: Read>(reader: &mut R, length_flags: u8) -> Result<Optio
         // Non-zero encoded lengths are increased by 3 to get the full length of the connection ID
         let length = length_flags + 3;
 
-        let connection_id = ConnectionId::read(&mut reader.take(length as u64))?;
+        let connection_id = ConnectionId::read(&mut reader.take(length.into()))?;
 
         Ok(Some(connection_id))
     }

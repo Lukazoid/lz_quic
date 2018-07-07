@@ -1,5 +1,6 @@
 use bytes::Bytes;
 use chrono::UTC;
+use conv::ValueFrom;
 use packets::{IncomingPacket, OutgoingPacket, PacketHeader, PacketHeaderReadContext};
 use protocol::{Readable, Writable};
 use std::io::{Cursor, Result as IoResult};
@@ -27,7 +28,11 @@ impl UdpCodec for PacketCodec {
         )?;
 
         // The data is everything after the header in the datagram
-        let data = Bytes::from(&buf[buf_cursor.position() as usize..]);
+
+        let data_start_index = usize::value_from(buf_cursor.position())
+            .expect("the buf cursor should not exceed the value which can be stored by a usize");
+
+        let data = Bytes::from(&buf[data_start_index..]);
 
         let incoming_packet = IncomingPacket {
             source_address: *src,

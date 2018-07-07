@@ -19,18 +19,18 @@ impl VarInt {
 
 impl From<u8> for VarInt {
     fn from(value: u8) -> Self {
-        VarInt(value as u64)
+        VarInt(value.into())
     }
 }
 
 impl From<u16> for VarInt {
     fn from(value: u16) -> Self {
-        VarInt(value as u64)
+        VarInt(value.into())
     }
 }
 impl From<u32> for VarInt {
     fn from(value: u32) -> Self {
-        VarInt(value as u64)
+        VarInt(value.into())
     }
 }
 
@@ -67,7 +67,7 @@ impl Readable for VarInt {
         let first_byte = reader.read_u8().chain_err(|| ErrorKind::FailedToReadBytes)?;
 
         let length_flag = first_byte & 0b11000000;
-        let first_byte_value = (first_byte & 0b00111111) as u64;
+        let first_byte_value = u64::from(first_byte & 0b00111111);
 
         let total_length = match length_flag >> 6 {
             0b00 => 1usize,
@@ -109,9 +109,9 @@ impl Writable for VarInt {
         let int_value: u64 = self.into_inner();
 
         match int_value {
-            0...63 => (int_value as u8).write(writer)?,
-            64...16383 => (0x4000 | int_value as u16).write(writer)?,
-            16384...1073741823 => (0x80000000 | int_value as u32).write(writer)?,
+            0...63 => u8::value_from(int_value).unwrap().write(writer)?,
+            64...16383 => (0x4000 | u16::value_from(int_value).unwrap()).write(writer)?,
+            16384...1073741823 => (0x80000000 | u32::value_from(int_value).unwrap()).write(writer)?,
             1073741824...4611686018427387903 => (0xC000000000000000 | int_value).write(writer)?,
             _ => bail!(ErrorKind::IntegerValueIsTooLargeToBeStoredAsAVarInt(
                 int_value

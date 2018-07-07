@@ -1,5 +1,6 @@
 use byteorder::{NetworkEndian, ReadBytesExt};
 use bytes::{Bytes, BytesMut};
+use conv::ValueFrom;
 use debugit::DebugIt;
 use errors::*;
 use smallvec::{Array, SmallVec};
@@ -123,7 +124,7 @@ pub trait Readable {
         trace!("reading from bytes {:?}", bytes);
 
         ReadableIterator {
-            length: bytes.len() as u64,
+            length: u64::value_from(bytes.len()).unwrap(),
             cursor: Cursor::new(bytes),
             _phantom: PhantomData::default(),
         }
@@ -140,7 +141,7 @@ pub trait Readable {
         trace!("reading from bytes {:?}", bytes);
 
         ReadableWithContextIterator {
-            length: bytes.len() as u64,
+            length: u64::value_from(bytes.len()).unwrap(),
             cursor: Cursor::new(bytes),
             context: context,
             _phantom: PhantomData::default(),

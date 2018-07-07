@@ -23,19 +23,19 @@ impl TryFrom<u64> for PacketNumber {
 
 impl From<u32> for PacketNumber {
     fn from(value: u32) -> PacketNumber {
-        PacketNumber(value as u64)
+        PacketNumber(value.into())
     }
 }
 
 impl From<u16> for PacketNumber {
     fn from(value: u16) -> PacketNumber {
-        PacketNumber(value as u64)
+        PacketNumber(value.into())
     }
 }
 
 impl From<u8> for PacketNumber {
     fn from(value: u8) -> PacketNumber {
-        PacketNumber(value as u64)
+        PacketNumber(value.into())
     }
 }
 
@@ -101,7 +101,7 @@ impl PacketNumber {
         // The initial value for packet number MUST be selected randomly from a
         // range between 0 and 2^32 - 1025 (inclusive)
         let inner = rng.gen_range(0u32, 4294966272u32);
-        let packet_number = PacketNumber(inner as u64);
+        let packet_number = PacketNumber(inner.into());
         debug!("generated new packet number {:?}", packet_number);
 
         packet_number

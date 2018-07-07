@@ -1,4 +1,5 @@
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
+use conv::ValueFrom;
 use debugit::DebugIt;
 use errors::*;
 use frames::Frame;
@@ -238,9 +239,9 @@ impl<'a> Writable for HkdfInfo<'a> {
         let label_prefix = "QUIC ";
         let label_len = label_prefix.len() + self.label.len();
 
-        assert!(label_len <= u8::max_value() as usize);
-
-        (label_len as u8).write(writer)?;
+        u8::value_from(label_len)
+            .expect("the label length should fit in a u8")
+            .write(writer)?;
 
         label_prefix.write(writer)?;
         self.label.write(writer)?;
@@ -257,11 +258,9 @@ fn encode_hkdf_info(label: &str, out_len: usize) -> Result<Bytes> {
     //     opaque label<6..255> = "QUIC " + Label;
     // } QhkdfExpandInfo;
 
-    assert!(out_len <= (u16::max_value() as usize));
-
     let hkdf_info = HkdfInfo {
         label,
-        out_len: out_len as u16,
+        out_len: u16::value_from(out_len).expect("the output length must fit in a u16"),
     };
 
     trace!("encoding hkdf info {:?}", hkdf_info);

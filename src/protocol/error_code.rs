@@ -1,3 +1,4 @@
+use conv::ValueFrom;
 use errors::*;
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
@@ -41,7 +42,7 @@ impl Readable for ErrorCode {
             0xa => ErrorCode::ProtocolViolation,
             0xb => ErrorCode::UnsolicitedPathResponse,
             0x100...0x1ff => {
-                let frame_type = value as u8;
+                let frame_type = u8::value_from(value & 0xffu16).unwrap();
                 ErrorCode::FrameError(frame_type)
             }
             _ => bail!(ErrorKind::FailedToReadErrorCode),
@@ -69,7 +70,7 @@ impl Writable for ErrorCode {
             ErrorCode::VersionNegotationError => 0x9,
             ErrorCode::ProtocolViolation => 0xa,
             ErrorCode::UnsolicitedPathResponse => 0xb,
-            ErrorCode::FrameError(frame_type) => (0x1u16 << 8) | *frame_type as u16,
+            ErrorCode::FrameError(frame_type) => (0x1u16 << 8) | u16::from(*frame_type),
         };
 
         bytes
