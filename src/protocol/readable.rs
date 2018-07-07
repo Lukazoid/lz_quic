@@ -204,6 +204,33 @@ impl Readable for BytesMut {
     }
 }
 
+macro_rules! array_impl {
+    ($($length:expr) *) => {
+        $(impl Readable for [u8; $length] {
+            type Context = ();
+
+            fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self>
+            where
+                Self: Sized,
+            {
+                trace!("reading byte array");
+
+                let mut array = [0u8; $length];
+
+                reader
+                    .read_exact(&mut array)
+                    .chain_err(|| ErrorKind::FailedToReadBytes)?;
+
+                debug!("read byte array {:?}", array);
+
+                Ok(array)
+            }
+        })*
+    };
+}
+
+array_impl!(16);
+
 impl Readable for Vec<u8> {
     type Context = ();
 

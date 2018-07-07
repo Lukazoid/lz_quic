@@ -313,6 +313,10 @@ error_chain! {
             description("duplicate transport parameter id")
             display("duplicate transport parameter id {}", id)
         }
+        TransportParameterMustBeSpecified (id: u16) {
+            description("transport parameter must be specified")
+            display("transport parameter {} must be specified", id)
+        }
     }
 }
 

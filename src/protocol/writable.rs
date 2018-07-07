@@ -1,5 +1,5 @@
 use byteorder::{NetworkEndian, WriteBytesExt};
-use bytes::{BufMut, BytesMut};
+use bytes::{Bytes, BytesMut};
 use debugit::DebugIt;
 use errors::*;
 use smallvec::{Array, SmallVec};
@@ -21,6 +21,17 @@ pub trait Writable {
         debug!("written {:?} to slice {:?}", DebugIt(self), slice);
 
         Ok(())
+    }
+
+    fn bytes_small<A>(&self) -> Result<SmallVec<A>>
+    where
+        A: Array<Item = u8>,
+    {
+        let mut small_vec = SmallVec::new();
+
+        self.write(&mut small_vec)?;
+
+        Ok(small_vec)
     }
 
     fn bytes(&self) -> Result<BytesMut> {
@@ -65,6 +76,20 @@ impl<E: Writable> Writable for Option<E> {
         if let Some(value) = self {
             value.write(writer)?;
         }
+
+        Ok(())
+    }
+}
+
+impl Writable for Bytes {
+    fn write<W: Write>(&self, writer: &mut W) -> Result<()> {
+        trace!("writing bytes {:?}", DebugIt(self));
+
+        writer
+            .write_all(self)
+            .chain_err(|| ErrorKind::FailedToWriteBytes(self.len()))?;
+
+        debug!("written bytes {:?}", DebugIt(self));
 
         Ok(())
     }
