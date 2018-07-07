@@ -81,3 +81,14 @@ impl Writable for ErrorCode {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::ErrorCode;
+    use protocol;
+
+    #[test]
+    fn round_trip_frame_error() {
+        protocol::test_write_read(&ErrorCode::FrameError(208)).unwrap();
+    }
+}
