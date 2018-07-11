@@ -43,6 +43,14 @@ pub trait Writable {
 
         Ok(writer.into_inner())
     }
+
+    fn bytes_vec(&self) -> Result<Vec<u8>> {
+        let mut vec = Vec::new();
+
+        self.write(&mut vec)?;
+
+        Ok(vec)
+    }
 }
 
 struct GrowingBytesMutWriter {
