@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use errors::*;
 use futures::{Async, Poll};
-use protocol::StreamId;
+use protocol::{FlowControl, StreamId};
 use std::collections::VecDeque;
 use std::mem;
 use utils::DataQueue;
@@ -11,6 +11,8 @@ pub struct StreamState {
     stream_id: StreamId,
     incoming_data: DataQueue,
     pending_outgoing_data: VecDeque<Bytes>,
+    incoming_flow_control: Option<FlowControl>,
+    outgoing_flow_control: Option<FlowControl>,
 }
 
 impl StreamState {
@@ -24,6 +26,8 @@ impl StreamState {
             stream_id,
             incoming_data: DataQueue::new(),
             pending_outgoing_data: VecDeque::new(),
+            incoming_flow_control: initial_max_incoming_data.map(FlowControl::with_initial_max),
+            outgoing_flow_control: initial_max_outgoing_data.map(FlowControl::with_initial_max),
         }
     }
 

@@ -2,15 +2,11 @@ use bytes::Bytes;
 use crypto;
 use crypto::CryptoState;
 use errors::*;
-use futures::{Async, Future, Poll, Stream};
-use packets::{PacketCodec, PacketDispatcher};
-use protocol::{ConnectionId, FlowControl, StreamId, StreamType};
+use futures::{Async, Future, Poll};
+use protocol::{ConnectionId, FlowControl, Readable, StreamId, StreamType, TransportParameters};
 use rustls::Session;
 use std::sync::{Arc, Mutex};
-use tokio_core::net::UdpFramed;
-use tokio_io::codec::Framed;
-use tokio_rustls::TlsStream;
-use {DataStream, NewDataStreams, Perspective, StreamMap, StreamMapEntry, StreamState};
+use {DataStream, Perspective, StreamMap, StreamMapEntry, StreamState};
 
 #[derive(Debug)]
 struct AeadPair {
@@ -223,5 +219,16 @@ impl<P: Perspective> Connection<P> {
         }
 
         Ok(().into())
+    }
+
+    pub fn handle_negotiated_session<S: Session>(&self, tls_session: &S) -> Result<()> {
+        let transport_parameter_bytes = tls_session
+            .get_quic_transport_parameters()
+            .ok_or_else(|| ErrorKind::TransportParametersAreRequired)?;
+
+        let transport_parameters =
+            TransportParameters::from_bytes_with_context(transport_parameter_bytes, &P::role())?;
+
+        unimplemented!()
     }
 }

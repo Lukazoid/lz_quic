@@ -317,6 +317,9 @@ error_chain! {
             description("transport parameter must be specified")
             display("transport parameter {} must be specified", id)
         }
+        TransportParametersAreRequired {
+            description("transport parameters are required")
+        }
     }
 }
 

@@ -3,8 +3,9 @@ use errors::*;
 use futures::{Async, Future, IntoFuture, Poll, Stream};
 use lz_shared_udp::{SharedUdpFramed, SharedUdpSocket};
 use packets::{IncomingPacket, PacketCodec};
-use protocol::{ConnectionId, Role, ServerId};
-use rustls::quic::ClientQuicExt;
+use protocol::{ConnectionId, MessageParameters, Role, ServerId, TransportParameters, Version,
+               Writable};
+use rustls::quic::{ClientQuicExt, QuicExt};
 use rustls::ClientSession;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
@@ -74,6 +75,24 @@ impl ClientPerspective {
             None => false,
         }
     }
+
+    fn build_transport_parameters(&self) -> TransportParameters {
+        TransportParameters {
+            message_parameters: MessageParameters::ClientHello {
+                initial_version: Version::DRAFT_IETF_08,
+            },
+            initial_max_stream_data: self.client_configuration.max_incoming_data_per_stream,
+            initial_max_data: self.client_configuration.max_incoming_data,
+            idle_timeout: 10,
+            initial_max_bidi_streams: None,
+            initial_max_uni_streams: None,
+            max_packet_size: Some(65527),
+            ack_delay_exponent: None,
+            disable_migration: false,
+            stateless_reset_token: None,
+            preferred_address: None,
+        }
+    }
 }
 
 impl Perspective for ClientPerspective {
@@ -92,34 +111,44 @@ impl Perspective for ClientPerspective {
         let host = self.server_id.host();
         let tls_config = self.client_configuration.tls_config.clone();
 
+        let server_id_for_error = self.server_id.clone();
+        let server_id_for_success = self.server_id.clone();
+
         let when_connected = DNSNameRef::try_from_ascii_str(host)
             .map_err(|_| Error::from_kind(ErrorKind::HostIsNotAValidDomainName(host.to_owned())))
-            .map(|dns_name| {
-                let server_id_for_error = self.server_id.clone();
-                let server_id_for_success = self.server_id.clone();
+            .and_then(|dns_name| {
+                let quic_transport_parameters = self.build_transport_parameters();
 
-                let quic_transport_parameters =
-                    unimplemented!("populate the quic transport parameters");
-
-                let client_session =
-                    ClientSession::new_quic(&tls_config, dns_name, quic_transport_parameters);
-
-                tokio_rustls::connect_async_with_session(crypto_stream, client_session)
-                    .chain_err(move || {
+                quic_transport_parameters
+                    .bytes_vec()
+                    .map(|quic_transport_parameters| {
+                        ClientSession::new_quic(&tls_config, dns_name, quic_transport_parameters)
+                    })
+            })
+            .map(|client_session| {
+                tokio_rustls::connect_async_with_session(crypto_stream, client_session).chain_err(
+                    move || {
                         ErrorKind::FailedToPerformTlsHandshakeWithServer(
                             server_id_for_error.host().to_owned(),
                         )
-                    })
-                    .map(move |x| {
-                        info!(
-                            "connection {}: performed TLS handshake from client to server {:?}",
-                            connection_description, server_id_for_success
-                        );
-                        x
-                    })
+                    },
+                )
             })
             .into_future()
-            .flatten();
+            .flatten()
+            .and_then(move |tls_stream| {
+                info!(
+                    "connection {}: performed TLS handshake from client to server {:?}",
+                    connection_description, server_id_for_success
+                );
+
+                {
+                    let (stream, session) = tls_stream.get_ref();
+                    stream.connection().handle_negotiated_session(session)?;
+                }
+
+                Ok(tls_stream)
+            });
 
         Box::new(when_connected)
     }

@@ -12,7 +12,7 @@ pub struct TransportParameters {
 
     pub initial_max_stream_data: u32,
     pub initial_max_data: u32,
-    pub idle_timeout_seconds: u16,
+    pub idle_timeout: u16,
     pub initial_max_bidi_streams: Option<u16>,
     pub initial_max_uni_streams: Option<u16>,
     pub max_packet_size: Option<u16>,
@@ -298,7 +298,7 @@ impl Readable for TransportParameters {
             u32::from_bytes,
         )?;
 
-        let idle_timeout_seconds = get_parameter_value(
+        let idle_timeout = get_parameter_value(
             &parameters_by_id,
             TransportParameterId::IdleTimeout,
             u16::from_bytes,
@@ -356,7 +356,7 @@ impl Readable for TransportParameters {
             message_parameters,
             initial_max_stream_data,
             initial_max_data,
-            idle_timeout_seconds,
+            idle_timeout,
             initial_max_bidi_streams,
             initial_max_uni_streams,
             max_packet_size,
@@ -389,7 +389,7 @@ impl Writable for TransportParameters {
         });
         transport_parameters.push(TransportParameter {
             id: TransportParameterId::IdleTimeout,
-            value: self.idle_timeout_seconds.bytes_small()?,
+            value: self.idle_timeout.bytes_small()?,
         });
         if let Some(value) = self.initial_max_bidi_streams {
             transport_parameters.push(TransportParameter {
@@ -463,7 +463,7 @@ mod test {
 
             initial_max_stream_data: 8192,
             initial_max_data: 65536,
-            idle_timeout_seconds: 120,
+            idle_timeout: 120,
             initial_max_bidi_streams: Some(8),
             initial_max_uni_streams: Some(8),
             max_packet_size: Some(1024),
@@ -482,12 +482,12 @@ mod test {
         let transport_parameters = TransportParameters {
             message_parameters: MessageParameters::EncryptedExtensions {
                 negotiated_version: Version::DRAFT_IETF_08,
-                supported_versions: hashset!(Version::DRAFT_IETF_08),
+                supported_versions: hashset![Version::DRAFT_IETF_08],
             },
 
             initial_max_stream_data: 8192,
             initial_max_data: 65536,
-            idle_timeout_seconds: 120,
+            idle_timeout: 120,
             initial_max_bidi_streams: Some(8),
             initial_max_uni_streams: Some(8),
             max_packet_size: Some(1024),

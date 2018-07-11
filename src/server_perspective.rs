@@ -1,8 +1,8 @@
 use errors::*;
-use futures::{Future, Poll};
+use futures::{Future, IntoFuture, Poll};
 use packets::IncomingPacket;
-use protocol::{ConnectionId, Role};
-use rustls::quic::ServerQuicExt;
+use protocol::{ConnectionId, MessageParameters, Role, TransportParameters, Version, Writable};
+use rustls::quic::{QuicExt, ServerQuicExt};
 use rustls::ServerSession;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -25,6 +25,25 @@ impl ServerPerspective {
             server_configuration,
         }
     }
+
+    fn build_transport_parameters(&self) -> TransportParameters {
+        TransportParameters {
+            message_parameters: MessageParameters::EncryptedExtensions {
+                negotiated_version: Version::DRAFT_IETF_08,
+                supported_versions: hashset![Version::DRAFT_IETF_08],
+            },
+            initial_max_stream_data: self.server_configuration.max_incoming_data_per_stream,
+            initial_max_data: self.server_configuration.max_incoming_data_per_connection,
+            idle_timeout: 10,
+            initial_max_bidi_streams: None,
+            initial_max_uni_streams: None,
+            max_packet_size: Some(65527),
+            ack_delay_exponent: None,
+            disable_migration: false,
+            stateless_reset_token: None,
+            preferred_address: None,
+        }
+    }
 }
 
 impl Perspective for ServerPerspective {
@@ -43,22 +62,37 @@ impl Perspective for ServerPerspective {
         let client_address_for_error = self.client_address;
         let client_address_for_success = self.client_address;
 
-        let quic_transport_parameters = unimplemented!("populate the quic transport parameters");
-        let server_session = ServerSession::new_quic(
-            &self.server_configuration.tls_config,
-            quic_transport_parameters,
-        );
+        let quic_transport_parameters = self.build_transport_parameters();
 
-        let when_connected = tokio_rustls::accept_async_with_session(crypto_stream, server_session)
-            .chain_err(move || {
-                ErrorKind::FailedToPerformTlsHandshakeWithClient(client_address_for_error)
+        let when_connected = quic_transport_parameters
+            .bytes_vec()
+            .map(|quic_transport_parameters| {
+                ServerSession::new_quic(
+                    &self.server_configuration.tls_config,
+                    quic_transport_parameters,
+                )
             })
-            .map(move |x| {
+            .map(|server_session| {
+                tokio_rustls::accept_async_with_session(crypto_stream, server_session).chain_err(
+                    move || {
+                        ErrorKind::FailedToPerformTlsHandshakeWithClient(client_address_for_error)
+                    },
+                )
+            })
+            .into_future()
+            .flatten()
+            .and_then(move |tls_stream| {
                 info!(
                     "connection {}: performed TLS handshake from server to client {:?}",
                     connection_description, client_address_for_success
                 );
-                x
+
+                {
+                    let (stream, session) = tls_stream.get_ref();
+                    stream.connection().handle_negotiated_session(session)?;
+                }
+
+                Ok(tls_stream)
             });
 
         Box::new(when_connected)
