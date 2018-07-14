@@ -1,7 +1,7 @@
 use errors::*;
 use futures::{Future, Poll};
 use packets::IncomingPacket;
-use protocol::{ConnectionId, Role};
+use protocol::{ConnectionId, MessageParameters, Readable, Role, RoleSpecificTransportParameters};
 use rustls::Session;
 use tokio_rustls::TlsStream;
 use {DataStream, StreamMap};
@@ -13,6 +13,8 @@ pub trait Perspective: Sized {
             Error = Error,
         >
         + Send;
+    type IncomingTransportMessageParameters: MessageParameters;
+    type RoleSpecificTransportParameters: RoleSpecificTransportParameters;
 
     fn handshake(&self, crypto_stream: DataStream<Self>) -> Self::HandshakeFuture;
 

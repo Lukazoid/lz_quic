@@ -221,13 +221,18 @@ impl<P: Perspective> Connection<P> {
         Ok(().into())
     }
 
-    pub fn handle_negotiated_session<S: Session>(&self, tls_session: &S) -> Result<()> {
+    pub fn handle_negotiated_session<S: Session>(&self, tls_session: &S) -> Result<()>
+    where
+        <<P as Perspective>::IncomingTransportMessageParameters as Readable>::Context: Default,
+    {
         let transport_parameter_bytes = tls_session
             .get_quic_transport_parameters()
             .ok_or_else(|| ErrorKind::TransportParametersAreRequired)?;
 
-        let transport_parameters =
-            TransportParameters::from_bytes_with_context(transport_parameter_bytes, &P::role())?;
+        let transport_parameters: TransportParameters<
+            P::IncomingTransportMessageParameters,
+            P::RoleSpecificTransportParameters,
+        > = TransportParameters::from_bytes(transport_parameter_bytes)?;
 
         unimplemented!()
     }

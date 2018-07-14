@@ -61,4 +61,8 @@ mod flow_control;
 pub use self::flow_control::FlowControl;
 
 mod transport_parameters;
-pub use self::transport_parameters::{MessageParameters, TransportParameters};
+pub use self::transport_parameters::{ClientHelloMessageParameters,
+                                     ClientSpecificTransportParameters,
+                                     EncryptedExtensionsMessageParameters, MessageParameters,
+                                     RoleSpecificTransportParameters,
+                                     ServerSpecificTransportParameters, TransportParameters};

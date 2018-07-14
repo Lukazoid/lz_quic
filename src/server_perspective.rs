@@ -1,7 +1,8 @@
 use errors::*;
 use futures::{Future, IntoFuture, Poll};
 use packets::IncomingPacket;
-use protocol::{ConnectionId, MessageParameters, Role, TransportParameters, Version, Writable};
+use protocol::{ClientHelloMessageParameters, ConnectionId, EncryptedExtensionsMessageParameters,
+               Role, ServerSpecificTransportParameters, TransportParameters, Version, Writable};
 use rustls::quic::{QuicExt, ServerQuicExt};
 use rustls::ServerSession;
 use std::net::SocketAddr;
@@ -26,9 +27,12 @@ impl ServerPerspective {
         }
     }
 
-    fn build_transport_parameters(&self) -> TransportParameters {
+    fn build_transport_parameters(
+        &self,
+    ) -> TransportParameters<EncryptedExtensionsMessageParameters, ServerSpecificTransportParameters>
+    {
         TransportParameters {
-            message_parameters: MessageParameters::EncryptedExtensions {
+            message_parameters: EncryptedExtensionsMessageParameters {
                 negotiated_version: Version::DRAFT_IETF_08,
                 supported_versions: hashset![Version::DRAFT_IETF_08],
             },
@@ -40,8 +44,10 @@ impl ServerPerspective {
             max_packet_size: Some(65527),
             ack_delay_exponent: None,
             disable_migration: false,
-            stateless_reset_token: None,
-            preferred_address: None,
+            role_specific_transport_parameters: ServerSpecificTransportParameters {
+                stateless_reset_token: None,
+                preferred_address: None,
+            },
         }
     }
 }
@@ -50,6 +56,8 @@ impl Perspective for ServerPerspective {
     type TlsSession = ServerSession;
     type HandshakeFuture =
         Box<Future<Item = TlsStream<DataStream<Self>, Self::TlsSession>, Error = Error> + Send>;
+    type IncomingTransportMessageParameters = ClientHelloMessageParameters;
+    type RoleSpecificTransportParameters = ServerSpecificTransportParameters;
 
     fn handshake(&self, crypto_stream: DataStream<Self>) -> Self::HandshakeFuture {
         let connection_description = crypto_stream.connection().description();
