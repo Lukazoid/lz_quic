@@ -205,7 +205,7 @@ impl Perspective for ClientPerspective {
                     if self.should_accept_incoming_packet(connection_id, &incoming_packet) {
                         return Ok(Async::Ready(incoming_packet));
                     } else {
-                        warn!("discarded packet");
+                        warn!("discarded packet from {:?}", incoming_packet.source_address);
                     }
                 }
                 Async::Ready(None) => unreachable!("the packets stream should never end"),
