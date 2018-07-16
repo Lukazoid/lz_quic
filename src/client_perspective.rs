@@ -9,6 +9,7 @@ use protocol::{ClientHelloMessageParameters, ClientSpecificTransportParameters, 
                Writable};
 use rustls::quic::ClientQuicExt;
 use rustls::ClientSession;
+use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
 use tokio_core::net::UdpSocket;
@@ -193,7 +194,10 @@ impl Perspective for ClientPerspective {
         StreamMap::new_client_stream_map()
     }
 
-    fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error> {
+    fn poll_incoming_packets(
+        &self,
+        connection_id: ConnectionId,
+    ) -> Poll<SmallVec<[IncomingPacket; 2]>, Error> {
         let mut packets_stream = self.packets
             .0
             .clone()
@@ -202,12 +206,17 @@ impl Perspective for ClientPerspective {
         loop {
             match packets_stream.poll()? {
                 Async::NotReady => return Ok(Async::NotReady),
-                Async::Ready(Some(incoming_packet)) => {
-                    if self.should_accept_incoming_packet(connection_id, &incoming_packet) {
-                        return Ok(Async::Ready(incoming_packet));
-                    } else {
-                        warn!("discarded packet from {:?}", incoming_packet.source_address);
+                Async::Ready(Some(incoming_packets)) => {
+                    let mut accepted_incoming_packets = SmallVec::new();
+                    for incoming_packet in incoming_packets {
+                        if self.should_accept_incoming_packet(connection_id, &incoming_packet) {
+                            accepted_incoming_packets.push(incoming_packet);
+                        } else {
+                            warn!("discarded packet from {:?}", incoming_packet.source_address);
+                        }
                     }
+
+                    return Ok(Async::Ready(accepted_incoming_packets));
                 }
                 Async::Ready(None) => unreachable!("the packets stream should never end"),
             }
@@ -224,8 +233,7 @@ impl Perspective for ClientPerspective {
         }
 
         sink.poll_complete()
-            .chain_err(|| ErrorKind::FailedToSendPacketToUdpSocket)
-            .unwrap();
+            .chain_err(|| ErrorKind::FailedToSendPacketToUdpSocket)?;
 
         Ok(().into())
     }

@@ -17,7 +17,7 @@ pub enum AddressConnectionIds {
 /// The type responsible for mapping to/from remote addresses and connection identifiers.
 #[derive(Debug, Clone, Default)]
 pub struct ConnectionMap {
-    /// Each connection has a single address tuple
+    /// Each connection ID MUST be used on only one local address
     connection_addresses: HashMap<ConnectionId, AddressTuple>,
 
     /// Each address tuple can have multiple connections

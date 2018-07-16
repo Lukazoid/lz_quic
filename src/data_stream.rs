@@ -114,7 +114,7 @@ impl<P: Perspective> Write for DataStream<P> {
             }
 
             // if no bytes could be buffered then process incoming packets
-            if self.connection.poll_process_incoming_packet()?.is_ready() {
+            if self.connection.poll_process_incoming_packets()?.is_ready() {
                 // if any new incoming packets then re-attempt buffering
                 // in case we were granted more credit
                 continue;

@@ -5,6 +5,7 @@ use protocol::{ClientHelloMessageParameters, ConnectionId, EncryptedExtensionsMe
                Role, ServerSpecificTransportParameters, TransportParameters, Version, Writable};
 use rustls::quic::{QuicExt, ServerQuicExt};
 use rustls::ServerSession;
+use smallvec::SmallVec;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio_rustls::{self, TlsStream};
@@ -141,7 +142,10 @@ impl Perspective for ServerPerspective {
         StreamMap::new_server_stream_map()
     }
 
-    fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error> {
+    fn poll_incoming_packets(
+        &self,
+        connection_id: ConnectionId,
+    ) -> Poll<SmallVec<[IncomingPacket; 2]>, Error> {
         unimplemented!()
     }
 

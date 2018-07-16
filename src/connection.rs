@@ -6,7 +6,7 @@ use futures::{Async, Future, Poll};
 use packets::{LongHeader, LongHeaderPacketType, OutgoingPacket, PacketHeader, PacketNumber,
               PartialPacketNumber};
 use protocol::{ConnectionId, EncryptionLevel, FlowControl, Readable, StreamId, StreamType,
-               TransportParameters, Version};
+               TransportParameters, VarInt, Version};
 use rustls::Session;
 use std::collections::VecDeque;
 use std::net::SocketAddr;
@@ -160,7 +160,7 @@ impl<P: Perspective> Connection<P> {
     }
 
     pub fn poll_try_transmit(&self) -> Poll<(), Error> {
-        trace!("determining whether to transmit a new frame");
+        trace!("determining whether to transmit a new packet");
 
         let mut stream_frames = self.pending_stream_frames
             .lock()
@@ -186,8 +186,12 @@ impl<P: Perspective> Connection<P> {
         stream_frames: &mut VecDeque<StreamFrame>,
     ) -> Poll<(), Error> {
         // TODO LH Actually write the stream frames
-        stream_frames.clear();
-        loop {
+
+        while !stream_frames.is_empty() {
+            trace!("transmitting new packet");
+
+            stream_frames.clear();
+
             let outgoing_packet = OutgoingPacket {
                 destination_address: self.remote_address,
                 packet_header: PacketHeader::Long(LongHeader {
@@ -195,10 +199,10 @@ impl<P: Perspective> Connection<P> {
                     version: Version::DRAFT_IETF_08,
                     destination_connection_id: Some(self.remote_connection_id),
                     source_connection_id: Some(self.local_connection_id),
-                    payload_length: 0,
+                    payload_length: 0u32.into(),
                     partial_packet_number: PartialPacketNumber::from_packet_number(
-                        PacketNumber::from(0u32),
-                        PacketNumber::from(0u32),
+                        0u32.into(),
+                        0u32.into(),
                     )?,
                 }),
                 data: Bytes::new(),
@@ -211,27 +215,26 @@ impl<P: Perspective> Connection<P> {
             {
                 return Ok(Async::NotReady);
             }
-        }
-    }
 
-    pub fn poll_process_incoming_packet(&self) -> Poll<(), Error> {
-        trace!("checking for a new incoming packet");
-
-        if let Async::Ready(incoming_packet) = self.perspective
-            .poll_incoming_packet(self.local_connection_id())?
-        {
-            trace!("found new incoming packet");
-            // TODO LH Do something with the packet
-            return Ok(().into());
+            debug!("transmitted new packet");
         }
 
-        trace!("no more incoming packets");
-
-        Ok(Async::NotReady)
+        Ok(().into())
     }
 
     pub fn poll_process_incoming_packets(&self) -> Poll<(), Error> {
-        while self.poll_process_incoming_packet()?.is_ready() {}
+        trace!("checking for a new incoming packets");
+
+        while let Async::Ready(incoming_packets) = self.perspective
+            .poll_incoming_packets(self.local_connection_id())?
+        {
+            for incoming_packet in incoming_packets {
+                trace!("found new incoming packet");
+                // TODO LH Do something with the packet
+            }
+        }
+
+        trace!("no more incoming packets");
 
         Ok(Async::NotReady)
     }

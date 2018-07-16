@@ -1,8 +1,9 @@
 use errors::*;
 use futures::{Future, Poll};
 use packets::{IncomingPacket, OutgoingPacket};
-use protocol::{ConnectionId, MessageParameters, Readable, Role, RoleSpecificTransportParameters};
+use protocol::{ConnectionId, MessageParameters, Role, RoleSpecificTransportParameters};
 use rustls::Session;
+use smallvec::SmallVec;
 use tokio_rustls::TlsStream;
 use {DataStream, StreamMap};
 
@@ -37,7 +38,10 @@ pub trait Perspective: Sized {
 
     fn create_stream_map() -> StreamMap;
 
-    fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error>;
+    fn poll_incoming_packets(
+        &self,
+        connection_id: ConnectionId,
+    ) -> Poll<SmallVec<[IncomingPacket; 2]>, Error>;
 
     fn poll_send_packet(&self, packet: OutgoingPacket) -> Poll<(), Error>;
 

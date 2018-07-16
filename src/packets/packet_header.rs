@@ -26,10 +26,18 @@ impl PacketHeader {
     pub fn source_connection_id(&self) -> Option<ConnectionId> {
         match self {
             PacketHeader::Long(long_header) => long_header.source_connection_id,
-            PacketHeader::Short(short_header) => None,
+            PacketHeader::Short(_) => None,
             PacketHeader::VersionNegotiation(version_negotiation) => {
                 version_negotiation.source_connection_id
             }
+        }
+    }
+
+    pub fn payload_length(&self) -> Option<VarInt> {
+        match self {
+            PacketHeader::Long(long_header) => Some(long_header.payload_length),
+            PacketHeader::Short(_) => None,
+            PacketHeader::VersionNegotiation(_) => Some(0u32.into()),
         }
     }
 }
@@ -114,7 +122,7 @@ impl Readable for PacketHeader {
                     version,
                     destination_connection_id,
                     source_connection_id,
-                    payload_length: payload_length.into(),
+                    payload_length,
                     partial_packet_number,
                 })
             }
@@ -199,10 +207,7 @@ impl Writable for PacketHeader {
 
                 long_header.destination_connection_id.write(writer)?;
                 long_header.source_connection_id.write(writer)?;
-
-                let payload_length = VarInt::value_from(long_header.payload_length)?;
-                payload_length.write(writer)?;
-
+                long_header.payload_length.write(writer)?;
                 long_header.partial_packet_number.write(writer)?;
             }
             PacketHeader::Short(short_header) => {
@@ -232,7 +237,7 @@ mod tests {
     use super::PacketHeader;
     use packets::{LongHeader, LongHeaderPacketType, PacketHeaderReadContext, ShortHeader,
                   VersionNegotiationPacket};
-    use protocol::{self, ConnectionId, Version};
+    use protocol::{self, ConnectionId, VarInt, Version};
     use rand;
 
     #[test]
@@ -260,7 +265,7 @@ mod tests {
             source_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
             version: Version::DRAFT_IETF_08,
             partial_packet_number: 5u8.into(),
-            payload_length: 654234,
+            payload_length: 654234u32.into(),
         };
         let packet_header = PacketHeader::Long(long_header);
 
