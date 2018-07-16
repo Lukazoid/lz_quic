@@ -1,12 +1,13 @@
 use debugit::DebugIt;
 use errors::*;
+use futures::sink::Sink;
 use futures::{Async, Future, IntoFuture, Poll, Stream};
 use lz_shared_udp::{SharedUdpFramed, SharedUdpSocket};
-use packets::{IncomingPacket, PacketCodec};
+use packets::{IncomingPacket, OutgoingPacket, PacketCodec};
 use protocol::{ClientHelloMessageParameters, ClientSpecificTransportParameters, ConnectionId,
                EncryptedExtensionsMessageParameters, Role, ServerId, TransportParameters, Version,
                Writable};
-use rustls::quic::{ClientQuicExt, QuicExt};
+use rustls::quic::ClientQuicExt;
 use rustls::ClientSession;
 use std::net::SocketAddr;
 use std::sync::{Arc, RwLock};
@@ -211,6 +212,22 @@ impl Perspective for ClientPerspective {
                 Async::Ready(None) => unreachable!("the packets stream should never end"),
             }
         }
+    }
+
+    fn poll_send_packet(&self, packet: OutgoingPacket) -> Poll<(), Error> {
+        let mut sink = self.packets.0.clone();
+        if sink.start_send(packet)
+            .chain_err(|| ErrorKind::FailedToSendPacketToUdpSocket)?
+            .is_not_ready()
+        {
+            return Ok(Async::NotReady);
+        }
+
+        sink.poll_complete()
+            .chain_err(|| ErrorKind::FailedToSendPacketToUdpSocket)
+            .unwrap();
+
+        Ok(().into())
     }
 
     fn role() -> Role {

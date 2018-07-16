@@ -1,6 +1,6 @@
 use errors::*;
 use futures::{Future, IntoFuture, Poll};
-use packets::IncomingPacket;
+use packets::{IncomingPacket, OutgoingPacket};
 use protocol::{ClientHelloMessageParameters, ConnectionId, EncryptedExtensionsMessageParameters,
                Role, ServerSpecificTransportParameters, TransportParameters, Version, Writable};
 use rustls::quic::{QuicExt, ServerQuicExt};
@@ -142,6 +142,10 @@ impl Perspective for ServerPerspective {
     }
 
     fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error> {
+        unimplemented!()
+    }
+
+    fn poll_send_packet(&self, packet: OutgoingPacket) -> Poll<(), Error> {
         unimplemented!()
     }
 

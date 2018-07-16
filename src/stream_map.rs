@@ -90,6 +90,10 @@ impl StreamMap {
         Ok(stream_map_entry.clone())
     }
 
+    pub fn get_streams<'a>(&'a self) -> impl Iterator<Item = StreamMapEntry> + 'a {
+        self.streams.values().cloned()
+    }
+
     pub fn get_or_ensure_stream(&mut self, stream_id: StreamId) -> StreamMapEntry {
         let stream_map_entry = self.streams.entry(stream_id).or_insert_with(|| {
             let state = Arc::new(Mutex::new(StreamState::new(stream_id, None, None)));

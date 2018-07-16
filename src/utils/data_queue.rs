@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use conv::{ConvUtil, ValueInto};
 use std::cmp::{self, Ordering, PartialOrd};
 use std::collections::binary_heap::PeekMut;
 use std::collections::BinaryHeap;
@@ -6,7 +7,7 @@ use utils::RevOrd;
 
 #[derive(Debug, PartialEq, Eq)]
 struct DataChunk {
-    offset: usize,
+    offset: u64,
     bytes: Bytes,
 }
 
@@ -23,7 +24,7 @@ impl Ord for DataChunk {
 }
 
 impl DataChunk {
-    pub fn new(offset: usize, bytes: Bytes) -> Self {
+    pub fn new(offset: u64, bytes: Bytes) -> Self {
         Self { offset, bytes }
     }
 
@@ -31,7 +32,7 @@ impl DataChunk {
         let to_advance = cmp::min(count, self.bytes.len());
 
         self.bytes.advance(to_advance);
-        self.offset += to_advance;
+        self.offset += to_advance.value_as::<u64>().unwrap();
 
         to_advance
     }
@@ -47,8 +48,8 @@ impl DataChunk {
         self.bytes.is_empty()
     }
 
-    pub fn end_offset(&self) -> usize {
-        self.offset + self.bytes.len()
+    pub fn end_offset(&self) -> u64 {
+        self.offset + self.bytes.len().value_as::<u64>().unwrap()
     }
 }
 
@@ -56,8 +57,8 @@ impl DataChunk {
 #[derive(Debug, Default)]
 pub struct DataQueue {
     pending_chunks: BinaryHeap<RevOrd<DataChunk>>,
-    read_offset: usize,
-    last_offset: Option<usize>,
+    read_offset: u64,
+    last_offset: Option<u64>,
 }
 
 impl DataQueue {
@@ -71,7 +72,7 @@ impl DataQueue {
             .unwrap_or(false)
     }
 
-    pub fn insert_chunk(&mut self, offset: usize, last: bool, bytes: Bytes) {
+    pub fn insert_chunk(&mut self, offset: u64, last: bool, bytes: Bytes) {
         let data_chunk = DataChunk::new(offset, bytes);
 
         let end_offset = data_chunk.end_offset();
@@ -114,7 +115,9 @@ impl DataQueue {
                             break;
                         }
                         Ordering::Less => {
-                            let to_advance = self.read_offset - current_chunk.offset;
+                            let to_advance = (self.read_offset - current_chunk.offset)
+                                .value_into()
+                                .unwrap();
 
                             trace!("the reader has already read past the start of the current chunk, advancing by {} bytes", to_advance);
                             current_chunk.try_advance(to_advance);
@@ -139,6 +142,9 @@ impl DataQueue {
                     }
 
                     read_bytes += bytes_to_read_from_chunk;
+
+                    let bytes_to_read_from_chunk: u64 =
+                        bytes_to_read_from_chunk.value_into().unwrap();
                     self.read_offset += bytes_to_read_from_chunk;
                 }
             }

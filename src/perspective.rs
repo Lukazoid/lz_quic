@@ -1,6 +1,6 @@
 use errors::*;
 use futures::{Future, Poll};
-use packets::IncomingPacket;
+use packets::{IncomingPacket, OutgoingPacket};
 use protocol::{ConnectionId, MessageParameters, Readable, Role, RoleSpecificTransportParameters};
 use rustls::Session;
 use tokio_rustls::TlsStream;
@@ -38,6 +38,8 @@ pub trait Perspective: Sized {
     fn create_stream_map() -> StreamMap;
 
     fn poll_incoming_packet(&self, connection_id: ConnectionId) -> Poll<IncomingPacket, Error>;
+
+    fn poll_send_packet(&self, packet: OutgoingPacket) -> Poll<(), Error>;
 
     fn role() -> Role;
 

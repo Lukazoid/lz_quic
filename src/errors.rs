@@ -320,6 +320,9 @@ error_chain! {
         TransportParametersAreRequired {
             description("transport parameters are required")
         }
+        FailedToSendPacketToUdpSocket {
+            description("failed to send packet to udp socket")
+        }
     }
 }
 

@@ -39,6 +39,7 @@ fn generate_connection_id() -> Result<ConnectionId> {
 }
 
 fn new_connection(
+    server_address: SocketAddr,
     server_id: ServerId,
     udp_socket: UdpSocket,
     client_configuration: ClientConfiguration,
@@ -52,6 +53,7 @@ fn new_connection(
         local_connection_id,
         remote_connection_id,
         client_perspective,
+        server_address,
     )?;
 
     Ok(connection)
@@ -64,8 +66,10 @@ impl Client {
         client_configuration: ClientConfiguration,
         handle: &Handle,
     ) -> NewClient {
-            .and_then(|udp_socket| new_connection(server_id, udp_socket, client_configuration))
         let future = bind_udp_socket(handle, server_address)
+            .and_then(|udp_socket| {
+                new_connection(server_address, server_id, udp_socket, client_configuration)
+            })
             .into_future()
             .and_then(|connection| {
                 let connection = Arc::new(connection);

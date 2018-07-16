@@ -91,7 +91,7 @@ mod data_stream;
 pub use self::data_stream::DataStream;
 
 mod stream_state;
-use self::stream_state::StreamState;
+use self::stream_state::{DequeueWriteResult, StreamState};
 
 mod stream_map;
 use self::stream_map::{StreamMap, StreamMapEntry};

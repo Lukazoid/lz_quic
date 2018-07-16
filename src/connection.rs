@@ -1,12 +1,17 @@
 use bytes::Bytes;
-use crypto;
 use crypto::CryptoState;
 use errors::*;
+use frames::StreamFrame;
 use futures::{Async, Future, Poll};
-use protocol::{ConnectionId, FlowControl, Readable, StreamId, StreamType, TransportParameters};
+use packets::{LongHeader, LongHeaderPacketType, OutgoingPacket, PacketHeader, PacketNumber,
+              PartialPacketNumber};
+use protocol::{ConnectionId, EncryptionLevel, FlowControl, Readable, StreamId, StreamType,
+               TransportParameters, Version};
 use rustls::Session;
+use std::collections::VecDeque;
+use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use {DataStream, Perspective, StreamMap, StreamMapEntry, StreamState};
+use {DataStream, DequeueWriteResult, Perspective, StreamMap, StreamMapEntry, StreamState};
 
 #[derive(Debug)]
 struct AeadPair {
@@ -29,8 +34,10 @@ pub struct Connection<P: Perspective> {
     stream_map: Mutex<StreamMap>,
     aead_clear: AeadPair,
     state: Arc<Mutex<State>>,
-    local_flow_control: Mutex<FlowControl>,
-    remote_flow_control: Mutex<FlowControl>,
+    incoming_flow_control: Mutex<FlowControl>,
+    outgoing_flow_control: Mutex<FlowControl>,
+    pending_stream_frames: Mutex<VecDeque<StreamFrame>>,
+    remote_address: SocketAddr,
 }
 
 impl<P: Perspective + 'static> Connection<P> {
@@ -38,6 +45,7 @@ impl<P: Perspective + 'static> Connection<P> {
         local_connection_id: ConnectionId,
         remote_connection_id: ConnectionId,
         perspective: P,
+        remote_address: SocketAddr,
     ) -> Result<Self> {
         let client_connection_id =
             P::client_connection_id(local_connection_id, remote_connection_id);
@@ -53,7 +61,7 @@ impl<P: Perspective + 'static> Connection<P> {
             read: read_clear,
         };
 
-        let local_flow_control =
+        let incoming_flow_control =
             FlowControl::with_initial_max(perspective.max_incoming_data().into());
 
         let connection = Self {
@@ -63,8 +71,10 @@ impl<P: Perspective + 'static> Connection<P> {
             stream_map: Mutex::new(P::create_stream_map()),
             aead_clear,
             state: Arc::new(Mutex::new(State::Initializing)),
-            local_flow_control: Mutex::new(local_flow_control),
-            remote_flow_control: Mutex::default(),
+            incoming_flow_control: Mutex::new(incoming_flow_control),
+            outgoing_flow_control: Mutex::default(),
+            pending_stream_frames: Mutex::default(),
+            remote_address,
         };
 
         debug!("created new connection {}", connection.description());
@@ -144,14 +154,84 @@ impl<P: Perspective> Connection<P> {
         self.remote_connection_id
     }
 
-    pub fn poll_process_incoming_packets(&self) -> Poll<(), Error> {
-        // TODO LH Eventually handle remote connection termination
+    fn should_transmit(&self, stream_frames: &VecDeque<StreamFrame>) -> bool {
+        // TODO LH Write the actual logic over whether we should transmit
+        !stream_frames.is_empty()
+    }
 
-        while let Async::Ready(incoming_packet) = self.perspective
+    pub fn poll_try_transmit(&self) -> Poll<(), Error> {
+        trace!("determining whether to transmit a new frame");
+
+        let mut stream_frames = self.pending_stream_frames
+            .lock()
+            .expect("failed to lock pending_stream_frames");
+
+        if self.should_transmit(&*stream_frames) {
+            self.poll_transmit_stream_frames(&mut *stream_frames)
+        } else {
+            Ok(Async::NotReady)
+        }
+    }
+
+    fn poll_transmit(&self) -> Poll<(), Error> {
+        let mut stream_frames = self.pending_stream_frames
+            .lock()
+            .expect("failed to lock pending_stream_frames");
+
+        self.poll_transmit_stream_frames(&mut *stream_frames)
+    }
+
+    fn poll_transmit_stream_frames(
+        &self,
+        stream_frames: &mut VecDeque<StreamFrame>,
+    ) -> Poll<(), Error> {
+        // TODO LH Actually write the stream frames
+        stream_frames.clear();
+        loop {
+            let outgoing_packet = OutgoingPacket {
+                destination_address: self.remote_address,
+                packet_header: PacketHeader::Long(LongHeader {
+                    packet_type: LongHeaderPacketType::Initial,
+                    version: Version::DRAFT_IETF_08,
+                    destination_connection_id: Some(self.remote_connection_id),
+                    source_connection_id: Some(self.local_connection_id),
+                    payload_length: 0,
+                    partial_packet_number: PartialPacketNumber::from_packet_number(
+                        PacketNumber::from(0u32),
+                        PacketNumber::from(0u32),
+                    )?,
+                }),
+                data: Bytes::new(),
+                encryption_level: EncryptionLevel::Unencrypted,
+            };
+
+            if self.perspective
+                .poll_send_packet(outgoing_packet)?
+                .is_not_ready()
+            {
+                return Ok(Async::NotReady);
+            }
+        }
+    }
+
+    pub fn poll_process_incoming_packet(&self) -> Poll<(), Error> {
+        trace!("checking for a new incoming packet");
+
+        if let Async::Ready(incoming_packet) = self.perspective
             .poll_incoming_packet(self.local_connection_id())?
         {
-            unimplemented!()
+            trace!("found new incoming packet");
+            // TODO LH Do something with the packet
+            return Ok(().into());
         }
+
+        trace!("no more incoming packets");
+
+        Ok(Async::NotReady)
+    }
+
+    pub fn poll_process_incoming_packets(&self) -> Poll<(), Error> {
+        while self.poll_process_incoming_packet()?.is_ready() {}
 
         Ok(Async::NotReady)
     }
@@ -164,18 +244,13 @@ impl<P: Perspective> Connection<P> {
             stream_map.get_stream(stream_id)?
         };
 
-        match stream_map_entry {
-            StreamMapEntry::Dead => {}
-            StreamMapEntry::Live(stream_state) => {
-                let mut stream_state = stream_state
-                    .lock()
-                    .expect("failed to obtain stream_state lock");
+        self.enqueue_stream_frames_from_stream_map_entry(&stream_map_entry);
 
-                self.enqueue_pending_writes(&mut stream_state);
-            }
+        while self.poll_transmit()?.is_ready() {
+            // TODO LH Stop when all frames for this stream have been sent
         }
 
-        Ok(().into())
+        Ok(Async::NotReady)
     }
 
     /// This also guarantees that the remote end acknowledged all of the stream
@@ -184,14 +259,75 @@ impl<P: Perspective> Connection<P> {
         self.poll_flush_stream(stream_id)?;
 
         // TODO LH Wait for acknowledgement
+        unimplemented!();
+
         Ok(().into())
     }
 
-    fn enqueue_pending_writes(&self, stream_state: &mut StreamState) {
-        while let Some(pending_write) = stream_state.dequeue_write() {
-            debug!("popped pending write");
-            // self.perspective
-            //     .queue_write(stream_state.stream_id(), pending_write);
+    fn enqueue_stream_frames(&self) {
+        let stream_map_entries: Vec<_> = {
+            let stream_map = self.stream_map
+                .lock()
+                .expect("failed to obtain stream_map lock");
+            let stream_map_entries = stream_map.get_streams();
+            stream_map_entries.collect()
+        };
+
+        for stream_map_entry in stream_map_entries {
+            self.enqueue_stream_frames_from_stream_map_entry(&stream_map_entry);
+        }
+    }
+
+    fn enqueue_stream_frames_from_stream_map_entry(&self, stream_map_entry: &StreamMapEntry) {
+        match stream_map_entry {
+            StreamMapEntry::Dead => {}
+            StreamMapEntry::Live(stream_state) => {
+                let mut stream_state = stream_state
+                    .lock()
+                    .expect("failed to obtain stream_state lock");
+
+                self.enqueue_stream_frames_from_stream_state(&mut stream_state);
+            }
+        }
+    }
+
+    fn enqueue_stream_frames_from_stream_state(&self, stream_state: &mut StreamState) {
+        loop {
+            let stream_id = stream_state.stream_id();
+
+            trace!("stream {:?}: popping pending writes", stream_id);
+
+            let stream_frame = match stream_state.dequeue_write() {
+                DequeueWriteResult::DequeuedWrite {
+                    offset,
+                    data,
+                    finished,
+                } => {
+                    debug!(
+                        "stream {:?}: popped pending write at offset {} length {}",
+                        stream_id,
+                        offset,
+                        data.len()
+                    );
+
+                    StreamFrame {
+                        finished,
+                        offset: offset.into(),
+                        stream_id,
+                        data,
+                    }
+                }
+                DequeueWriteResult::NotReady => {
+                    trace!("stream {:?}: no pending writes", stream_id);
+                    break;
+                }
+            };
+
+            let mut pending_stream_frames = self.pending_stream_frames
+                .lock()
+                .expect("failed to lock pending_stream_frames");
+
+            pending_stream_frames.push_back(stream_frame);
         }
     }
 
@@ -200,23 +336,10 @@ impl<P: Perspective> Connection<P> {
             let mut stream_map = self.stream_map
                 .lock()
                 .expect("failed to obtain stream_map lock");
-            stream_map.get_stream(stream_id)?
+            stream_map.forget_stream(stream_id)?
         };
 
-        if let StreamMapEntry::Live(stream_state) = stream_map_entry {
-            let mut stream_state = stream_state
-                .lock()
-                .expect("failed to obtain stream_state lock");
-
-            self.enqueue_pending_writes(&mut stream_state);
-        }
-
-        {
-            let mut stream_map = self.stream_map
-                .lock()
-                .expect("failed to obtain stream_map lock");
-            stream_map.forget_stream(stream_id)?;
-        }
+        self.enqueue_stream_frames_from_stream_map_entry(&stream_map_entry);
 
         Ok(().into())
     }
@@ -235,5 +358,13 @@ impl<P: Perspective> Connection<P> {
         > = TransportParameters::from_bytes(transport_parameter_bytes)?;
 
         unimplemented!()
+    }
+
+    pub fn incoming_flow_control(&self) -> &Mutex<FlowControl> {
+        &self.incoming_flow_control
+    }
+
+    pub fn outgoing_flow_control(&self) -> &Mutex<FlowControl> {
+        &self.outgoing_flow_control
     }
 }
