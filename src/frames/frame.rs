@@ -1,9 +1,10 @@
 use byteorder::WriteBytesExt;
 use errors::*;
-use frames::{AckFrame, ApplicationCloseFrame, BlockedFrame, ConnectionCloseFrame, MaxDataFrame,
-             MaxStreamDataFrame, MaxStreamIdFrame, NewConnectionIdFrame, PathChallengeFrame,
-             PathResponseFrame, ReadStreamFrameContext, ResetStreamFrame, StopSendingFrame,
-             StreamBlockedFrame, StreamFrame, StreamIdBlockedFrame};
+use frames::{AckFrame, ApplicationCloseFrame, BlockedFrame, ConnectionCloseFrame, CryptoFrame,
+             InitialPacketFrame, MaxDataFrame, MaxStreamDataFrame, MaxStreamIdFrame,
+             NewConnectionIdFrame, PathChallengeFrame, PathResponseFrame, ReadStreamFrameContext,
+             ResetStreamFrame, StopSendingFrame, StreamBlockedFrame, StreamFrame,
+             StreamIdBlockedFrame};
 use protocol::{Readable, Writable};
 use std::io::{Read, Write};
 
@@ -26,6 +27,16 @@ pub enum Frame {
     PathChallenge(PathChallengeFrame),
     PathResponse(PathResponseFrame),
     Stream(StreamFrame),
+    Crypto(CryptoFrame),
+}
+
+impl From<InitialPacketFrame> for Frame {
+    fn from(value: InitialPacketFrame) -> Self {
+        match value {
+            InitialPacketFrame::Ack(ack_frame) => Frame::Ack(ack_frame),
+            InitialPacketFrame::Crypto(crypto_frame) => Frame::Crypto(crypto_frame),
+        }
+    }
 }
 
 bitflags!(
@@ -45,6 +56,7 @@ bitflags!(
         const ACK               = 0x0d,
         const PATH_CHALLENGE    = 0x0e,
         const PATH_RESPONSE     = 0x0f,
+        const CRYPTO            = 0x18,
         
     }
 );
@@ -97,6 +109,7 @@ impl Readable for Frame {
                 ACK => Frame::Ack(Readable::read(reader)?),
                 PATH_CHALLENGE => Frame::PathChallenge(Readable::read(reader)?),
                 PATH_RESPONSE => Frame::PathResponse(Readable::read(reader)?),
+                CRYPTO => Frame::Crypto(Readable::read(reader)?),
                 _ => bail!(ErrorKind::FailedToReadFrame),
             }
         };
@@ -236,6 +249,13 @@ impl Writable for Frame {
                     .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
                 stream_frame.write(writer)?;
             }
+            Frame::Crypto(crypto_frame) => {
+                CRYPTO
+                    .bits()
+                    .write(writer)
+                    .chain_err(|| ErrorKind::FailedToWriteCryptoFrame)?;
+                crypto_frame.write(writer)?;
+            }
         }
 
         debug!("written frame {:?}", self);
@@ -248,7 +268,7 @@ impl Writable for Frame {
 mod tests {
     use super::Frame;
     use bytes::Bytes;
-    use frames::StreamFrame;
+    use frames::{CryptoFrame, StreamFrame};
     use protocol::{self, StreamId};
 
     #[test]
@@ -261,5 +281,15 @@ mod tests {
         });
 
         protocol::test_write_read(&stream_frame).unwrap();
+    }
+
+    #[test]
+    fn write_read_crypto_frame() {
+        let crypto_frame = Frame::Crypto(CryptoFrame {
+            offset: 5.into(),
+            data: Bytes::from(&[0x78, 0x91][..]),
+        });
+
+        protocol::test_write_read(&crypto_frame).unwrap();
     }
 }
