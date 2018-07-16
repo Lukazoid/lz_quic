@@ -2,7 +2,7 @@ use errors::*;
 use futures::{Future, IntoFuture};
 use protocol::{ConnectionId, ServerId, StreamType};
 use rand::OsRng;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use tokio_core::net::UdpSocket;
 use tokio_core::reactor::Handle;
@@ -14,8 +14,13 @@ pub struct Client {
     connection: Arc<Connection<ClientPerspective>>,
 }
 
-fn bind_udp_socket(handle: &Handle) -> Result<UdpSocket> {
-    let any_port = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 0).into();
+fn bind_udp_socket(handle: &Handle, server_address: SocketAddr) -> Result<UdpSocket> {
+    let any_port = match server_address {
+        SocketAddr::V6(_) => {
+            SocketAddrV6::new(Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0), 0, 0, 0).into()
+        }
+        SocketAddr::V4(_) => SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 0).into(),
+    };
     trace!("binding udp socket to {:?}", any_port);
 
     let udp_socket =
@@ -59,8 +64,8 @@ impl Client {
         client_configuration: ClientConfiguration,
         handle: &Handle,
     ) -> NewClient {
-        let future = bind_udp_socket(handle)
             .and_then(|udp_socket| new_connection(server_id, udp_socket, client_configuration))
+        let future = bind_udp_socket(handle, server_address)
             .into_future()
             .and_then(|connection| {
                 let connection = Arc::new(connection);
