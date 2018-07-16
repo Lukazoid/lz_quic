@@ -110,6 +110,12 @@ error_chain! {
         FailedToWriteStreamFrame {
             description("failed to write stream frame")
         }
+        FailedToReadCryptoFrame {
+            description("failed to read crypto frame")
+        }
+        FailedToWriteCryptoFrame {
+            description("failed to write crypto frame")
+        }
         FailedToReadAckFrame {
             description("failed to read ACK frame")
         }

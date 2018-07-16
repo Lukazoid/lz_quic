@@ -46,8 +46,14 @@ pub use self::stream_offset::StreamOffset;
 mod stream_frame;
 pub use self::stream_frame::{ReadStreamFrameContext, StreamFrame};
 
+mod crypto_frame;
+pub use self::crypto_frame::CryptoFrame;
+
 mod frame;
 pub use self::frame::Frame;
+
+mod initial_packet_frame;
+pub use self::initial_packet_frame::InitialPacketFrame;
 
 mod frame_queue;
 pub use self::frame_queue::FrameQueue;

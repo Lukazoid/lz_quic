@@ -1,5 +1,6 @@
+use bytes::Bytes;
 use errors::*;
-use frames::Frame;
+use frames::{Frame, InitialPacketFrame};
 use packets::PacketNumber;
 use protocol::Version;
 use std::net::SocketAddr;
@@ -17,15 +18,10 @@ pub enum PacketContent {
     Regular {
         frames: Vec<Frame>,
     },
-}
-
-impl PacketContent {
-    pub fn frames(&self) -> Option<&[Frame]> {
-        match self {
-            PacketContent::Regular { frames } => Some(frames.as_slice()),
-            _ => None,
-        }
-    }
+    Initial {
+        token: Bytes,
+        frames: Vec<InitialPacketFrame>,
+    },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
