@@ -1,7 +1,5 @@
-use conv::ValueInto;
 use errors::*;
-use frames::StreamOffset;
-use protocol::{Readable, StreamId, VarInt, Writable};
+use protocol::{Readable, StreamId, StreamOffset, Writable};
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]

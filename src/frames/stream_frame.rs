@@ -1,8 +1,7 @@
 use bytes::Bytes;
 use conv::ValueInto;
 use errors::*;
-use frames::StreamOffset;
-use protocol::{Readable, StreamId, VarInt, Writable};
+use protocol::{Readable, StreamId, StreamOffset, VarInt, Writable};
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -36,7 +35,7 @@ impl Readable for StreamFrame {
         let offset = if context.is_offset_present {
             Readable::read(reader).chain_err(|| ErrorKind::FailedToReadStreamFrame)?
         } else {
-            0u64.into()
+            0u32.into()
         };
 
         let data = if context.is_length_present {

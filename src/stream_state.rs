@@ -2,7 +2,7 @@ use bytes::Bytes;
 use conv::{ConvUtil, ValueInto};
 use errors::*;
 use futures::{Async, Poll};
-use protocol::{FlowControl, StreamId};
+use protocol::{FlowControl, StreamId, StreamOffset};
 use std::collections::VecDeque;
 use std::mem;
 use utils::DataQueue;
@@ -10,7 +10,7 @@ use utils::DataQueue;
 #[derive(Debug)]
 pub enum DequeueWriteResult {
     DequeuedWrite {
-        offset: u64,
+        offset: StreamOffset,
         data: Bytes,
         finished: bool,
     },
@@ -22,7 +22,7 @@ pub struct StreamState {
     stream_id: StreamId,
     incoming_data: DataQueue,
     pending_outgoing_data: VecDeque<Bytes>,
-    outgoing_offset: u64,
+    outgoing_offset: StreamOffset,
     has_all_outgoing_data: bool,
     incoming_flow_control: Option<FlowControl>,
     outgoing_flow_control: Option<FlowControl>,
@@ -38,7 +38,7 @@ impl StreamState {
             stream_id,
             incoming_data: DataQueue::new(),
             pending_outgoing_data: VecDeque::new(),
-            outgoing_offset: 0,
+            outgoing_offset: 0u32.into(),
             has_all_outgoing_data: false,
             incoming_flow_control: initial_max_incoming_data.map(FlowControl::with_initial_max),
             outgoing_flow_control: initial_max_outgoing_data.map(FlowControl::with_initial_max),

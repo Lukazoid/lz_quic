@@ -4,9 +4,11 @@ use errors::*;
 use num::{FromPrimitive, Unsigned};
 use protocol::{Readable, Writable};
 use std::error::Error as StdError;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::io::{Read, Write};
 use std::mem;
 use std::ops::Deref;
+use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct VarInt(u64);
@@ -14,6 +16,34 @@ pub struct VarInt(u64);
 impl VarInt {
     pub fn into_inner(self) -> u64 {
         self.0
+    }
+}
+
+impl Display for VarInt {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        self.0.fmt(f)
+    }
+}
+
+const OVERFLOW_MESSAGE: &'static str = "value overflows that allowable by VarInt";
+
+impl<T: ValueInto<VarInt>> Add<T> for VarInt {
+    type Output = VarInt;
+
+    fn add(self, rhs: T) -> Self::Output {
+        let self_as_u64: u64 = self.into();
+
+        let rhs: VarInt = rhs.value_into().expect(OVERFLOW_MESSAGE);
+        let rhs_as_u64: u64 = rhs.into();
+
+        let added = self_as_u64.checked_add(rhs_as_u64).expect(OVERFLOW_MESSAGE);
+        VarInt::value_from(added).expect(OVERFLOW_MESSAGE)
+    }
+}
+
+impl<T: ValueInto<VarInt>> AddAssign<T> for VarInt {
+    fn add_assign(&mut self, rhs: T) {
+        *self = *self + rhs;
     }
 }
 
@@ -28,6 +58,7 @@ impl From<u16> for VarInt {
         VarInt(value.into())
     }
 }
+
 impl From<u32> for VarInt {
     fn from(value: u32) -> Self {
         VarInt(value.into())

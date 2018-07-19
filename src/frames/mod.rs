@@ -40,9 +40,6 @@ pub use self::path_challenge_frame::PathChallengeFrame;
 mod path_response_frame;
 pub use self::path_response_frame::PathResponseFrame;
 
-mod stream_offset;
-pub use self::stream_offset::StreamOffset;
-
 mod stream_frame;
 pub use self::stream_frame::{ReadStreamFrameContext, StreamFrame};
 

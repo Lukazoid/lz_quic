@@ -66,3 +66,6 @@ pub use self::transport_parameters::{ClientHelloMessageParameters,
                                      EncryptedExtensionsMessageParameters, MessageParameters,
                                      RoleSpecificTransportParameters,
                                      ServerSpecificTransportParameters, TransportParameters};
+
+mod stream_offset;
+pub use self::stream_offset::StreamOffset;

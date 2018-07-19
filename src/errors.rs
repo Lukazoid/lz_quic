@@ -1,6 +1,5 @@
-use frames::StreamOffset;
 use futures::{Async, Future, Poll, Stream};
-use protocol::{ConnectionId, StreamId, Version};
+use protocol::{ConnectionId, StreamId, StreamOffset, Version};
 use std::error::Error as StdError;
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 use std::net::SocketAddr;
