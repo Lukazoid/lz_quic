@@ -12,7 +12,10 @@ use tokio_core::net::UdpCodec;
 pub struct PacketCodec;
 
 impl UdpCodec for PacketCodec {
-    type In = SmallVec<[IncomingPacket; 2]>;
+    /// We will usually always only have 1 incoming packet so we optimize for this case
+    type In = SmallVec<[IncomingPacket; 1]>;
+
+    /// We don't current support coalescing outgoing packets
     type Out = OutgoingPacket;
 
     fn decode(&mut self, src: &SocketAddr, mut buf: &[u8]) -> IoResult<Self::In> {

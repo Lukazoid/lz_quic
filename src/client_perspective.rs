@@ -197,7 +197,7 @@ impl Perspective for ClientPerspective {
     fn poll_incoming_packets(
         &self,
         connection_id: ConnectionId,
-    ) -> Poll<SmallVec<[IncomingPacket; 2]>, Error> {
+    ) -> Poll<SmallVec<[IncomingPacket; 1]>, Error> {
         let mut packets_stream = self.packets
             .0
             .clone()

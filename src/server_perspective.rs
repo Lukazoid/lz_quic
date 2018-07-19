@@ -145,7 +145,7 @@ impl Perspective for ServerPerspective {
     fn poll_incoming_packets(
         &self,
         connection_id: ConnectionId,
-    ) -> Poll<SmallVec<[IncomingPacket; 2]>, Error> {
+    ) -> Poll<SmallVec<[IncomingPacket; 1]>, Error> {
         unimplemented!()
     }
 

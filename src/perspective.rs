@@ -41,7 +41,7 @@ pub trait Perspective: Sized {
     fn poll_incoming_packets(
         &self,
         connection_id: ConnectionId,
-    ) -> Poll<SmallVec<[IncomingPacket; 2]>, Error>;
+    ) -> Poll<SmallVec<[IncomingPacket; 1]>, Error>;
 
     fn poll_send_packet(&self, packet: OutgoingPacket) -> Poll<(), Error>;
 
