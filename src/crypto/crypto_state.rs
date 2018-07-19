@@ -236,7 +236,7 @@ impl<'a> Writable for HkdfInfo<'a> {
 
         self.out_len.write(writer)?;
 
-        let label_prefix = "QUIC ";
+        let label_prefix = "quic ";
         let label_len = label_prefix.len() + self.label.len();
 
         u8::value_from(label_len)
@@ -255,7 +255,7 @@ impl<'a> Writable for HkdfInfo<'a> {
 fn encode_hkdf_info(label: &str, out_len: usize) -> Result<Bytes> {
     // struct {
     //     uint16 length = Length;
-    //     opaque label<6..255> = "QUIC " + Label;
+    //     opaque label<6..255> = "quic " + Label;
     // } QhkdfExpandInfo;
 
     let hkdf_info = HkdfInfo {
@@ -296,7 +296,7 @@ mod tests {
         let info = encode_hkdf_info("key", 32).unwrap();
 
         assert_eq!(
-            [0x00, 0x20, 0x08, 0x51, 0x55, 0x49, 0x43, 0x20, 0x6b, 0x65, 0x79,],
+            [0x00, 0x20, 0x08, 0x71, 0x75, 0x69, 0x63, 0x20, 0x6b, 0x65, 0x79,],
             &info[..]
         );
     }
