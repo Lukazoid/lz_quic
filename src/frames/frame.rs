@@ -1,11 +1,11 @@
-use byteorder::WriteBytesExt;
+use conv::ValueInto;
 use errors::*;
 use frames::{AckFrame, ApplicationCloseFrame, BlockedFrame, ConnectionCloseFrame, CryptoFrame,
              InitialPacketFrame, MaxDataFrame, MaxStreamDataFrame, MaxStreamIdFrame,
              NewConnectionIdFrame, PathChallengeFrame, PathResponseFrame, ReadStreamFrameContext,
              ResetStreamFrame, StopSendingFrame, StreamBlockedFrame, StreamFrame,
              StreamIdBlockedFrame};
-use protocol::{Readable, Writable};
+use protocol::{Readable, VarInt, Writable};
 use std::io::{Read, Write};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -75,7 +75,12 @@ impl Readable for Frame {
     fn read_with_context<R: Read>(reader: &mut R, _: &Self::Context) -> Result<Self> {
         trace!("reading frame");
 
-        let flags = u8::read(reader).chain_err(|| ErrorKind::FailedToReadFrame)?;
+        let flags: u8 = VarInt::read(reader)
+            .chain_err(|| ErrorKind::FailedToReadFrame)?
+            .into_inner()
+            .value_into()
+            .unwrap();
+
         let read_frame = if flags == 0 {
             Frame::Padding
         } else if flags >= 0x10 && flags <= 0x17 {
@@ -126,109 +131,97 @@ impl Writable for Frame {
 
         match self {
             Frame::Padding => {
-                let type_flags = FrameTypeFlags::empty().bits();
-                writer
-                    .write_u8(type_flags)
+                let type_flags = VarInt::from(FrameTypeFlags::empty().bits());
+
+                type_flags
+                    .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePaddingFrame)?;
             }
             Frame::ResetStream(reset_stream_frame) => {
-                RESET_STREAM
-                    .bits()
+                VarInt::from(RESET_STREAM.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteResetStreamFrame)?;
                 reset_stream_frame.write(writer)?;
             }
             Frame::ConnectionClose(connection_close_frame) => {
-                CONNECTION_CLOSE
-                    .bits()
+                VarInt::from(CONNECTION_CLOSE.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteConnectionCloseFrame)?;
                 connection_close_frame.write(writer)?;
             }
             Frame::ApplicationClose(application_close_frame) => {
-                APPLICATION_CLOSE
-                    .bits()
+                VarInt::from(APPLICATION_CLOSE.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteApplicationCloseFrame)?;
                 application_close_frame.write(writer)?;
             }
             Frame::MaxData(max_data_frame) => {
-                MAX_DATA
-                    .bits()
+                VarInt::from(MAX_DATA.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteMaxDataFrame)?;
                 max_data_frame.write(writer)?;
             }
             Frame::MaxStreamData(max_stream_data_frame) => {
-                MAX_STREAM_DATA
-                    .bits()
+                VarInt::from(MAX_STREAM_DATA.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteMaxStreamDataFrame)?;
                 max_stream_data_frame.write(writer)?;
             }
             Frame::MaxStreamId(max_stream_id_frame) => {
-                MAX_STREAM_ID
-                    .bits()
+                VarInt::from(MAX_STREAM_ID.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteMaxStreamIdFrame)?;
                 max_stream_id_frame.write(writer)?;
             }
             Frame::Ping => {
-                PING.bits()
+                VarInt::from(PING.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePingFrame)?;
             }
             Frame::Blocked(blocked_frame) => {
-                BLOCKED
-                    .bits()
+                VarInt::from(BLOCKED.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteBlockedFrame)?;
                 blocked_frame.write(writer)?;
             }
             Frame::StreamBlocked(stream_blocked_frame) => {
-                STREAM_BLOCKED
-                    .bits()
+                VarInt::from(STREAM_BLOCKED.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteStreamBlockedFrame)?;
                 stream_blocked_frame.write(writer)?;
             }
             Frame::StreamIdBlocked(stream_id_blocked_frame) => {
-                STREAM_ID_BLOCKED
-                    .bits()
+                VarInt::from(STREAM_ID_BLOCKED.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteStreamIdBlockedFrame)?;
                 stream_id_blocked_frame.write(writer)?
             }
             Frame::NewConnectionId(new_connection_id_frame) => {
-                NEW_CONNECTION_ID
-                    .bits()
+                VarInt::from(NEW_CONNECTION_ID.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteNewConnectionIdFrame)?;
                 new_connection_id_frame.write(writer)?;
             }
             Frame::StopSending(stop_sending_frame) => {
-                STOP_SENDING
-                    .bits()
+                VarInt::from(STOP_SENDING.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteStopSendingFrame)?;
                 stop_sending_frame.write(writer)?;
             }
             Frame::Ack(ack_frame) => {
-                ACK.bits()
+                VarInt::from(ACK.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteAckFrame)?;
                 ack_frame.write(writer)?;
             }
             Frame::PathChallenge(path_challenge_frame) => {
-                PATH_CHALLENGE
-                    .bits()
+                VarInt::from(PATH_CHALLENGE.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePathChallengeFrame)?;
                 path_challenge_frame.write(writer)?;
             }
             Frame::PathResponse(path_response_frame) => {
-                PATH_RESPONSE
-                    .bits()
+                VarInt::from(PATH_RESPONSE.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWritePathResponseFrame)?;
                 path_response_frame.write(writer)?;
@@ -244,14 +237,13 @@ impl Writable for Frame {
                     flags |= STREAM_FRAME_FIN;
                 }
 
-                (0x10u8 | flags.bits())
+                VarInt::from(0x10u8 | flags.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteStreamFrame)?;
                 stream_frame.write(writer)?;
             }
             Frame::Crypto(crypto_frame) => {
-                CRYPTO
-                    .bits()
+                VarInt::from(CRYPTO.bits())
                     .write(writer)
                     .chain_err(|| ErrorKind::FailedToWriteCryptoFrame)?;
                 crypto_frame.write(writer)?;
@@ -275,7 +267,7 @@ mod tests {
     fn write_read_stream_frame() {
         let stream_frame = Frame::Stream(StreamFrame {
             finished: true,
-            offset: 5.into(),
+            offset: 5u32.into(),
             stream_id: StreamId::first_unidirectional_client_stream_id(),
             data: Bytes::from(&[0x78, 0x91][..]),
         });
@@ -286,7 +278,7 @@ mod tests {
     #[test]
     fn write_read_crypto_frame() {
         let crypto_frame = Frame::Crypto(CryptoFrame {
-            offset: 5.into(),
+            offset: 5u32.into(),
             data: Bytes::from(&[0x78, 0x91][..]),
         });
 
