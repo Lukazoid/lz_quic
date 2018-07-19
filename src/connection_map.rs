@@ -122,7 +122,6 @@ impl ConnectionMap {
 mod tests {
     use super::{AddressConnectionIds, ConnectionMap};
     use protocol::ConnectionId;
-    use rand;
 
     #[test]
     fn get_connection_id_returns_none_when_no_connection_added() {
@@ -141,7 +140,7 @@ mod tests {
     fn get_connection_id_returns_correct_id() {
         let mut connection_map = ConnectionMap::new();
 
-        let connection_id = ConnectionId::generate(&mut rand::thread_rng());
+        let connection_id = ConnectionId::generate().unwrap();
 
         let local_address = "10.0.0.1:65412".parse().unwrap();
         let remote_address = "10.0.0.2:443".parse().unwrap();
@@ -157,7 +156,7 @@ mod tests {
     fn insert_fails_if_connection_id_already_exists() {
         let mut connection_map = ConnectionMap::new();
 
-        let connection_id = ConnectionId::generate(&mut rand::thread_rng());
+        let connection_id = ConnectionId::generate().unwrap();
         assert!(connection_map.insert(
             connection_id,
             "10.0.0.1:65412".parse().unwrap(),
@@ -178,8 +177,8 @@ mod tests {
     fn insert_associates_multiple_connection_ids_if_addresses_already_exists() {
         let mut connection_map = ConnectionMap::new();
 
-        let first_connection_id = ConnectionId::generate(&mut rand::thread_rng());
-        let second_connection_id = ConnectionId::generate(&mut rand::thread_rng());
+        let first_connection_id = ConnectionId::generate().unwrap();
+        let second_connection_id = ConnectionId::generate().unwrap();
 
         let local_address = "10.0.0.1:65412".parse().unwrap();
         let remote_address = "10.0.0.2:443".parse().unwrap();
@@ -202,7 +201,7 @@ mod tests {
         let connection_map = ConnectionMap::new();
 
         assert_eq!(
-            connection_map.contains_connection_id(ConnectionId::generate(&mut rand::thread_rng())),
+            connection_map.contains_connection_id(ConnectionId::generate().unwrap()),
             false
         );
     }
@@ -211,7 +210,7 @@ mod tests {
     fn contains_connection_id_returns_true_for_existing_connection_id() {
         let mut connection_map = ConnectionMap::new();
 
-        let connection_id = ConnectionId::generate(&mut rand::thread_rng());
+        let connection_id = ConnectionId::generate().unwrap();
         assert!(connection_map.insert(
             connection_id,
             "10.0.0.1:65412".parse().unwrap(),

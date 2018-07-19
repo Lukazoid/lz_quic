@@ -237,14 +237,13 @@ mod tests {
     use super::PacketHeader;
     use packets::{LongHeader, LongHeaderPacketType, PacketHeaderReadContext, ShortHeader,
                   VersionNegotiationPacket};
-    use protocol::{self, ConnectionId, VarInt, Version};
-    use rand;
+    use protocol::{self, ConnectionId, Version};
 
     #[test]
     pub fn read_write_version_negotiation_packet_header() {
         let version_negotiation_packet = VersionNegotiationPacket {
-            destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
-            source_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
+            destination_connection_id: Some(ConnectionId::generate().unwrap()),
+            source_connection_id: Some(ConnectionId::generate().unwrap()),
             supported_versions: vec![Version::DRAFT_IETF_08],
         };
         let packet_header = PacketHeader::VersionNegotiation(version_negotiation_packet);
@@ -261,8 +260,8 @@ mod tests {
     pub fn read_write_long_packet_header() {
         let long_header = LongHeader {
             packet_type: LongHeaderPacketType::Handshake,
-            destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
-            source_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
+            destination_connection_id: Some(ConnectionId::generate().unwrap()),
+            source_connection_id: Some(ConnectionId::generate().unwrap()),
             version: Version::DRAFT_IETF_08,
             partial_packet_number: 5u8.into(),
             payload_length: 654234u32.into(),
@@ -280,7 +279,7 @@ mod tests {
     #[test]
     pub fn read_write_short_packet_header() {
         let short_header = ShortHeader {
-            destination_connection_id: Some(ConnectionId::generate(&mut rand::thread_rng())),
+            destination_connection_id: Some(ConnectionId::generate().unwrap()),
             partial_packet_number: 3421u16.into(),
             key_phase: true,
         };

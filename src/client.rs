@@ -1,7 +1,6 @@
 use errors::*;
 use futures::{Future, IntoFuture};
 use protocol::{ConnectionId, ServerId, StreamType};
-use rand::OsRng;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::sync::Arc;
 use tokio_core::net::UdpSocket;
@@ -31,21 +30,14 @@ fn bind_udp_socket(handle: &Handle, server_address: SocketAddr) -> Result<UdpSoc
     Ok(udp_socket)
 }
 
-fn generate_connection_id() -> Result<ConnectionId> {
-    let mut rng =
-        OsRng::new().chain_err(|| ErrorKind::FailedToCreateCryptographicRandomNumberGenerator)?;
-
-    Ok(ConnectionId::generate(&mut rng))
-}
-
 fn new_connection(
     server_address: SocketAddr,
     server_id: ServerId,
     udp_socket: UdpSocket,
     client_configuration: ClientConfiguration,
 ) -> Result<Connection<ClientPerspective>> {
-    let local_connection_id = generate_connection_id()?;
-    let remote_connection_id = generate_connection_id()?;
+    let local_connection_id = ConnectionId::generate()?;
+    let remote_connection_id = ConnectionId::generate()?;
 
     let client_perspective = ClientPerspective::new(udp_socket, client_configuration, server_id);
 

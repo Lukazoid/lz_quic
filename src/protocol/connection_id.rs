@@ -1,8 +1,7 @@
 use bytes::Bytes;
 use errors::*;
 use protocol::{Readable, Writable};
-use rand::Rng;
-use smallvec::SmallVec;
+use rand::{OsRng, Rng};
 use std::io::{Read, Write};
 
 /// A unique identifier for a connection.
@@ -40,7 +39,7 @@ impl Writable for ConnectionId {
 }
 
 impl ConnectionId {
-    pub fn generate<R: Rng>(rng: &mut R) -> ConnectionId {
+    pub fn generate_with_rng<R: Rng>(rng: &mut R) -> ConnectionId {
         trace!("generating new connection id");
         let mut bytes = [0; 18];
         rng.fill_bytes(&mut bytes);
@@ -48,6 +47,13 @@ impl ConnectionId {
         debug!("generated new connection id {:?}", connection_id);
 
         connection_id
+    }
+
+    pub fn generate() -> Result<ConnectionId> {
+        let mut rng =
+            OsRng::new().chain_err(|| ErrorKind::FailedToCreateCryptographicRandomNumberGenerator)?;
+
+        Ok(ConnectionId::generate_with_rng(&mut rng))
     }
 
     pub fn bytes(&self) -> &[u8] {
@@ -59,11 +65,10 @@ impl ConnectionId {
 mod tests {
     use super::ConnectionId;
     use protocol::{self, Readable};
-    use rand;
 
     #[test]
     fn read_write_connection_id() {
-        let connection_id = ConnectionId::generate(&mut rand::thread_rng());
+        let connection_id = ConnectionId::generate().unwrap();
 
         protocol::test_write_read(&connection_id).unwrap();
     }

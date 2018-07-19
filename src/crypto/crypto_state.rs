@@ -288,7 +288,6 @@ mod tests {
     use super::*;
     use frames::Frame;
     use protocol::ConnectionId;
-    use rand;
     use ring::digest;
     use ring::hmac::SigningKey;
 
@@ -315,18 +314,13 @@ mod tests {
 
     #[test]
     fn crypto_state_for_handshake_works() {
-        CryptoState::for_handshake(
-            ConnectionId::generate(&mut rand::thread_rng()),
-            "my test label",
-        ).unwrap();
+        CryptoState::for_handshake(ConnectionId::generate().unwrap(), "my test label").unwrap();
     }
 
     #[test]
     fn crypto_state_seal_open() {
-        let crypto_state = CryptoState::for_handshake(
-            ConnectionId::generate(&mut rand::thread_rng()),
-            "my test label",
-        ).unwrap();
+        let crypto_state =
+            CryptoState::for_handshake(ConnectionId::generate().unwrap(), "my test label").unwrap();
 
         let packet_number = 1254u32.into();
         let packet_header_bytes = b"some packet header bytes";
